@@ -1,0 +1,10 @@
+﻿stadium_code,facility_manager,game_operator,phone_general,phone_facility,phone_ticket,evidence_type,source_id,verified_at,status,notes
+JAMSIL,서울특별시 체육시설관리사업소,LG스포츠·두산베어스,02-2202-3834,,,OFFICIAL,S034,2026-09-03,CONFIRMED,서울시 시설 페이지의 민간운영 표기
+GOCHEOK,서울시설공단 돔경기장운영처,키움 히어로즈(홈경기),02-2128-2300,02-2128-2365,,OFFICIAL,S038,2026-09-03,CONFIRMED,장애인 이용 문의는 FAQ의 운영 연락처 병기
+MUNHAK,주식회사 신세계야구단,SSG 랜더스,1599-6970,070-7119-3198,1577-3419,OFFICIAL,S044,2026-09-03,CONFIRMED,주차 문의와 티켓 문의 분리
+SUWON,수원시·수원도시공사(시설),KT 스포츠,1899-5916,031-240-2720~1,,OFFICIAL,S049,2026-09-03,CONFIRMED,경기 운영 문의와 주차 문의 분리
+DAEJEON,한화 이글스,한화 이글스,042-630-8200,,,OFFICIAL,S055,2026-09-03,CONFIRMED,구단 공식 볼파크 대표번호
+DAEGU,삼성 라이온즈,삼성 라이온즈,053-780-3300,,,OFFICIAL,S057,2026-09-03,CONFIRMED,구단 공식 이용 안내 대표번호
+GWANGJU,광주광역시(시설)·KIA 타이거즈,KIA 타이거즈,070-7686-8000,,,OFFICIAL,S059,2026-09-03,CONFIRMED,KIA 공식 구장 안내 대표번호
+SAJIK,부산광역시 체육시설관리사업소,롯데 자이언츠,,051-500-2115,051-852-1982,OFFICIAL,S068,2026-09-03,CONFIRMED,부산시 시설 문의와 롯데 티켓 문의 분리
+CHANGWON,창원시설공단 창원NC파크관리팀,NC 다이노스,1644-9112,055-712-0392,,OFFICIAL,S072,2026-09-03,CONFIRMED,"경기·티켓은 NC, 시설은 창원시설공단"

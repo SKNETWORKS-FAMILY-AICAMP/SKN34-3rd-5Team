@@ -1,0 +1,9 @@
+﻿stadium_name,facility_type,floor,location_or_claim,source_url,source_grade,status,reason
+수원 KT 위즈파크,수유실,2F,과거 공공목록: 중앙안내센터 옆/앞,https://health.suwon.go.kr/sub.asp?page_code=sub0606,C,RECHECK,현행 2026 공식 지도에는 미표기. 수유실 찾기 사이트에는 현재도 2F 위치가 노출됨.
+수원 KT 위즈파크,수유실,4F,과거 공공목록: Play Station/엘리베이터 인근,https://health.suwon.go.kr/sub.asp?page_code=sub0606,C,RECHECK,현행 2026 공식 지도에는 미표기. 수유실 찾기 사이트에는 4F 엘리베이터 1호기 옆으로 노출됨.
+광주 KIA 챔피언스필드,화장실,3F·5F,2021 공식 시설물 목록은 층 단위 화장실 존재만 뒷받침,https://tigers.co.kr/files/article/2021/01/27/20210127180030-%EC%B2%A8%EB%B6%801.%20%EA%B5%90%EC%B2%B4%EB%8C%80%EC%83%81%20%EB%A6%AC%EC%8A%A4%ED%8A%B8%20%28%EA%B4%91%EC%A3%BC%2C%ED%95%A8%ED%8F%89%29.pdf,D,HISTORICAL_ONLY,정확 블록의 현행 근거는 아님. 현재 시트에는 사용자 제공 최신 보완 위치만 별도 RECHECK로 기록.
+고척스카이돔,흡연구역,외부,2016 위치 5곳: 1층 3루 광장 / 2층 A·C·E 게이트 / 외야 광장,https://www.hankookilbo.com/news/article/201608021018329560,D,HISTORICAL_ONLY,2026 공식 FAQ는 외부 흡연부스 5곳을 확인하지만 전수 위치는 미공개. 과거 위치는 현행값으로 승격하지 않음.
+서울 잠실야구장,수유실,2.5F,2024 안내자료의 2.5F 수유실·놀이방,,C,HISTORICAL_ONLY,현재 공식 지도에는 수유실 핀이 없어 현행 위치 확정 근거로 사용하지 않음.
+창원 NC파크,수유실,3F,2022 현장 안내판 자료에 3F 수유실 표기,https://blog.naver.com/PostView.nhn?blogId=eunji93115&logNo=222726974320,C,HISTORICAL_ONLY,현재 수유실 찾기에서 미노출. 사용자 결정에 따라 현행 데이터에서 제외.
+창원 NC파크,수유실,4F,2022 현장 안내판 자료에 4F 수유실 표기,https://blog.naver.com/PostView.nhn?blogId=eunji93115&logNo=222726974320,C,HISTORICAL_ONLY,현재 수유실 찾기에서 미노출. 사용자 결정에 따라 현행 데이터에서 제외.
+창원 NC파크,흡연구역,1루,과거 1루 측 흡연부스 언급,,C,HISTORICAL_ONLY,"2024년 이후 별도 1루 흡연구역의 현행 근거를 확보하지 못해, 사용자 결정에 따라 '없음'으로 처리하고 현행 시트에서 제외."
