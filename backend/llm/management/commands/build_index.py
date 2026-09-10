@@ -50,9 +50,11 @@ CHECKPOINT_EVERY = 500
 # ── 파일 → (category, 자연키 컬럼들) ────────────────────────────────────────────
 CSV_SPEC = {
     "구장티켓가격.csv":               ("PRICE",         ["team_code", "zone_code", "day_type", "customer_type", "price_tier"]),
-    "구장먹거리_공식매점.csv":         ("FOOD_IN",       ["record_id"]),
+    # 2026-09-10 팀 결정(B안): 구장 내 먹거리는 자리어때만 임베딩. 구장먹거리_공식매점.csv 는 임베딩 제외(파일은 4차 크롤링 소스로 보존)
+    "구장먹거리_위치_자리어때.csv":     ("FOOD_IN",       ["record_id"]),
     "kbo_ticket_policy_structured.csv": ("TICKET_POLICY", ["id"]),
     "구장편의시설.csv":               ("FACILITY",      ["record_id"]),
+    "구장편의시설_위치_자리어때.csv":   ("FACILITY",      ["record_id"]),   # 굿즈샵·포토부스·물품보관함 — 공식과 유형 안 겹침
     "구장좌석구역.csv":               ("SEAT",          ["stadium_code", "zone_code"]),
     "구장부가콘텐츠_공식.csv":         ("CONTENT",       ["record_id"]),
     "구장교통정보.csv":               ("TRANSPORT",     ["stadium_code", "access_code"]),
@@ -147,7 +149,7 @@ class Command(BaseCommand):
                     sc = TEAM_HOME.get(r.get("team_code"))  # kbo_ticket_policy 에는 stadium_code 없음
                 tc = r.get("team_code") if isinstance(r.get("team_code"), str) else None
                 header = stadium_ko.get(sc, sc or "전 구장")
-                if tc:
+                if tc and "," not in tc:  # 'LG,DOOSAN'(잠실 공동홈)은 구장명만
                     header += f" · {TEAM_KO.get(tc, tc)}"
                 text = row_text(header, r)
                 if str(r.get("status", "")).upper() not in ("CONFIRMED", "CONFIRMED_OFFICIAL", "NAN", ""):
@@ -155,18 +157,16 @@ class Command(BaseCommand):
                 natural = "_".join(str(r.get(c, "")) for c in key_cols)
                 add(fname, category, sc, tc, natural, text, r)
 
-        # 1-2. external_places: in_stadium_flag=Y 제외, 단 DAEGU 14건은 FOOD_IN 으로 포함
+        # 1-2. external_places: in_stadium_flag=Y(구장 내 매장 22건) 전부 제외 — 구장 내 먹거리는 자리어때가 담당
+        #      (이전의 DAEGU 14건 예외는 자리어때 대구 43건이 생겨 2026-09-10 제거)
         df = read_csv("external_places.csv")
         for r in df.to_dict("records"):
             sc = r["stadium_code"]
-            inside = str(r.get("in_stadium_flag", "")).upper() == "Y"
-            if inside and sc != "DAEGU":
+            if str(r.get("in_stadium_flag", "")).upper() == "Y":
                 continue
-            category = "FOOD_IN" if inside else KAKAO_CATEGORY.get(r.get("category_group_code"), "SPOT")
+            category = KAKAO_CATEGORY.get(r.get("category_group_code"), "SPOT")
             header = stadium_ko.get(sc, sc)
             text = row_text(header, r)
-            if inside:
-                text += " (카카오 지도 기준 정보로 영업시간·폐업 여부 확인이 필요합니다.)"
             r["evidence_type"] = "THIRD_PARTY_API"
             add("external_places.csv", category, sc, None, str(r["attraction_id"]), text, r)
 
