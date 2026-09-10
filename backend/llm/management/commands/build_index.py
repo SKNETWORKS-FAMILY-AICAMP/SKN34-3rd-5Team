@@ -4,7 +4,7 @@ RAG 인덱싱: 전처리 CSV/docs → 청크 텍스트 → 임베딩 → Documen
 실행:
   python manage.py build_index --dry-run          # 청크만 만들고 통계·샘플 출력 (임베딩 X)
   python manage.py build_index --limit 50         # 50건만 끝까지 (연결·키 테스트용)
-  python manage.py build_index                    # 전량 (약 3,830청크, 100원 안팎)
+  python manage.py build_index                    # 전량 (약 3,832청크, 100원 안팎)
 
 재현성: 이 파일 하나로 처음부터 다시 만들어짐. 임베딩은 artifacts/ 에 500건마다 체크포인트.
 근거 문서: claude/임베딩_대상파일_정리.md, claude/청킹임베딩_의사결정노트.md
@@ -70,8 +70,8 @@ KAKAO_CATEGORY = {"FD6": "FOOD_OUT", "CE7": "CAFE", "AT4": "SPOT"}
 # 직접 질문("삼성 몇 위야", "9/12 잠실 경기 있어")만이라도 답하도록 임베딩에도 넣는다. 상대 날짜 질문은 SQL 라우팅(4차)에서.
 SENTENCE_CSV_SPEC = {
     "kbo_schedule_full.csv":           ("SCHEDULE", ["id"]),
-    "kbo_schedule_postseason_tbd.csv": ("SCHEDULE", ["id"]),
     "kbo_standing.csv":                ("STANDING", ["id"]),
+    # kbo_schedule_postseason_tbd(4건)은 참가팀 TBD 플레이스홀더라 제외 (9/10 결정). 순위 확정 후 크롤러가 실제 일정을 쓰면 그때 포함
 }
 # 구장 기본정보(주소·좌표) 9건 — "잠실야구장 주소 알려줘" 용
 STADIUM_CSV = ("stadium_coordinates.csv", "STADIUM", ["stadium_code"])
@@ -294,8 +294,8 @@ class Command(BaseCommand):
         short = sum(1 for c in chunks if len(c["content"]) < 50)
         by_cat = Counter(c["category"] for c in chunks)
         dup = n - len({c["doc_id"] for c in chunks})
-        self.stdout.write(f"\n총 청크: {n}  (기대 3,826 ± 200, 2026-09-10 기준)")
-        self.stdout.write(f"stadium_code 없음: {no_stadium}  (정상 9 = 반입 공통 1 + 기초규칙 4 + 포스트시즌 TBD 4)")
+        self.stdout.write(f"\n총 청크: {n}  (기대 3,832 ± 200, 2026-09-10 기준)")
+        self.stdout.write(f"stadium_code 없음: {no_stadium}  (정상 5 = 반입 공통 1 + 기초규칙 4)")
         self.stdout.write(f"50자 미만: {short}")
         self.stdout.write(f"doc_id 중복: {dup}  (0 이어야 함)")
         for cat, cnt in sorted(by_cat.items(), key=lambda x: -x[1]):

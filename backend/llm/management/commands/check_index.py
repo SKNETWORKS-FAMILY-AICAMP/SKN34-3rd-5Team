@@ -1,7 +1,7 @@
 """원격 DB에 인덱스가 제대로 들어갔는지 확인 (읽기 전용, 임베딩 호출 없음).
 
 python manage.py check_index            # 요약
-python manage.py check_index --expect 3836
+python manage.py check_index --expect 3832
 """
 from collections import Counter
 
@@ -39,7 +39,7 @@ class Command(BaseCommand):
         w("\n파일별:")
         for k, v in sorted(src.items(), key=lambda x: -x[1]):
             w(f"  {str(k):40s} {v:5d}")
-        w(f"\nstadium_code 없음: {sc_none}  (정상: 9 = 반입 공통 1 + 기초규칙 4 + 포스트시즌 TBD 4)")
+        w(f"\nstadium_code 없음: {sc_none}  (정상: 5 = 반입 공통 1 + 기초규칙 4)")
 
         with connection.cursor() as c:
             c.execute("SELECT count(*) FROM llm_documentchunk WHERE embedding IS NULL")
