@@ -40,6 +40,9 @@ EXTRA_SPEC = {
     "구장편의시설_보류이력.csv":       ("FACILITY_HOLD", ["facility_type", "floor"]),
     "3차_신규확보데이터.csv":          ("SUPPLEMENT",    ["no"]),
     "kbo_standing_history.csv":       ("STANDING",      ["snapshot_date", "team_code"]),
+    # 자리어때(myseatcheck.com) 구역 단위 위치 — UNOFFICIAL/PARTIAL, 2026-09-10 추가. build_index 등록은 별도 결정
+    "구장먹거리_위치_자리어때.csv":     ("FOOD_IN_LOC",   ["record_id"]),
+    "구장편의시설_위치_자리어때.csv":   ("FACILITY_LOC",  ["record_id"]),
 }
 KAKAO_CATEGORY = {"FD6": "FOOD_OUT", "CE7": "CAFE", "AT4": "SPOT"}
 TEAM_HOME = {
@@ -135,7 +138,7 @@ def build(fname, category, key_cols, df, stadium_ko):
             sc = TEAM_HOME.get(tc, "")
         cat = category
         header = stadium_ko.get(sc, sc or "전 구장")
-        if tc:
+        if tc and "," not in tc:  # 'LG,DOOSAN'(잠실 공동 홈)은 구장명만
             header += f" · {TEAM_KO.get(tc, tc)}"
         text = row_text(header, r)
         note = ""
