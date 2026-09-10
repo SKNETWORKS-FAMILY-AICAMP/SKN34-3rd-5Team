@@ -213,3 +213,6 @@ yarn-error.log*
 next-env.d.ts
 
 # End of https://www.toptal.com/developers/gitignore/api/nextjs,django
+
+# RAG 인덱싱 산출물 (벡터는 git 에 안 올림 — HuggingFace/DB 로 공유)
+backend/artifacts/

@@ -18,6 +18,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./backend:/app
+      - ./data:/data:ro    # build_index 가 읽는 전처리 CSV
+      - ./docs:/docs:ro    # build_index 가 읽는 JSON/md
     ports:
       - "8000:8000"
     depends_on:

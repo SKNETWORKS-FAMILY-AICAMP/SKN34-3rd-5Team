@@ -11,3 +11,5 @@ python-dotenv
 langchain-core
 langchain-openai
 langchain-community
+pandas
+numpy
