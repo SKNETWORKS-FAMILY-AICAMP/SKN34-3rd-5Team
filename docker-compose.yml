@@ -3,7 +3,7 @@ services:
     image: pgvector/pgvector:pg18
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5431:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
     env_file:
