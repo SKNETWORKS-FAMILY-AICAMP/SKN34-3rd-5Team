@@ -12,6 +12,8 @@ import "@/styles/info.css";
 import "@/styles/auth.css";
 import "@/styles/chat-launcher.css";
 import "@/styles/map.css";
+import "@/styles/nearby-planner.css";
+import "@/styles/course-travel.css";
 import { ChatProvider } from "@/components/chat-provider";
 import { SiteFrame } from "@/components/site-frame";
 

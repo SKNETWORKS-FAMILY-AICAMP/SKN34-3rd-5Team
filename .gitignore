@@ -218,3 +218,7 @@ next-env.d.ts
 backend/artifacts/
 backend/env
 frontend/.env.local
+
+# Frontend application source, not Python build output.
+!frontend/lib/
+!frontend/lib/**

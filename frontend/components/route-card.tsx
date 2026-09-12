@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { type TripRoute, useLikedRoutes, useRouteViews } from "@/lib/routes";
+import { withCourseStart } from "@/lib/drawn-course";
 
 export function formatRouteDate(value: string) {
   const date = new Date(value);
@@ -17,18 +18,19 @@ function stadiumTeam(stadium: string) {
 export function RouteCard({ route }: { route: TripRoute }) {
   const liked = useLikedRoutes().includes(route.id);
   const views = useRouteViews();
+  const stops = withCourseStart(route.stops, route.start);
   return (
     <article className="route-card">
       <Link href={`/routes/${encodeURIComponent(route.id)}`} className="route-card-link">
         <div className="route-card-image">
           <Image src={route.cover.startsWith("/images/") ? route.cover : "/images/stadium-night.jpg"} alt="야구장 분위기 이미지" fill sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" />
           <span className="route-card-sample">{route.isSample ? "샘플 코스" : "내가 만든 코스"}</span>
-          <div className="route-card-image-caption"><span>{route.duration}</span><span>{route.stops.length}개 장소</span></div>
+          <div className="route-card-image-caption"><span>{route.duration}</span><span>{stops.length}개 장소</span></div>
         </div>
         <div className="route-card-content">
           <div className="route-card-badges"><span className="route-stadium-pill">{route.stadium}</span><span className="route-team-badge">{stadiumTeam(route.stadium)}</span></div>
           <h3>{route.title}</h3>
-          <p className="route-card-stops">{route.stops.map(stop => stop.name).join(" → ")}</p>
+          <p className="route-card-stops">{stops.map(stop => stop.name).join(" → ")}</p>
           <div className="route-card-tags">{route.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}</div>
           <div className="route-card-footer">
             <span className="route-card-author"><span className="route-avatar" aria-hidden="true">{route.isSample ? "K" : "나"}</span><span>{route.author}<time dateTime={route.createdAt}>{formatRouteDate(route.createdAt)}</time></span></span>

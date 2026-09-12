@@ -1,0 +1,20 @@
+.page { padding-top: 56px; padding-bottom: 80px; min-height: 65vh; }
+.page h1 { font-size: clamp(26px, 4vw, 36px); margin: 10px 0 14px; letter-spacing: -1px; }
+.description { color: #718097; font-size: 14px; line-height: 1.8; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 30px 0 24px; }
+.tabs a { padding: 12px 18px; border: 1px solid #e0e8f4; border-radius: 10px; color: #657790; background: white; font-size: 13px; }
+.tabs a[aria-current="page"] { background: #edf4ff; border-color: #bcd3f7; color: #2868dc; font-weight: 700; }
+.tabs a:focus-visible { outline: 2px solid #2868dc; outline-offset: 3px; }
+.filters { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+.filters label { font-size: 13px; font-weight: 600; color: #405575; }
+.filters select { min-width: 180px; max-width: 100%; min-height: 42px; padding: 10px 34px 10px 13px; border: 1px solid #dce5f1; border-radius: 8px; background: #fff; color: #405575; font: inherit; font-size: 13px; cursor: pointer; }
+.filters select:focus-visible { outline: 2px solid #2868dc; outline-offset: 2px; }
+.filters p { margin: 0 0 0 auto; color: #718097; font-size: 12px; }
+@media (max-width: 480px) {
+  .filters select { flex: 1; min-width: 0; }
+  .filters p { flex-basis: 100%; margin-left: 0; }
+}
+.empty { padding: 60px 20px; text-align: center; border: 1px solid #e4eaf4; border-radius: 16px; background: white; color: #718097; }
+.empty svg { color: #789dd5; }
+.empty h2 { margin: 18px 0 10px; font-size: 18px; color: #405575; }
+.empty p { font-size: 13px; line-height: 1.8; }
