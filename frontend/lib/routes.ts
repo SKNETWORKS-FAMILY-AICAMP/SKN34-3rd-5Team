@@ -2,7 +2,7 @@
 
 import { useMemo, useSyncExternalStore } from "react";
 
-export type RouteStop = { name: string; lat: number; lng: number; category: string };
+export type RouteStop = { name: string; lat: number; lng: number; category: string; placeId?: string; address?: string; tourContentId?: string; isMapPoint?: boolean; isDrawnPoint?: boolean };
 export function areValidCoordinates(lat: unknown, lng: unknown): boolean {
   return typeof lat === "number" && typeof lng === "number" && Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 }
@@ -11,6 +11,7 @@ export type TripRoute = {
   tags: string[]; duration: string; cover: string; stops: RouteStop[];
   author: string; likes: number; isSample: boolean; createdAt: string;
   views?: number; contentFormat?: "html";
+  start?: { lat: number; lng: number };
 };
 
 export const sampleRoutes: TripRoute[] = [
@@ -83,8 +84,9 @@ function isRoute(value: unknown): value is TripRoute {
     && typeof item.likes === "number" && Number.isFinite(item.likes) && typeof item.isSample === "boolean"
     && (item.views === undefined || (typeof item.views === "number" && Number.isFinite(item.views) && item.views >= 0))
     && (item.contentFormat === undefined || item.contentFormat === "html")
+    && (item.start === undefined || (item.start !== null && typeof item.start === "object" && areValidCoordinates((item.start as Record<string, unknown>).lat, (item.start as Record<string, unknown>).lng)))
     && Array.isArray(item.tags) && item.tags.every(tag => typeof tag === "string")
-    && Array.isArray(item.stops) && item.stops.every(stop => stop && typeof stop === "object" && typeof stop.name === "string" && typeof stop.category === "string" && areValidCoordinates(stop.lat, stop.lng));
+    && Array.isArray(item.stops) && item.stops.every(stop => stop && typeof stop === "object" && typeof stop.name === "string" && typeof stop.category === "string" && (stop.placeId === undefined || typeof stop.placeId === "string") && (stop.address === undefined || typeof stop.address === "string") && (stop.tourContentId === undefined || typeof stop.tourContentId === "string") && (stop.isMapPoint === undefined || typeof stop.isMapPoint === "boolean") && (stop.isDrawnPoint === undefined || typeof stop.isDrawnPoint === "boolean") && areValidCoordinates(stop.lat, stop.lng));
 }
 
 function parseStoredRoutes(raw: string): TripRoute[] {

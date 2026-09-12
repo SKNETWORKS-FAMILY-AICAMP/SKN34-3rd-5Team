@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import { RouteContent } from "@/components/route-content";
 import { RouteMap } from "@/components/route-map";
 import { RouteDetailSkeleton } from "@/components/route-skeleton";
 import { routeContentToText } from "@/lib/route-content";
+import { coursePointLabel, withCourseStart } from "@/lib/drawn-course";
 import { deleteRoute, recordRouteView, toggleRouteLike, useLikedRoutes, useRoutes, useRoutesReady, useRouteViews } from "@/lib/routes";
 
 function DeleteRouteDialog({ title, error, busy, onCancel, onDelete }: { title: string; error: string; busy: boolean; onCancel: () => void; onDelete: () => void }) {
@@ -35,7 +36,8 @@ export default function RouteDetailPage({ params }: { params: Promise<{ id: stri
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState("");
   const [shareFallback, setShareFallback] = useState("");
-  const route = routes.find(item => item.id === id);
+  const storedRoute = routes.find(item => item.id === id);
+  const route = useMemo(() => storedRoute && { ...storedRoute, stops: withCourseStart(storedRoute.stops, storedRoute.start) }, [storedRoute]);
 
   useEffect(() => {
     if (ready && route) recordRouteView(id);
@@ -44,7 +46,7 @@ export default function RouteDetailPage({ params }: { params: Promise<{ id: stri
   if (!ready || deleting) return <RouteDetailSkeleton/>;
   if (!route) return <main className="container route-empty route-not-found"><h1>코스를 찾을 수 없어요</h1><p>삭제된 코스이거나, 다른 브라우저에서 작성한 코스일 수 있어요.</p><Link className="button button-primary" href="/routes">커뮤니티 목록</Link></main>;
 
-  const stadiumStop = route.stops.find(stop => stop.category === "경기 관람" || stop.category === "야구장" || stop.name === route.stadium) ?? route.stops[0];
+  const stadiumStop = route.stops.find(stop => stop.category === "경기 관람" || stop.category === "야구장" || stop.name === route.stadium);
   const removeRoute = () => {
     try { deleteRoute(route.id); setDeleting(true); router.push("/routes?deleted=1"); }
     catch (caught) { setDeleteError(caught instanceof Error ? caught.message : "삭제하지 못했어요. 다시 시도해 주세요."); }
@@ -52,7 +54,7 @@ export default function RouteDetailPage({ params }: { params: Promise<{ id: stri
   const shareRoute = async () => {
     setError(""); setFeedback(""); setShareFallback("");
     const url = `${window.location.origin}/routes/${encodeURIComponent(route.id)}`;
-    const text = `${route.title}\n${route.stadium} · ${route.duration}\n\n${route.stops.map((stop, index) => `${index + 1}. ${stop.name}`).join("\n")}\n\n${routeContentToText(route.content, route.contentFormat)}`;
+    const text = `${route.title}\n${route.stadium} · ${route.duration}\n\n${route.stops.map((stop, index) => `${coursePointLabel(route.stops, index)}. ${stop.name}`).join("\n")}\n\n${routeContentToText(route.content, route.contentFormat)}`;
     const shareData: ShareData = route.isSample ? { title: route.title, url } : { title: route.title, text };
     try {
       if (navigator.share) { await navigator.share(shareData); return; }
@@ -80,12 +82,12 @@ export default function RouteDetailPage({ params }: { params: Promise<{ id: stri
       <div className="route-detail-layout">
         <article className="route-detail-body">
           <section className="route-detail-map"><div className="route-subsection-heading"><h2>지도로 보는 오늘의 코스</h2><span>{route.stops.length}개 장소</span></div><RouteMap stops={route.stops}/></section>
-          <section className="route-stops-section"><div className="route-subsection-heading"><h2>이 순서로 방문해 보세요</h2><span>{route.stops.length}개 장소</span></div><ol className="route-stop-list">{route.stops.map((stop, index) => <li key={`${stop.name}-${index}`}><span className="route-stop-number">{String(index + 1).padStart(2, "0")}</span><div className="route-stop-info"><span className="route-stop-category">{stop.category}</span><h3>{stop.name}</h3><a href={`https://map.kakao.com/link/map/${encodeURIComponent(stop.name)},${stop.lat},${stop.lng}`} target="_blank" rel="noreferrer">카카오맵에서 위치 보기 <span aria-hidden="true">↗</span></a></div></li>)}</ol></section>
+          <section className="route-stops-section"><div className="route-subsection-heading"><h2>이 순서로 방문해 보세요</h2><span>{route.stops.length}개 장소</span></div><ol className="route-stop-list">{route.stops.map((stop, index) => <li key={`${stop.name}-${index}`}><span className="route-stop-number">{coursePointLabel(route.stops, index).padStart(2, "0")}</span><div className="route-stop-info"><span className="route-stop-category">{stop.category}</span><h3>{stop.name}</h3><a href={`https://map.kakao.com/link/map/${encodeURIComponent(stop.name)},${stop.lat},${stop.lng}`} target="_blank" rel="noreferrer">카카오맵에서 위치 보기 <span aria-hidden="true">↗</span></a></div></li>)}</ol></section>
           <section className="route-story"><p className="eyebrow">MY BASEBALL DAY</p><h2>이렇게 하루를 보내보세요</h2><div className="route-story-content"><RouteContent content={route.content} format={route.contentFormat}/></div><div className="route-detail-tags">{route.tags.map(tag => <span key={tag}>#{tag}</span>)}</div></section>
         </article>
 
         <aside className="route-detail-sidebar">
-          <div className="route-summary-box"><span className="route-summary-symbol" aria-hidden="true">↗</span><h2>설레는 직관,<br />이 코스로 시작해볼까요?</h2><p>마음에 드는 코스에 좋아요를 남기고<br />나만의 하루도 작성해보세요.</p><button className={`button route-like-button${liked ? " is-liked" : ""}`} aria-pressed={liked} onClick={() => { try { toggleRouteLike(route.id); setError(""); setFeedback(liked ? "좋아요를 취소했어요." : "이 코스에 좋아요를 남겼어요."); } catch (caught) { setError(caught instanceof Error ? caught.message : "좋아요를 저장하지 못했어요."); } }}><svg viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" /></svg>{liked ? "좋아요 취소" : "좋아요"}<span>{route.likes + Number(liked)}</span></button><button type="button" className="button button-secondary route-share-button" onClick={shareRoute}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M5 12v8h14v-8"/></svg>공유하기</button>{stadiumStop && <a className="button button-primary" target="_blank" rel="noreferrer" href={`https://map.kakao.com/link/to/${encodeURIComponent(stadiumStop.name)},${stadiumStop.lat},${stadiumStop.lng}`}>구장까지 길찾기 <span aria-hidden="true">↗</span></a>}<Link className="route-sidebar-write" href="/routes/new">나만의 코스 작성하기 <span aria-hidden="true">→</span></Link></div>
+          <div className="route-summary-box"><span className="route-summary-symbol" aria-hidden="true">↗</span><h2>설레는 직관,<br />이 코스로 시작해볼까요?</h2><p>마음에 드는 코스에 좋아요를 남기고<br />나만의 하루도 작성해보세요.</p><button className={`button route-like-button${liked ? " is-liked" : ""}`} aria-pressed={liked} onClick={() => { try { toggleRouteLike(route.id); setError(""); setFeedback(liked ? "좋아요를 취소했어요." : "이 코스에 좋아요를 남겼어요."); } catch (caught) { setError(caught instanceof Error ? caught.message : "좋아요를 저장하지 못했어요."); } }}><svg viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" /></svg>{liked ? "좋아요 취소" : "좋아요"}<span>{route.likes + Number(liked)}</span></button><button type="button" className="button button-secondary route-share-button" onClick={shareRoute}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M5 12v8h14v-8"/></svg>공유하기</button>{stadiumStop && <a className="button button-primary" target="_blank" rel="noreferrer" href={`https://map.kakao.com/link/to/${encodeURIComponent(stadiumStop.name)},${stadiumStop.lat},${stadiumStop.lng}`}>구장까지 길찾기 <span aria-hidden="true">↗</span></a>}{!stadiumStop && <a className="button button-primary" target="_blank" rel="noreferrer" href={"https://map.kakao.com/link/search/" + encodeURIComponent(route.stadium)}>구장 위치 찾기 ↗</a>}<Link className="route-sidebar-write" href="/routes/new">나만의 코스 작성하기 <span aria-hidden="true">→</span></Link></div>
           {!route.isSample && <div className="route-owner-actions"><p>이 브라우저에서 작성한 코스예요.</p><div><Link href={`/routes/new?edit=${encodeURIComponent(route.id)}`}>수정하기</Link><button type="button" onClick={() => { setDeleteError(""); setConfirmDelete(true); }}>삭제하기</button></div></div>}
           {error && <p role="alert" className="route-error">{error}</p>}
           {feedback && <p role="status" className="route-feedback">{feedback}</p>}

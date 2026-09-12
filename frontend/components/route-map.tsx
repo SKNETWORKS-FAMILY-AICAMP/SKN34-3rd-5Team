@@ -3,12 +3,18 @@
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { loadKakaoMaps, type KakaoMap, type KakaoMaps, type KakaoOverlay, type KakaoPlace, type MapClickEvent } from "@/lib/kakao-maps";
 import { areValidCoordinates, type RouteStop } from "@/lib/routes";
+import { coursePointLabel } from "@/lib/drawn-course";
+import { CourseTravelPanel, useCourseDirections, useTravelOverlay } from "./course-travel";
 import { Icon } from "./icons";
 
 type Props = { stops: RouteStop[]; searchable?: boolean; onAddStop?: (stop: RouteStop) => void };
 
 export function RouteMap({ stops, searchable = false, onAddStop }: Props) {
+  const travel = useCourseDirections(stops);
+  const [fitRequest, setFitRequest] = useState(0);
+  const [mapState, setMapState] = useState<KakaoMap | null>(null);
   const mapNode = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (travel.picking) mapNode.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }, [travel.picking]);
   const mapRef = useRef<KakaoMap | null>(null);
   const [sdk, setSdk] = useState<KakaoMaps | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -23,8 +29,9 @@ export function RouteMap({ stops, searchable = false, onAddStop }: Props) {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const searchId = useId();
   const first = stops[0];
+  useTravelOverlay(mapState, sdk, travel);
   const fitRoute = useEffectEvent((map: KakaoMap, maps: KakaoMaps) => {
-    const points = stops.filter(stop => areValidCoordinates(stop.lat, stop.lng)).map(stop => new maps.LatLng(stop.lat, stop.lng));
+    const points = [...travel.points, ...(travel.data?.legs.flatMap((leg) => leg.paths.flat()) ?? [])].filter(stop => areValidCoordinates(stop.lat, stop.lng)).map(stop => new maps.LatLng(stop.lat, stop.lng));
     if (points.length > 1) { const bounds = new maps.LatLngBounds(); points.forEach(point => bounds.extend(point)); map.setBounds(bounds, 45, 35, 35, 35); }
     else if (points[0]) map.setCenter(points[0]);
   });
@@ -37,40 +44,42 @@ export function RouteMap({ stops, searchable = false, onAddStop }: Props) {
     return () => { cancelled = true; sequence.current += 1; clearTimeout(searchTimer.current); };
   }, [attempt]);
 
+  const isPickingStart = useEffectEvent(() => travel.picking);
   useEffect(() => {
     if (!sdk || !mapNode.current) return;
-    const map = new sdk.Map(mapNode.current, { center: new sdk.LatLng(37.5162, 127.07594), level: 5, draggable: searchable, scrollwheel: searchable, disableDoubleClickZoom: !searchable });
+    const map = new sdk.Map(mapNode.current, { center: new sdk.LatLng(37.5162, 127.07594), level: 5, draggable: true, scrollwheel: true, disableDoubleClickZoom: false });
     mapRef.current = map;
+    const frame = requestAnimationFrame(() => setMapState(map));
     const onClick = (event: MapClickEvent) => {
       const lat = event.latLng.getLat(), lng = event.latLng.getLng();
-      if (searchable && areValidCoordinates(lat, lng)) { setSelected({ name: "", lat, lng, category: "내 장소" }); setNotice(""); }
+      if (searchable && !isPickingStart() && areValidCoordinates(lat, lng)) { setSelected({ name: "", lat, lng, category: "내 장소" }); setNotice(""); }
     };
     if (searchable) sdk.event.addListener(map, "click", onClick);
     const observer = new ResizeObserver(() => { const center = map.getCenter(); map.relayout(); if (!searchable) fitRoute(map, sdk); else map.setCenter(center); });
     observer.observe(mapNode.current);
-    return () => { observer.disconnect(); if (searchable) sdk.event.removeListener(map, "click", onClick); mapRef.current = null; };
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); if (searchable) sdk.event.removeListener(map, "click", onClick); mapRef.current = null; };
   }, [sdk, searchable]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!sdk || !map) return;
     const overlays: KakaoOverlay[] = [];
-    const path = stops.filter(stop => areValidCoordinates(stop.lat, stop.lng)).map((stop, index) => {
+    stops.filter(stop => areValidCoordinates(stop.lat, stop.lng)).map((stop, index) => {
       const point = new sdk.LatLng(stop.lat, stop.lng);
       const label = document.createElement("span");
-      label.className = "route-map-pin";
-      label.textContent = String(index + 1);
-      label.title = `${index + 1}. ${stop.name}`;
+      label.className = (stop.isMapPoint || stop.isDrawnPoint) ? "planner-drawn-pin" : "route-map-pin";
+      const text = document.createElement("span"); text.textContent = coursePointLabel(stops, index); label.appendChild(text);
+      label.title = `${coursePointLabel(stops, index)}. ${stop.name}`;
       label.setAttribute("aria-label", label.title);
       overlays.push(new sdk.CustomOverlay({ map, position: point, content: label, yAnchor: 1, zIndex: 2 }));
       return point;
     });
-    if (path.length > 1) {
-      overlays.push(new sdk.Polyline({ map, path, strokeWeight: 4, strokeColor: "#246bf3", strokeOpacity: .85, strokeStyle: "solid", endArrow: true }));
-    }
+
     fitRoute(map, sdk);
     return () => overlays.forEach(overlay => overlay.setMap(null));
-  }, [sdk, stops]);
+  }, [sdk, stops, mapState]);
+
+  useEffect(() => { if (mapState && sdk && travel.data) fitRoute(mapState, sdk); }, [mapState, sdk, travel.data, fitRequest]);
 
   function search() {
     if (!query.trim() || !sdk || !mapRef.current || searching) return;
@@ -102,18 +111,20 @@ export function RouteMap({ stops, searchable = false, onAddStop }: Props) {
 
   return (
     <section className="route-map" aria-label={searchable ? "방문 장소 검색과 지도" : "코스 지도"}>
+      <CourseTravelPanel travel={travel} stops={stops} onFit={() => setFitRequest((value) => value + 1)} />
       {searchable && <div className="route-map-search" role="search">
         <label htmlFor={searchId} className="sr-only">지도에서 장소 검색</label>
         <Icon name="search" size={19} />
         <input id={searchId} value={query} maxLength={100} onChange={event => { setQuery(event.target.value); sequence.current += 1; clearTimeout(searchTimer.current); setSearching(false); setResults([]); setSearchNote(""); }} onKeyDown={event => { if (event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); search(); } }} placeholder="구장, 맛집, 카페 이름으로 검색" />
         <button type="button" onClick={search} disabled={!sdk || searching || !query.trim()}>{searching ? <><span className="ui-spinner" />검색 중</> : "검색"}</button>
       </div>}
-      <div className="route-map-stage">
+      <div className={`route-map-stage${travel.picking ? " is-picking-start" : ""}`}>
+        {travel.picking && <div className="course-pick-hint">지도를 눌러 출발 위치를 지정하세요 <button type="button" onClick={travel.cancelPicking}>취소</button></div>}
         <div ref={mapNode} className="route-map-canvas" aria-label="카카오 지도" />
         {!sdk && <div className="route-map-placeholder" role="status"><Icon name="stadium" size={38} /><strong>{error ? "지도를 잠시 불러오지 못했어요" : "코스를 지도에 펼치는 중"}</strong><p>{error || "방문할 장소와 순서를 준비하고 있어요."}</p>{error ? <button className="button button-secondary" type="button" onClick={() => { setError(""); setAttempt(value => value + 1); }}>다시 불러오기</button> : <span className="ui-spinner" />}</div>}
         {sdk && <span className="route-map-label">{searchable ? "지도에서 위치를 눌러 직접 추가할 수 있어요" : "코스 미리보기"}</span>}
       </div>
-      <p className="route-map-caption">선은 방문 순서를 연결한 표시예요. 실제 도보·차량 길찾기는 카카오맵에서 확인해 주세요.{first && <> <a href={`https://map.kakao.com/link/map/${encodeURIComponent(first.name)},${first.lat},${first.lng}`} target="_blank" rel="noreferrer">카카오맵 열기 ↗</a></>}</p>
+      <p className="route-map-caption">선택한 이동 수단의 실제 경로를 표시해요. 조회할 수 없는 구간은 선을 표시하지 않아요.{first && <> <a href={`https://map.kakao.com/link/map/${encodeURIComponent(first.name)},${first.lat},${first.lng}`} target="_blank" rel="noreferrer">카카오맵 열기 ↗</a></>}</p>
       {searching && <p className="route-map-note" role="status">장소를 검색하고 있어요.</p>}
       {searchNote && <p className="route-map-note" role="status">{searchNote}</p>}
       {results.length > 0 && <ul className="route-map-results" aria-label="장소 검색 결과">{results.map(place => <li key={place.id}><div><strong>{place.place_name}</strong><span>{place.road_address_name || place.address_name}</span></div><button type="button" aria-label={`${place.place_name} 방문 장소에 추가`} onClick={() => add({ name: place.place_name, lat: Number(place.y), lng: Number(place.x), category: place.category_group_name || "방문 장소" })}>추가 +</button></li>)}</ul>}

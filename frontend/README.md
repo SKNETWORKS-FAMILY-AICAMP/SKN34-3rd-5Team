@@ -17,6 +17,8 @@ npm run dev
 
 팀 Docker 환경은 저장소 루트에서 `docker compose up -d --build`로 실행합니다. 이번 변경에서 한글 글꼴 패키지 `@fontsource-variable/noto-sans-kr`를 추가했으므로 의존성 설치 또는 재빌드가 필요합니다. 전체 Docker 환경 구동은 별도 확인이 필요합니다.
 
+지도 기능을 로컬 Node로 실행할 때는 `frontend/.env.example`을 참고해 `frontend/.env.local`을 설정합니다. 팀 Docker에서는 루트 `.env.example`을 참고해 루트 `.env`에 `NEXT_PUBLIC_KAKAO_MAP_KEY`, `KAKAO_REST_API_KEY`, `TOUR_API_KEY`를 설정합니다. Compose가 세 변수를 Next 컨테이너에 전달하며 Docker 환경변수가 `.env.local`보다 우선합니다. JavaScript 키만 공개 변수로 쓰고 REST·관광공사 키는 서버 전용으로 유지합니다. 배포 주소도 카카오 JavaScript SDK 도메인에 등록해야 합니다.
+
 ## 화면과 현재 동작
 
 | 주소 | 구성 |
@@ -26,7 +28,9 @@ npm run dev
 | `/standings` | 정규리그 팀 순위 전체 12개 항목, 타율·평균자책·최근 10경기, 기록별 정렬 |
 | `/routes` | 검색·9개 구장 필터·최신순·좋아요순·페이지 이동, 로딩·빈 상태 |
 | `/routes/[id]` | 본문, 지도·방문 순서, 좋아요·공유, 직접 저장한 코스 수정·삭제 확인 |
-| `/routes/new` | 제목·본문·구장·장소 좌표·방문 순서 편집, 지도·검색 연결, 선택 구장으로 챗봇 질문 |
+| `/routes/new` | 구장 반경 2.5km 장소 탐색, 핀과 빈 지도에서 코스 추가, 완성 후 이동 시간 조회와 이름으로 저장 |
+| `/community`, `/community/teams` | 자유 게시판, 전체·10개 구단 선택. 게시글 API 연결 전 |
+| `/community/predictions` | 승부 예측, 전체·10개 구단 선택. 게시글 API 연결 전 |
 | `/stadiums` | 데이터에 포함된 9개 구장 검색과 위치 안내 |
 | `/guide` | 야구 기본 규칙, 관람 준비 체크리스트 |
 | `/login`, `/signup` | 입력 폼, 입력값 확인, 소셜 로그인 버튼 |
@@ -47,7 +51,8 @@ UI/UX 가이드의 큰 항목 2~5에 맞춰 여섯 기본 화면, 반응형, 로
 
 - 회원·소셜 로그인 API, 세션과 작성자 권한 연결. 현재 로그인 성공 처리는 하지 않습니다.
 - 게시글·좋아요·페이지 조회 API 연결. 현재 로컬 저장소는 `lib/routes.ts`에 모았습니다.
-- 카카오맵 웹 도메인 등록 후 실제 지도 확인. SDK·검색·마커·방문 순서 연결선 코드와 상세 복원은 구현했지만, 현재 로컬 SDK는 401을 반환합니다. 사용 중인 카카오 앱에 `http://localhost:3000`을 등록한 뒤 재확인합니다.
+- 카카오 지도·장소 검색은 로컬에서 연결을 확인했습니다. 배포 시 JavaScript SDK 도메인을 등록하고 구장 경계 필터를 검증해야 합니다. 설정·카테고리·표시 한도·데이터 한계는 [직접 코스 작성 안내](docs/NEARBY_PLANNER.md)를 참고하세요.
+- 관광공사 장소도 동일한 반경에 합쳐 표시합니다. Next 서버 전용 `TOUR_API_KEY` 설정이 필요하며, 출처 표시·중복 제거와 오류 시 재시도를 지원합니다.
 - CKEditor 5 라이선스 설정과 이미지 업로드. 사용자가 라이선스 없이 우선 진행하기로 선택해 현재는 일반 본문 입력을 사용하며, `components/editor.tsx`에 라이선스 설정 어댑터를 준비했습니다.
 - 챗봇의 팀 RAG·경기 정보·지도 데이터 연결과 답변 검증. 작성 화면의 코스 예시는 미리 작성된 내용입니다.
 - 서비스 정책 문구 확정. 회원가입 화면의 정책 안내는 초안입니다.
@@ -56,9 +61,9 @@ UI/UX 가이드의 큰 항목 2~5에 맞춰 여섯 기본 화면, 반응형, 로
 
 ```bash
 npm run lint
+npm test
+npx tsc --noEmit
 npm run build
-npm run test:chat
-npm run test:kbo
 ```
 
 최종 브라우저 확인 대상은 360px·768px·1440px입니다. 결과와 외부 연결 상태는 [UI/UX 구현 현황](docs/UIUX_PROGRESS.md)에 구분해 기록합니다.

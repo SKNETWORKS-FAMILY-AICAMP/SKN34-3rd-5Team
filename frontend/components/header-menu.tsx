@@ -20,8 +20,15 @@ const groups = [
   {
     title: "AI 루트", icon: "route",
     items: [
-      { title: "AI 루트 작성", href: "/routes/new" },
+      { title: "루트 만들기", href: "/routes/new" },
       { title: "루트 둘러보기", href: "/routes" },
+    ],
+  },
+  {
+    title: "커뮤니티", icon: "chat",
+    items: [
+      { title: "자유 게시판", href: "/community/teams" },
+      { title: "승부 예측", href: "/community/predictions" },
     ],
   },
 ] as const;
@@ -77,7 +84,7 @@ function HeaderMenuContent({ pathname }: { pathname: string }) {
             </li>
             {groups.map(group => (
               <li key={group.title}>
-                <details className="header-menu-group" open={group.items.some(item => item.href === pathname) || (group.title === "AI 루트" && pathname.startsWith("/routes/")) ? true : undefined}>
+                <details className="header-menu-group" open={group.items.some(item => item.href === pathname) || (group.title === "AI 루트" && pathname.startsWith("/routes/")) || (group.title === "커뮤니티" && (pathname === "/community" || pathname.startsWith("/community/"))) ? true : undefined}>
                   <summary className="header-menu-category">
                     <span className="header-menu-icon"><Icon name={group.icon} size={20} /></span>
                     <span>{group.title}</span><Icon className="header-menu-chevron" name="chevron" size={16} />
@@ -85,7 +92,7 @@ function HeaderMenuContent({ pathname }: { pathname: string }) {
                   <ul className="header-menu-children">
                     {group.items.map(item => (
                       <li key={item.href}>
-                        <Link href={item.href} aria-current={pathname === item.href ? "page" : undefined} onClick={closeMenu}>
+                        <Link href={item.href} aria-current={pathname === item.href || (pathname === "/community" && item.href === "/community/teams") ? "page" : undefined} onClick={closeMenu}>
                           {item.title}
                         </Link>
                       </li>

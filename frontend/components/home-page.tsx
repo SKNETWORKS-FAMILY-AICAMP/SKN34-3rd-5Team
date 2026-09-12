@@ -25,7 +25,7 @@ const stadiumTeams = [
 ] as const;
 
 const shortcuts = [
-  { icon: "sparkles", title: "AI 루트 작성", caption: "내 취향대로, 가볍게", href: "/routes/new" },
+  { icon: "sparkles", title: "루트 만들기", caption: "지도를 보며 직접 만드는 하루", href: "/routes/new" },
   { icon: "route", title: "루트 둘러보기", caption: "다른 팬들의 하루", href: "/routes" },
   { icon: "stadium", title: "구장 정보", caption: "가기 전에 알아두기", href: "/stadiums" },
   { icon: "book", title: "야구 가이드", caption: "첫 직관도 자신 있게", href: "/guide" },
