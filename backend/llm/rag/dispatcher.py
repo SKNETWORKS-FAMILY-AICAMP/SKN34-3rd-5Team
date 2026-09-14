@@ -91,6 +91,13 @@ def _call(domain, question, history, hint_stadium):
         return domain.answer(question, history=history, hint_stadium=hint_stadium)
     except Exception:            # 한 도메인이 죽어도 챗봇 전체가 죽지 않게
         log.exception("rag domain failed: %s", domain.__name__)
+        if domain is venue:      # venue 가 죽으면 club 이 대신 답한다 (같은 DB 라 답은 나온다)
+            try:
+                r = club.answer(question, history=history, hint_stadium=hint_stadium)
+                r["route"] = f"venue:error>club>{r['route']}"
+                return r
+            except Exception:
+                log.exception("rag fallback failed")
         return {"answer": persona.FIXED["error"], "sources": [], "route": f"{domain.__name__}:error"}
 
 

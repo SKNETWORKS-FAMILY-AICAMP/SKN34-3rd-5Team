@@ -10,6 +10,7 @@ psycopg2-binary==2.9.12
 typing_extensions==4.16.0
 python-dotenv
 Pillow==12.1.1
+langchain
 langchain-core
 langchain-openai
 langchain-community
