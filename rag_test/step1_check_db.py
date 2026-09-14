@@ -8,7 +8,7 @@ one = lambda sql: conn.execute(sql).fetchone()
 many = lambda sql: conn.execute(sql).fetchall()
 
 print("pgvector 버전 :", one("SELECT extversion AS v FROM pg_extension WHERE extname='vector'")["v"])
-print("총 청크       :", one("SELECT count(*) AS n FROM llm_documentchunk")["n"], "(기대 3832)")
+print("총 청크       :", one("SELECT count(*) AS n FROM llm_documentchunk")["n"], "(기대 3839)")
 print("embedding NULL:", one("SELECT count(*) AS n FROM llm_documentchunk WHERE embedding IS NULL")["n"], "(기대 0)")
 print("doc_id 중복   :", len(many("""SELECT metadata->>'doc_id' FROM llm_documentchunk
                                    GROUP BY 1 HAVING count(*) > 1""")), "(기대 0)")

@@ -53,6 +53,13 @@ SYSTEM_SERVICE = """너는 야구장을 자주 다녀서 직관 꿀팁을 잘 �
 3. 숫자·가격·시각은 context 의 값을 그대로 쓴다. 계산하거나 반올림하지 않는다.
 4. 질문과 다른 구장의 정보는 쓰지 않는다.
 5. 순위·일정처럼 바뀌는 정보는 기준일을 함께 밝힌다.
+5-1. 반입물품은 KBO 전 구장 공통 규정이 기본값이다. 구단 예외가 context 에 있으면 그것이 공통 규정보다 우선하고,
+     예외가 없으면 "정보가 없다"고 하지 말고 공통 규정으로 답한다("전 구장 공통 기준으로는 ~").
+     공통 규정에도 그 품목이 없을 때만 없다고 한다. 구단 예외의 적용 범위(예: LG 홈경기 한정)는 그 범위에만 적용한다.
+5-2. 단, 술의 종류와 도수는 예외다. 공통 규정이 정하는 것은 용기와 용량(미개봉 PET 1개 또는 캔 2개, 총 1L, 유리병 금지)뿐이고
+     도수 기준은 정하지 않는다. 그러므로 소주처럼 도수가 높은 술을 물으면, 도수 기준이 context 에 있는 구장은 그 기준으로 답하고
+     기준이 없는 구장은 용기·용량 기준만 알려준 뒤 "도수 제한은 구장마다 달라서 제 자료에는 이 구장 기준이 없다"고 밝힌다.
+     도수 기준이 없다는 이유로 소주가 허용된다고 말하지 않는다.
 
 말투 규칙
 6. 결론을 첫 문장에 먼저 말한다. 주의 문구로 시작하지 않는다.
@@ -66,9 +73,16 @@ SYSTEM_SERVICE = """너는 야구장을 자주 다녀서 직관 꿀팁을 잘 �
 10. 친한 선배가 알려주듯 "~해요", "~예요", "~거든요", "~보세요" 같은 부드러운 존댓말을 쓴다. 딱딱한 "~입니다", "~됩니다" 체는 피한다.
     답이 좋은 소식이면 "좋아요!", "다행이에요" 처럼 짧은 리액션을 첫머리에 붙여도 된다. 이모지는 한 답변에 최대 1개까지만.
 15. 도움이 될 만한 것이 context 에 같이 있으면 마지막에 "참고로 ~" 한 문장으로 덧붙인다. 없으면 억지로 만들지 않는다.
+    질문과 직접 관련 없는 내용(좌석을 안 물었는데 좌석 안내 등)은 참고로도 붙이지 않는다.
+21. 야구 직관과 무관한 주제는 "저는 KBO 야구 직관만 도와드려요"처럼 짧게 범위를 밝히고, 그 분야의 다른 사이트나
+    정보원을 추천하지 않는다. 확인처 안내는 야구 관련 질문일 때만 한다.
+20. 앞으로 일어날 일(순위 전망·승부 예측·매진 여부)은 단정하지 않는다. 대신 context 에 있는 현재 사실만 알려주고
+    "남은 경기에 달려 있어 점치기는 어렵다"처럼 솔직히 말한다.
 17. 한 번에 여러 가지를 물으면 빠뜨리지 말고 물어본 순서대로 "- 주차: ...", "- 반입: ..." 처럼 항목을 나눠 답한다.
     그중 일부만 context 에 있으면 있는 것부터 답하고, 없는 항목은 "~는 제가 가진 정보에 없네요" 라고 따로 밝힌다.
-19. 여러 구장을 물으면 구장별로 "- 잠실: ...", "- 고척: ..." 항목을 나눠 답한다. 자료가 있는 구장만 적고, 없는 구장은 굳이 나열하지 않는다.
+19. 여러 구장을 물으면 구장별로 "- 잠실: ...", "- 고척: ..." 항목을 나눠 답한다.
+    "각 구단", "구장별로", "나머지도" 처럼 전체를 물으면 context 에 있는 구장을 하나도 빼지 말고 다 적는다.
+    구단 예외가 없는 구장은 "공통 기준과 같아요" 한 줄로 짧게 적고, 같은 설명을 구장마다 반복하지 않는다.
 18. 질문이 길고 사연이 섞여 있어도 실제로 궁금해하는 것만 골라 답한다. 인사말이나 상황 설명은 그대로 반복하지 않는다.
 16. 거절할 때도 미안한 마음을 담아 "그 부분은 제가 가진 정보에 없네요, 죄송해요" 처럼 부드럽게 말하고, 어디서 확인하면 되는지 알려준다.
 11. "제공된 자료에 따르면", "context", "문서", "doc_id", "등급" 같은 내부 용어는 답변에 쓰지 않는다.
@@ -107,17 +121,27 @@ def build_context(rows, with_grade=True, max_chars=1200):
 
 
 # ── 가드 (LLM 호출 전) ─────────────────────────────────────────────────────
+# 야구 직관과 무관한 주제 — 짧게 범위를 밝히고 끝낸다 (설계서 OUT_OF_SCOPE 인텐트)
+OFF_TOPIC = re.compile(r"축구|K리그|농구|배구|골프|e스포츠|롤드컵|올림픽|월드컵|"
+                       r"날씨|주식|코인|부동산|영화|드라마|아이돌|연예인|여자친구\s*선물|다이어트|"
+                       r"코딩|파이썬|숙제|레시피|요리법")
+BASEBALL = re.compile(r"야구|KBO|구장|직관|경기|반입|재입장|좌석|예매|순위|선수|"
+                      r"잠실|고척|문학|수원|대전|대구|광주|사직|창원|포항|"
+                      r"LG|두산|키움|SSG|KT|한화|삼성|KIA|기아|롯데|NC")
 REFUND = re.compile(r"환불|예매\s*취소|티켓\s*취소|취소\s*수수료")
 POHANG_AROUND = re.compile(r"포항.*(주차|맛집|먹거리|교통|카페|근처)|(주차|맛집|먹거리|교통|카페|근처).*포항")
 NEED_STADIUM = {"TRANSPORT", "FOOD_IN", "FOOD_OUT", "CAFE", "SPOT", "FACILITY", "CONTENT",
                 "SEAT", "PRICE", "REENTRY", "OPERATION", "STADIUM"}
 CARRY_OVER = NEED_STADIUM | {"CARRY_IN"}   # 구장 이어받기 대상 (반입은 구단마다 달라 이어받되, 없을 땐 공통 규정으로 답한다)
 FIXED = {
+    "scope": "야구 직관 안내만 도와드릴 수 있습니다. 다른 주제는 확인한 자료에 없습니다.",
     "refund": "취소/환불 규정은 예매처에 문의하시기 바랍니다.",
     "pohang": "포항 특별경기 구장의 주변 정보는 확인한 자료에 없습니다. 경기 일정은 안내해 드릴 수 있어요.",
     "clarify": "어느 구장 기준으로 알려드릴까요? (잠실·고척·문학·수원·대전·대구·광주·사직·창원)",
 }
 FIXED_SERVICE = {   # 서비스용 가드 문구 (평가용 FIXED 는 채점 정규식과 맞물려 있어 그대로 둔다)
+    "scope": "저는 KBO 야구 직관만 도와드릴 수 있어요! 경기 일정이나 순위, 반입 규정, 좌석, 예매처럼 "
+             "구장 가실 때 궁금한 건 편하게 물어보세요.",
     "refund": "취소랑 환불은 구단이 아니라 예매처 규정을 따라서요, 예매하신 곳(티켓링크·인터파크 등)에 문의하시는 게 제일 정확해요. 예매처에 문의하시면 수수료까지 바로 안내받으실 수 있어요.",
     "pohang": "포항은 특별경기 구장이라 주변 정보까지는 제가 아직 못 챙겼어요, 죄송해요. 경기 일정은 바로 알려드릴 수 있어요!",
     "clarify": "어느 구장으로 가시나요? 구장을 알려주시면 바로 찾아드릴게요. (잠실·고척·문학·수원·대전·대구·광주·사직·창원)",
@@ -129,7 +153,11 @@ WARN_SUFFIX = {"UNOFFICIAL": "이건 다녀온 분들 제보 기준이라 현장
 
 
 # 우리 답변에 나올 일이 없는 문자 체계 (키릴·히브리·아랍·인도계·타이 등). 한글·영문·숫자·기호·×·℃ 등은 그대로 둔다.
-JUNK = re.compile(r"[\u0400-\u052F\u0590-\u1CFF\u1D00-\u1DFF\uFB00-\uFDFF\uFE70-\uFEFF]")
+JUNK = re.compile(r"[\u0400-\u052F\u0590-\u1CFF\u1D00-\u1DFF\uE000-\uF8FF\uFB00-\uFDFF\uFE70-\uFEFF]")
+
+# 답변 끝에 붙는 모델 부스러기: "…없어요..calc" 처럼 마침표 뒤에 영소문자 토막이 달라붙는 경우.
+# 앞 글자가 영숫자면(kbo.co.kr, ver.2 등) 건드리지 않는다.
+TAIL_JUNK = re.compile(r"(?<![A-Za-z0-9/])\.{1,4}\s*[a-z]{1,12}\s*$")
 
 
 _SOFT = [  # (딱딱한 어미, 부드러운 어미) — 뜻이 안 바뀌는 것만
@@ -153,7 +181,8 @@ def soften(text):
 
 def clean(text):
     """모델이 가끔 답변 끝에 섞는 다른 언어 글자를 지운다 (예: 구자라트 문자)"""
-    return re.sub(r"[ \t]{2,}", " ", JUNK.sub("", text)).strip()
+    t = re.sub(r"[ \t]{2,}", " ", JUNK.sub("", text)).strip()
+    return TAIL_JUNK.sub("", t).strip()
 
 
 def call_llm(messages):
@@ -164,7 +193,11 @@ def call_llm(messages):
 
 
 # ── 후속 질문 재구성: "그럼 사직은?" → "사직 경기 몇대몇이야?" ────────────────────
-ALL_STADIUM = re.compile(r"다른\s*구장|나머지\s*구장|타\s*구장|전\s*구장|모든\s*구장|다른\s*데|딴\s*구장|구장별|구장마다|각\s*구장")
+# 사람들은 "구장"과 "구단"을 섞어 쓴다("각 구단 소주 돼?"). 둘 다 다구장 질문으로 본다.
+ALL_STADIUM = re.compile(
+    r"(?:다른|나머지|타|전|모든|각|딴|여러|전체|10개|열개)\s*(?:구장|구단|팀)|"
+    r"구장별|구장마다|구단별|구단마다|팀별|팀마다|다른\s*데|어느\s*구장|어떤\s*구장"
+)
 STADIUM_CODES = ["JAMSIL", "GOCHEOK", "MUNHAK", "SUWON", "DAEJEON", "DAEGU", "GWANGJU", "SAJIK", "CHANGWON"]
 
 
@@ -244,6 +277,25 @@ def rewrite_followup(question, history):
     return f"{new} {prev}"                              # "경기 몇대몇이야?" → "사직 경기 몇대몇이야?"
 
 
+PAST_GAME = re.compile(r"(\d{4}-\d{2}-\d{2})")
+
+
+def drop_past_games(rows, question, today=None):
+    """날짜를 묻지 않았는데 지난 경기 청크가 근거로 들어오면 뺀다.
+       "몇 시부터 입장?" 같은 질문에 5월·6월 경기 시각을 나열하는 걸 막는다."""
+    if date_tokens(question) or re.search(r"어제|그제|지난|작년|결과|스코어|이겼|졌", question):
+        return rows                                   # 과거를 실제로 물은 질문은 그대로
+    today = today or date.today().isoformat()
+    keep = []
+    for r in rows:
+        if r.get("category") == "SCHEDULE":
+            m = PAST_GAME.search(r["content"] or "")
+            if m and m[1] < today:
+                continue                              # 지난 경기 → 근거에서 제외
+        keep.append(r)
+    return keep or rows                               # 전부 빠지면 원래대로 (빈 근거 방지)
+
+
 def slots_from_history(history, today=None):
     """직전 대화(최신부터)에서 구장·팀·날짜를 찾는다. history = [{'role','content'}, ...]"""
     today = today or date.today().isoformat()
@@ -298,13 +350,14 @@ def answer(conn, mode, question, qvec, history=None):
     if multi:
         stadium, prev_stadium = None, None  # "다른 구장은?" → 특정 구장으로 좁히지 않는다
         out["guard"] = (out["guard"] + " " if out["guard"] else "") + "multi_stadium"
-    if service and other_intent:           # "오늘 두산 경기 보러 가는데 소주 돼?" → 경기는 맥락, 질문은 반입 → 일정 청크는 후보에서 뺀다
-        cats = sorted(other_intent)
+    # 복합 질문은 일정 카테고리를 빼지 않는다. "9/12 누가 홈이고 소주 돼?" 처럼 둘 다 물을 수 있어서,
+    # 직접조회(structured)만 양보하고 검색은 카테고리별로 3건씩 균등 확보한다.
     if service and stadium is None and prev_stadium and not multi and (not cats or set(cats) & CARRY_OVER):
         # "재입장은?" 처럼 구장을 생략하면 직전 구장으로 이어간다 (규칙·순위처럼 구장 무관한 질문은 제외)
         stadium = prev_stadium
         out["guard"] = (out["guard"] + " " if out["guard"] else "") + f"carry:{stadium}"
-    guard = ("refund" if REFUND.search(question) else
+    guard = ("scope" if OFF_TOPIC.search(question) and not BASEBALL.search(question) else
+             "refund" if REFUND.search(question) else
              "pohang" if POHANG_AROUND.search(question) else
              "clarify" if stadium is None and not multi and set(cats) & NEED_STADIUM else "")
     if guard:
@@ -313,14 +366,19 @@ def answer(conn, mode, question, qvec, history=None):
 
     if multi:
         # 구장마다 따로 검색해 2건씩 확보 (한꺼번에 뽑으면 특정 구장이 후보를 독점한다)
-        rows, seen = [], set()
+        rows, seen, common_kept = [], set(), False
         for st in STADIUM_CODES:
             part, ms = search(conn, qvec, k=8, stadium=st, categories=cats or None, ef_search=G2_EF_SEARCH)
             out["retrieval_ms"] += ms
             for r in keyword_rerank(question, part, k=2):
-                if r["doc_id"] not in seen and r["stadium"]:      # 공통 청크는 구장별로 중복되니 제외
-                    seen.add(r["doc_id"])
-                    rows.append(r)
+                if r["doc_id"] in seen:
+                    continue
+                if not r["stadium"]:          # 공통 청크는 구장마다 중복되니 처음 1건만 남긴다
+                    if common_kept:
+                        continue
+                    common_kept = True
+                seen.add(r["doc_id"])
+                rows.append(r)
     elif service and len(cats) >= 2:
         # 복합 질문: 카테고리를 한꺼번에 검색하면 청크가 많은 쪽(좌석·일정)이 자리를 다 차지한다.
         # 카테고리마다 따로 검색해 3건씩 확보해야 "반입은 정보가 없어요" 같은 누락이 안 생긴다.
@@ -343,6 +401,8 @@ def answer(conn, mode, question, qvec, history=None):
         rows += [r for r in extra if r["doc_id"] not in have]
     if not (service and (multi or len(cats) >= 2)):   # 복합·다구장 질문은 위에서 이미 골라 놨다
         rows = keyword_rerank(question, rows, k=5)
+    if service:
+        rows = drop_past_games(rows, question)        # 지난 경기 나열 방지
     system = SYSTEM_SERVICE.format(today=date.today().isoformat()) if service else SYSTEM_GUARDED
     shots = FEW_SHOT_SERVICE if service else FEW_SHOT
     past = [{"role": m["role"], "content": m["content"]} for m in (history or [])[-6:]] if service else []

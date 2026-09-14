@@ -1,7 +1,17 @@
 """순위·일정 자동 갱신 — 크롤링 → 로컬 전용 폴더로 복사 → 재적재
 
-git 에 올라간 data/preprocessed 는 건드리지 않는다 (팀원과 충돌 방지).
-크롤링 결과는 backend/_data_live 에만 쌓고, build_index 는 RAG_DATA_DIR 로 그 폴더를 본다.
+크롤링 결과는 backend/_data_live 에 쌓고, build_index 는 RAG_DATA_DIR 로 그 폴더를 본다.
+
+2026-09-14 추가: data/preprocessed 에도 같은 파일을 복사한다.
+  docker-compose.yml 이 마운트하는 건 레포 루트 data/ 라서, RAG_DATA_DIR 없이 그냥
+    docker compose exec backend python manage.py build_index
+  를 치면 갱신 전 CSV 를 읽어 버린다(실제로 9/13 크롤링분이 안 들어가 순위가 9/09 로 나왔다).
+  두 곳을 같이 맞춰 두면 어떤 명령을 쳐도 같은 데이터를 본다.
+
+  이 두 파일은 git 추적 대상이라 매일 변경으로 잡힌다. 커밋하지 않으려면 한 번만:
+    git update-index --skip-worktree data/preprocessed/kbo_standing.csv
+    git update-index --skip-worktree data/preprocessed/kbo_schedule_full.csv
+  (되돌리기: --no-skip-worktree)
 
 수동 실행: python rag_test\\daily_refresh.py
 로그      : rag_test\\results\\refresh.log
@@ -17,7 +27,7 @@ LOG = Path(__file__).resolve().parent / "results" / "refresh.log"
 LOG.parent.mkdir(exist_ok=True)
 
 CRAWLERS = ["crawling/kbo_standing.py", "crawling/kbo_schedule.py"]   # 자주 바뀌는 것만
-REPO_DATA = ROOT / "data" / "preprocessed"          # git 추적 대상 — 읽기만 한다
+REPO_DATA = ROOT / "data" / "preprocessed"          # git 추적 대상 · 도커가 /data 로 마운트하는 폴더
 CRAWLED = ROOT / "backend" / "data" / "preprocessed"  # 크롤러가 쓰는 곳 (스크립트 위치 기준)
 LIVE = ROOT / "backend" / "_data_live"              # build_index 가 읽을 로컬 전용 폴더
 
@@ -72,6 +82,10 @@ for src in CRAWLED.glob("*.csv"):
         shutil.copy2(src, dst)
         updated += 1
         log(f"갱신 {src.name}")
+        repo_dst = REPO_DATA / src.name           # 도커가 마운트하는 쪽도 같이 맞춘다 (위 주석 참고)
+        if repo_dst.exists():
+            shutil.copy2(src, repo_dst)
+            log(f"갱신 {src.name} → data/preprocessed")
 log(f"갱신 {updated}건")
 
 out = run("python", "manage.py", "build_index", env={"RAG_DATA_DIR": "/app/_data_live"})   # 3. 재적재

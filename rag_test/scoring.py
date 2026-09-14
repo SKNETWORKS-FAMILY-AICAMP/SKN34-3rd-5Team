@@ -33,7 +33,11 @@ def norm(s):
     return re.sub(r"[\s,]", "", s or "")  # "1,117 면" == "1117면"
 
 
-def is_correct(answer, must):
+def is_correct(answer, must, must_all=None):
+    """must: 하나만 맞으면 정답 (표현이 여러 가지일 때) · must_all: 전부 들어가야 정답 (복합 질문)"""
+    if must_all:
+        a = norm(answer)
+        return all(any(norm(alt) in a for alt in (m if isinstance(m, list) else [m])) for m in must_all)
     return any(norm(m) in norm(answer) for m in must)
 
 
@@ -58,7 +62,8 @@ def judge(q, answer):
         return "OK" if refused else "지어냄"
     if q["expect"] == "clarify":
         return "OK" if CLARIFY.search(answer) else "되묻기실패"
-    ok = is_correct(answer, q["must"]) if q.get("must") else not refused
+    ok = (is_correct(answer, q.get("must", []), q.get("must_all"))
+          if (q.get("must") or q.get("must_all")) else not refused)
     if ok:
         return "OK"
     if refused:

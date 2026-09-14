@@ -20,17 +20,29 @@ STADIUM_PLACE = {"JAMSIL": "잠실구장", "GOCHEOK": "고척구장", "MUNHAK": 
 # "... 경기 상태는 경기 종료입니다. 최종 스코어는 삼성 0 - 두산 4로 두산이 승리했습니다."
 RE_GAME = re.compile(rf"(\d{{4}}-\d{{2}}-\d{{2}})\s+(\d{{2}}:\d{{2}})에\s*(\S+?)에서\s*({TEAMS})\s*원정팀과\s*({TEAMS})\s*홈팀")
 RE_STATUS = re.compile(r"경기 상태는\s*(.+?)입니다")
+RE_CANCEL = re.compile(r"취소되었습니다|우천\s*취소|경기 취소")   # 취소 경기는 문장 형식이 달라 따로 잡는다
 RE_SCORE = re.compile(rf"최종 스코어는\s*({TEAMS})\s*(\d+)\s*-\s*({TEAMS})\s*(\d+)로\s*({TEAMS})\s*(?:이|가)\s*승리")
 # "2026 시즌 KBO 순위에서 삼성는 1위입니다. 총 121경기를 ... 72승 46패 3무 ... 승률은 0.610이고 게임차는 0.0"
 RE_RANK = re.compile(rf"({TEAMS})[는은]?\s*(\d+)위입니다.*?(\d+)경기.*?(\d+)승\s*(\d+)패\s*(\d+)무.*?승률은\s*([\d.]+).*?게임차는\s*([\d.]+)")
 
-EXCLUDE_RANK = re.compile(r"타율|홈런|방어율|평균자책|선수|투수|타자|득점권|MVP")   # 선수 기록은 데이터에 없음 → 거절 경로
+# 팀 기록(최근 10경기·연승·팀타율·평균자책)은 kbo_standing_history.csv 에 있지만 답하지 않는다 (2026-09-13 결정).
+#  - 스코프: 직관 안내이지 기록 조회가 아니다. 답하기 시작하면 선수 개인 기록 요구로 이어진다.
+#  - 근거 체계: 청크가 아니라 파일이라 status/evidence_type/sources 등급 체계 밖이다.
+#  - 배포: 배포 환경에 그 파일이 없을 수 있다. 4차에서 정형 테이블로 옮길 때 함께 검토.
+# 예측 질문: 단정하지 않되 판단 재료(현재 순위·5위와의 차이)는 사실로 준다. 가을야구는 5위까지.
+PREDICT = re.compile(r"갈것같|갈까|갈수있|가능성|가능할|될까|될수있|올라갈|진출|우승|가을야구|포스트시즌|승산|해낼|할수있")
+AUTUMN = re.compile(r"가을야구|포스트시즌|진출|플레이오프|가을")            # 5위권 다툼 질문 (공백 제거본으로 검사)
+PREDICT_GAME = re.compile(r"누가이길|이길것같|이길까|질까|승부예측|스코어예측|이길것|승리할")
+EXCLUDE_RANK = re.compile(r"타율|홈런|방어율|평균자책|ERA|선수|투수|타자|득점권|MVP|"
+                          r"최근|10경기|열\s*경기|연승|연패|상승세|하락세|분위기|기세")   # 데이터에 없는 기록 → 거절 경로로   # 선수 기록은 데이터에 없음 → 거절 경로
 ASK_RANK = re.compile(
-    r"순위|몇\s*위|승률|게임차|게임\s*차|경기\s*차|승차|선두|\d+\s*위|일위|"
-    r"꼴찌|꼴지|최하위|맨\s*밑|바닥|누가\s*(더\s*)?(높|잘|위|앞)|어디가\s*(더\s*)?(높|잘|위|앞)"
+    r"순위|몇\s*위|몇\s*등|몇\s*번째|등수|랭킹|승률|게임차|게임\s*차|경기\s*차|승차|선두|"
+    r"\d+\s*개\s*(팀|구단)|전체\s*(순위|팀)|팀\s*순위|리그\s*순위|"
+    r"\d+\s*위|\d+\s*등|일위|"
+    r"꼴찌|꼴지|꼴등|최하위|맨\s*밑|바닥|누가\s*(더\s*)?(높|잘|위|앞)|어디가\s*(더\s*)?(높|잘|위|앞)"
 )
-RE_NTH = re.compile(r"(\d{1,2})\s*위")
-LAST = re.compile(r"꼴찌|꼴지|꼬리|최하위|맨\s*밑|바닥|10위|십위")
+RE_NTH = re.compile(r"(\d{1,2})\s*[위등]")
+LAST = re.compile(r"꼴찌|꼴지|꼴등|꼬리|최하위|맨\s*밑|바닥|10위|10등|십위")
 ASK_GAME = re.compile(r"경기|일정|홈경기|맞대결|상대|결과|스코어|이겼|졌|어디서|몇\s*시|시간|장소")
 ASK_NEXT = re.compile(r"다음|담\s|이번\s*주|언제")
 ASK_SCORE = re.compile(r"몇\s*대\s*몇|몇대몇|스코어|결과|점수|이겼|졌|승리|패배")
@@ -112,8 +124,9 @@ def games(conn):
             continue                                   # 포스트시즌 안내문 4건은 형식이 달라 건너뜀
         st = RE_STATUS.search(r["content"])
         sc = RE_SCORE.search(r["content"])
-        out.append(dict(date=m[1], time=m[2], place=m[3], away=m[4], home=m[5],
-                        status=st[1] if st else "", as_of=r["updated_at"],
+        canceled = bool(RE_CANCEL.search(r["content"]))
+        out.append(dict(date=m[1], time=m[2], place=m[3], away=m[4], home=m[5], canceled=canceled,
+                        status="경기 취소" if canceled else (st[1] if st else ""), as_of=r["updated_at"],
                         score=f"{sc[1]} {sc[2]} - {sc[3]} {sc[4]} ({sc[5]} 승)" if sc else ""))
     return sorted(out, key=lambda g: (g["date"], g["time"]))
 
@@ -121,11 +134,18 @@ def games(conn):
 def _fmt(g, today):
     d = datetime.strptime(g["date"], "%Y-%m-%d")
     line = f"{d.month}월 {d.day}일 {g['time']} {g['place']} · {g['home']} 홈 vs {g['away']} 원정"
+    if g.get("canceled"):
+        return line + " → 경기 취소 (사유는 자료에 없어요)"
     if g["score"]:
         line += f" → {g['score']}"
     elif g["date"] < today:
         line += " (지난 경기, 결과 미반영)"
     return line
+
+
+def started_at(g, today, now):
+    """이미 시작한 경기인가 (오늘이면 시작 시각까지 비교)"""
+    return g["date"] < today or (g["date"] == today and g["time"] <= now)
 
 
 def answer(conn, question, today=None, hint_team=None, hint_place=None, hint_date=None, now=None):
@@ -137,6 +157,44 @@ def answer(conn, question, today=None, hint_team=None, hint_place=None, hint_dat
     # "다음 경기는?", "몇대몇이야?" 처럼 팀·구장·날짜·순위를 아무것도 안 적은 후속 질문일 때만 직전 대화를 이어받는다
     if not elliptical:                                 # 뭔가 명시했으면 직전 대화 힌트는 쓰지 않는다
         hint_team = hint_place = hint_date = None
+
+    # ── 예측 질문: 단정하지 않는다. 비교 대상(순위·게임차)은 DB 사실로 주고 판단은 사용자 몫 ─────
+    #    "몇 위까지 진출" 같은 리그 규정은 우리 데이터에 없으므로 우리가 주장하지 않는다.
+    q_ns = re.sub(r"\s+", "", question)               # "가을 야구", "갈 수 있을까" 처럼 띄어쓰기가 흔들려도 잡는다
+
+    if PREDICT_GAME.search(q_ns):                     # 승부 예측: 대진은 알려주되 승패는 말하지 않는다
+        rows = games(conn)
+        when = q_date or hint_date
+        team = q_team or hint_team
+        hit = [g for g in rows if (not when or g["date"] == when)
+               and (not team or team in (g["home"], g["away"]))
+               and (when or not started_at(g, today, now))]
+        line = ("\n".join("- " + _fmt(g, today) for g in hit[:3]) + "\n") if hit else ""
+        return (f"{line}누가 이길지는 저도 알 수 없어요. 경기 결과를 예측하는 건 제가 할 수 있는 일이 아니라서요.\n"
+                f"경기 전 분위기나 전적은 KBO 홈페이지나 중계 방송에서 확인해 보시는 게 좋아요!").strip()
+
+    if PREDICT.search(q_ns) and not PREDICT_GAME.search(q_ns):
+        team, table = q_team or hint_team, standings(conn)
+        row = next((t for t in table if t["team"] == team), None) if team else None
+        if row:
+            gap_to = lambda o: round(float(row["gb"]) - float(o["gb"]), 1)
+            if AUTUMN.search(q_ns):                        # 가을야구 → 5위권과 비교
+                fifth = next((t for t in table if t["rank"] == 5), None)
+                sixth = next((t for t in table if t["rank"] == 6), None)
+                if row["rank"] <= 5 and sixth:
+                    ref = f" 6위 {sixth['team']}{josa(sixth['team'], '과', '와')}는 {abs(gap_to(sixth))}경기 차이고요."
+                elif fifth and row["rank"] > 5:
+                    ref = f" 5위 {fifth['team']}{josa(fifth['team'], '과', '와')}는 {abs(gap_to(fifth))}경기 차이고요."
+                else:
+                    ref = ""
+                tail = "가을야구 진출 기준까지는 제가 가진 자료에 없어서, 가능성은 점치기 어려워요."
+            else:                                          # 우승 등 → 1위와 비교
+                top = table[0]
+                ref = ("" if row["rank"] == 1 else
+                       f" 1위 {top['team']}{josa(top['team'], '과', '와')}는 {row['gb']}경기 차이고요.")
+                tail = "앞으로 어떻게 될지는 남은 경기에 달려 있어서 제가 점치기는 어려워요."
+            return (f"{row['as_of']} 기준으로 {team}{josa(team, '은', '는')} {row['rank']}위예요.{ref}\n"
+                    f"{tail} 순위는 KBO 홈페이지에서 매일 확인하실 수 있어요!")
 
     # ── 순위 ──────────────────────────────────────────────────────────────
     if ASK_RANK.search(question) and not EXCLUDE_RANK.search(question):
@@ -175,9 +233,16 @@ def answer(conn, question, today=None, hint_team=None, hint_place=None, hint_dat
             gap = "" if row["rank"] == 1 else f", 1위와 {row['gb']}경기 차"
             return (f"{as_of} 기준으로 {row['team']}{josa(team, '은', '는')} {row['rank']}위예요{' 🥇' if row['rank'] == 1 else ''}. "
                     f"{row['games']}경기 {row['win']}승 {row['lose']}패 {row['draw']}무, 승률 {row['rate']}{gap}예요.\n{tail}")
+        # 10팀 전부 보여준다. DB 직접 조회라 5팀이든 10팀이든 비용이 같고,
+        # "순위 알려줘"는 보통 전체를 기대한다. "상위 5개"처럼 개수를 지정하면 그만큼만.
+        m_top = re.search(r"(?:상위|top|TOP)\s*(\d{1,2})|(\d{1,2})\s*(?:개\s*)?팀만", question)
+        n = int(m_top[1] or m_top[2]) if m_top else len(table)
+        shown = table[:max(1, min(n, len(table)))]
         lines = "\n".join(f"- {t['rank']}위 {t['team']} ({t['win']}승 {t['lose']}패 {t['draw']}무, 승률 {t['rate']})"
-                          for t in table[:5])
-        return f"{as_of} 기준 상위 5개 팀이에요.\n{lines}\n{tail}"
+                          for t in shown)
+        head = (f"{as_of} 기준 KBO 순위예요." if len(shown) == len(table)
+                else f"{as_of} 기준 상위 {len(shown)}개 팀이에요.")
+        return f"{head}\n{lines}\n{tail}"
 
     # ── 일정 ──────────────────────────────────────────────────────────────
     score_q = bool(ASK_SCORE.search(question))
@@ -220,11 +285,11 @@ def answer(conn, question, today=None, hint_team=None, hint_place=None, hint_dat
         return f"{label} 경기는 이거예요!\n" + "\n".join("- " + _fmt(g, today) for g in hit) + f"\n{note}"
 
     home_only = "홈경기" in question                    # 다음 경기
-    started = lambda x: x["date"] < today or (x["date"] == today and x["time"] <= now)   # 이미 시작한 경기는 제외
+    started = lambda x: started_at(x, today, now)   # 이미 시작한 경기는 제외
     mine = [x for x in rows if (not team or team in (x["home"], x["away"]))
             and (not home_only or not team or x["home"] == team)
             and (not place or x["place"] == place)]
-    future = [x for x in mine if not started(x)]
+    future = [x for x in mine if not started(x) and not x.get("canceled")]   # 취소 경기는 다음 경기가 아니다
     if not future:
         return (f"{today} 이후 {team or ''} 경기가 제가 가진 일정표({rows[0]['date']}~{rows[-1]['date']})에는 없네요. "
                 f"KBO 홈페이지에서 확인해 보세요!")
