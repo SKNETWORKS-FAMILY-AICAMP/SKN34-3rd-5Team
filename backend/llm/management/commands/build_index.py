@@ -4,7 +4,7 @@ RAG 인덱싱: 전처리 CSV/docs → 청크 텍스트 → 임베딩 → Documen
 실행:
   python manage.py build_index --dry-run          # 청크만 만들고 통계·샘플 출력 (임베딩 X)
   python manage.py build_index --limit 50         # 50건만 끝까지 (연결·키 테스트용)
-  python manage.py build_index                    # 전량 (약 3,832청크, 100원 안팎)
+  python manage.py build_index                    # 전량 (약 3,839청크, 100원 안팎 · 2026-09-13 청킹 조정 기준)
 
 재현성: 이 파일 하나로 처음부터 다시 만들어짐. 임베딩은 artifacts/ 에 500건마다 체크포인트.
 근거 문서: claude/임베딩_대상파일_정리.md, claude/청킹임베딩_의사결정노트.md
@@ -75,6 +75,60 @@ SENTENCE_CSV_SPEC = {
 }
 # 구장 기본정보(주소·좌표) 9건 — "잠실야구장 주소 알려줘" 용
 STADIUM_CSV = ("stadium_coordinates.csv", "STADIUM", ["stadium_code"])
+
+# 반입·재입장 JSON 의 코드값을 사람이 읽는 문장으로 (2026-09-13)
+# 이유: {"carrier": "N"} 은 임베딩이 "캐리어는 안 된다"는 뜻을 배울 수 없다. 검색·채점 모두 이 문장을 쓴다.
+ITEM_KO = {
+    "bag": "가방", "shopping_bag": "쇼핑백", "bulky_items": "부피가 큰 물품", "glass_bottle": "유리병",
+    "frozen_water": "얼린 물", "beverage": "음료", "food": "음식", "hot_or_strong_smell_food": "뜨겁거나 냄새가 강한 음식",
+    "dangerous_items": "위험 물품", "noisy_cheering_tools": "소음이 큰 응원도구", "pet": "반려동물",
+    "carrier": "캐리어", "icebox": "아이스박스", "portable_chair": "휴대용 의자", "portable_table": "휴대용 간이테이블",
+    "alcohol": "주류", "team_exception": "구단 예외 규정", "strong_smell_food": "냄새가 강한 음식",
+    "soup_food": "국물 음식", "whole_throwable_fruit": "통째로 던질 수 있는 과일", "cut_fruit": "잘라 온 과일",
+    "outside_food": "외부 음식", "umbrella": "우산", "banner": "현수막",
+}
+CODE_KO = {   # 값이 코드일 때
+    "Y": "반입할 수 있습니다", "N": "반입할 수 없습니다", "ALLOWED": "반입할 수 있습니다",
+    "NOT_ALLOWED": "반입할 수 없습니다", "RESTRICTED": "반입이 금지됩니다",
+    "RESTRICTED_OR_RESTRICTABLE": "제한될 수 있습니다", "CUT_ONLY": "잘라서 가져오면 반입할 수 있습니다",
+    "UNKNOWN": "확인된 자료가 없습니다", "CONDITIONAL": "조건부로 허용됩니다",
+}
+REENTRY_KO = {
+    "TICKET_CHECK": "게이트에서 실물 티켓이나 앱 티켓을 매번 확인하는 방식으로 재입장할 수 있습니다",
+    "HAND_STAMP_AND_WRISTBAND_REQUEST": "나갈 때 게이트 안쪽 요원에게 손등 도장과 팔찌를 요청하면 재입장할 수 있습니다",
+    "UNKNOWN": "재입장 방법이 확인된 자료에 없습니다",
+}
+SKIP_KEYS = {"team_code", "stadium", "status", "source", "source_note", "source_url", "evidence_type",
+             "carry_in_policy", "carry_in_status", "reentry_status", "reentry_evidence_type",
+             "reentry_source", "reentry_source_url", "reentry_updated_at", "updated_at"}
+
+
+def _eun(word: str) -> str:
+    """받침 보고 은/는 고르기 (유리병은 / 과일은 / 캐리어는)"""
+    ch = word.strip()[-1] if word.strip() else ""
+    return "은" if "가" <= ch <= "힣" and (ord(ch) - ord("가")) % 28 else "는"
+
+
+def rules_to_sentences(d: dict) -> str:
+    """{"carrier": "N"} → "캐리어는 반입할 수 없습니다." · 값이 이미 문장이면 그대로 쓴다."""
+    out = []
+    for k, v in d.items():
+        if k in SKIP_KEYS or v in (None, "", "UNKNOWN"):
+            continue
+        v = str(v).strip()
+        label = ITEM_KO.get(k, k.replace("_", " "))
+        if k == "reentry_method":
+            out.append(REENTRY_KO.get(v, v))
+        elif k.startswith("reentry_"):
+            out.append(v if len(v) > 12 else f"{label}: {v}")      # note·procedure 는 이미 문장
+        elif v in CODE_KO:
+            out.append(f"{label}{_eun(label)} {CODE_KO[v]}")
+        elif len(v) > 12:
+            out.append(f"{label}: {v}")                             # 원래 문장인 항목
+        else:
+            out.append(f"{label}{_eun(label)} {v}")
+    return ". ".join(out) + ("." if out else "")
+
 
 TEAM_SHORT_KO = {  # 크롤러 CSV의 team 컬럼(한글 약칭) → 코드
     "LG": "LG", "두산": "DOOSAN", "키움": "KIWOOM", "SSG": "SSG", "KT": "KT",
@@ -216,7 +270,7 @@ class Command(BaseCommand):
         j = json.load(open(DOCS_DIR / "KBO_반입물품_재입장규정.json", encoding="utf-8"))
         common = j.get("carry_in_common_rules")
         add("KBO_반입물품_재입장규정.json", "CARRY_IN", None, None, "COMMON",
-            "[전 구장 공통] KBO 야구장 반입물품 공통 규정: " + json.dumps(common, ensure_ascii=False),
+            "[전 구장 공통] KBO 야구장 반입물품 공통 규정입니다. " + rules_to_sentences(common),
             {"scope": "COMMON", "status": "CONFIRMED", "evidence_type": "OFFICIAL"})
         for code, t in j.get("teams", {}).items():
             name = TEAM_KO.get(code, code)
@@ -224,19 +278,35 @@ class Command(BaseCommand):
             carry = {k: v for k, v in t.items() if not k.startswith("reentry")}
             reentry = {k: v for k, v in t.items() if k.startswith("reentry")}
             add("KBO_반입물품_재입장규정.json", "CARRY_IN", home, code, "RULES",
-                f"[{name} 홈경기] 반입물품 규정: " + json.dumps(carry, ensure_ascii=False),
+                f"[{name} 홈경기] {t.get('stadium', '')} 반입물품 규정입니다. " + rules_to_sentences(carry)
+                + " 그 밖의 물품은 KBO 전 구장 공통 규정을 따릅니다.",
                 {**t, "status": t.get("status") or t.get("carry_in_status"), "evidence_type": t.get("evidence_type")})
             add("KBO_반입물품_재입장규정.json", "REENTRY", home, code, "RULES",
-                f"[{name} 홈경기] 재입장 규정 (구단 공식 확인이 안 된 비공식 정보입니다): "
-                + json.dumps(reentry, ensure_ascii=False),
+                f"[{name} 홈경기] {t.get('stadium', '')} 재입장 규정입니다(구단 공식 확인이 안 된 비공식 정보). "
+                + rules_to_sentences(reentry),
                 {**t, "status": "PARTIAL", "evidence_type": "UNOFFICIAL"})
 
-        # 1-4. 기초규칙: 헤딩 기준 분할
+        # 1-4. 기초규칙: 헤딩 기준 분할 + 2부 표는 제도별로 한 청크씩 (2026-09-13)
+        #      이유: 7개 제도가 한 청크에 있으면 "ABS 뭐야" 에 나머지 6개가 통째로 딸려온다.
         md = (DOCS_DIR / "기초규칙_요약본.md").read_text(encoding="utf-8")
         parts = [p.strip() for p in re.split(r"^# ", md, flags=re.M) if p.strip()]
         for i, part in enumerate(parts, 1):
-            add("기초규칙_요약본.md", "RULE", None, None, f"PART{i}", "[야구 기초 규칙] " + part,
-                {"part": i, "status": "CONFIRMED", "evidence_type": "OFFICIAL"})
+            rows = re.findall(r"^\|\s*([^|]+?)\s*\|\s*(.+?)\s*\|\s*$", part, flags=re.M)
+            rows = [(a, b) for a, b in rows if a not in ("제도", "---") and not a.startswith("--")]
+            if rows:                                  # 표가 있는 부(2부 KBO 고유 규정)
+                head = part.splitlines()[0].strip()
+                for name_, rule in rows:
+                    key = re.sub(r"[^0-9A-Za-z가-힣]", "", name_)[:24]
+                    add("기초규칙_요약본.md", "RULE", None, None, key,
+                        f"[야구 기초 규칙 · {head}] {name_}: {rule}",
+                        {"part": i, "topic": name_, "status": "CONFIRMED", "evidence_type": "OFFICIAL"})
+                intro = re.sub(r"^\|.*$", "", part, flags=re.M).strip()
+                if len(intro) > 40:
+                    add("기초규칙_요약본.md", "RULE", None, None, f"PART{i}", "[야구 기초 규칙] " + intro,
+                        {"part": i, "status": "CONFIRMED", "evidence_type": "OFFICIAL"})
+            else:
+                add("기초규칙_요약본.md", "RULE", None, None, f"PART{i}", "[야구 기초 규칙] " + part,
+                    {"part": i, "status": "CONFIRMED", "evidence_type": "OFFICIAL"})
 
         return chunks
 
@@ -294,8 +364,8 @@ class Command(BaseCommand):
         short = sum(1 for c in chunks if len(c["content"]) < 50)
         by_cat = Counter(c["category"] for c in chunks)
         dup = n - len({c["doc_id"] for c in chunks})
-        self.stdout.write(f"\n총 청크: {n}  (기대 3,832 ± 200, 2026-09-10 기준)")
-        self.stdout.write(f"stadium_code 없음: {no_stadium}  (정상 5 = 반입 공통 1 + 기초규칙 4)")
+        self.stdout.write(f"\n총 청크: {n}  (기대 3,839 ± 200, 2026-09-13 청킹 조정 기준)")
+        self.stdout.write(f"stadium_code 없음: {no_stadium}  (정상 12 = 반입 공통 1 + 기초규칙 11)")
         self.stdout.write(f"50자 미만: {short}")
         self.stdout.write(f"doc_id 중복: {dup}  (0 이어야 함)")
         for cat, cnt in sorted(by_cat.items(), key=lambda x: -x[1]):
