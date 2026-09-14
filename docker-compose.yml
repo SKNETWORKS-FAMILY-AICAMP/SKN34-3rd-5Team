@@ -31,6 +31,13 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL}
       AUTH_FRONTEND_ORIGIN: ${AUTH_FRONTEND_ORIGIN:-http://127.0.0.1:80}
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
+      EMAIL_HOST: ${EMAIL_HOST:-mailpit}
+      EMAIL_PORT: ${EMAIL_PORT:-1025}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-false}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
 
       # Docker 내부에서는 db 서비스명으로 접근
       DB_HOST: db
@@ -116,7 +123,7 @@ services:
     environment:
       MP_DATABASE: /data/mailpit.db
       MP_MAX_MESSAGES: 1000
-      MP_UI_AUTH: "admin:adminpw"
+      MP_UI_AUTH: ${MAILPIT_UI_AUTH:?Set MAILPIT_UI_AUTH for the local Mailpit web UI}
 
     volumes:
       - ./data/mailpit:/data

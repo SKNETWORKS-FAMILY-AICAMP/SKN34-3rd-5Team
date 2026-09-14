@@ -144,24 +144,24 @@ email_host_password = os.getenv("EMAIL_HOST_PASSWORD", "")
 email_use_tls = os.getenv("EMAIL_USE_TLS", "false").strip().lower()
 if email_use_tls not in {"true", "false"}:
     raise ValueError("EMAIL_USE_TLS must be either 'true' or 'false'")
+email_backend = (
+    os.getenv("EMAIL_BACKEND") or "django.core.mail.backends.smtp.EmailBackend"
+)
 
 DEFAULT_FROM_EMAIL = (
     os.getenv("DEFAULT_FROM_EMAIL") or email_host_user or "webmaster@localhost"
 )
 AUTH_FRONTEND_ORIGIN = os.getenv("AUTH_FRONTEND_ORIGIN", "http://127.0.0.1:80").rstrip("/")
 
-MAILERS = {
-    "default": {
-        "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
-        "OPTIONS": {
-            "host": email_host,
-            "port": email_port,
-            "username": email_host_user,
-            "password": email_host_password,
-            "use_tls": email_use_tls == "true",
-        },
-    },
-}
+MAILERS = {"default": {"BACKEND": email_backend}}
+if email_backend == "django.core.mail.backends.smtp.EmailBackend":
+    MAILERS["default"]["OPTIONS"] = {
+        "host": email_host,
+        "port": email_port,
+        "username": email_host_user,
+        "password": email_host_password,
+        "use_tls": email_use_tls == "true",
+    }
 
 
 REST_FRAMEWORK = {
