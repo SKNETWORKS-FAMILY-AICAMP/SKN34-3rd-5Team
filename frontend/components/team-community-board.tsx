@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { PostCategory } from "./post-category";
+import { PostCommentCount } from "./post-comment-count";
 import { useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { TeamLogo } from "@/components/team-logo";
@@ -23,7 +25,7 @@ export function TeamCommunityBoard({ teamCode, postId }: { teamCode: string; pos
   const selectedPostTeam = selectedPost ? getTeamBoard(selectedPost.teamCode) : undefined;
   const [page, setPage] = useState(1);
   const listHeading = useRef<HTMLHeadingElement>(null);
-  const pageSize = 10;
+  const pageSize = 20;
   const pageCount = Math.max(1, Math.ceil(posts.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const visiblePosts = posts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -49,7 +51,7 @@ export function TeamCommunityBoard({ teamCode, postId }: { teamCode: string; pos
       {postId ? selectedPost && selectedPostTeam ? (
         <article className="team-community-article" aria-labelledby="free-post-heading">
           <div className="team-community-article-team"><TeamLogo code={selectedPostTeam.code} name={selectedPostTeam.name} className="team-community-logo"/><Link href={getTeamBoardHref(selectedPostTeam.code)}>{selectedPostTeam.name} 자유게시판</Link></div>
-          <header><div className="community-post-labels"><span className="community-stadium-label" data-category={selectedPost.category}>{selectedPost.category}</span><span className="community-sample-label">샘플 글</span></div><h2 id="free-post-heading">{selectedPost.title}</h2></header>
+          <header><div className="community-post-labels"><PostCategory category={selectedPost.category} /><span className="community-sample-label">샘플 글</span></div><h2 id="free-post-heading">{selectedPost.title}</h2></header>
           <p className="team-community-post-content">{selectedPost.content}</p>
           <p className="team-community-sample-note">화면 구성을 확인하기 위한 샘플 글입니다. 실제 이용자가 작성한 글이 아닙니다.</p>
           <Link className="button button-secondary" href={getTeamBoardHref(team?.code)}>목록으로</Link>
@@ -69,7 +71,7 @@ export function TeamCommunityBoard({ teamCode, postId }: { teamCode: string; pos
               return <tr key={post.id}>
                 <td className="community-number">{posts.length - (currentPage - 1) * pageSize - index}</td>
                 <td><span className="team-community-table-team"><TeamLogo code={post.teamCode} name={postTeam?.name ?? post.teamCode} className="team-community-logo"/><span>{postTeam?.shortName ?? post.teamCode}</span></span></td>
-                <td className="community-post"><Link className="community-post-link" href={getTeamBoardHref(post.teamCode, post.id)}><span className="community-post-labels"><span className="community-stadium-label" data-category={post.category}>{post.category}</span><span className="team-community-mobile-team">{postTeam?.name}</span><span className="community-sample-label">샘플</span></span><span className="community-post-title">{post.title}</span></Link></td>
+                <td className="community-post"><Link className="community-post-link" href={getTeamBoardHref(post.teamCode, post.id)}><span className="community-post-labels"><PostCategory category={post.category} /><span className="team-community-mobile-team">{postTeam?.name}</span><span className="community-sample-label">샘플</span></span><span className="community-post-title">{post.title}</span><PostCommentCount count={post.commentCount} /></Link></td>
                 <td>샘플 글</td>
               </tr>;
             })}</tbody>

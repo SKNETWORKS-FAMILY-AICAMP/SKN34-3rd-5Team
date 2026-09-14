@@ -2,7 +2,7 @@ import type { ChatReply, ChatRequest, ChatStatus } from "./types";
 
 // The browser talks only to our server. Provider URLs and keys stay on the server.
 const CHAT_ENDPOINT = "/chat-api";
-const REQUEST_TIMEOUT_MS = 30_000;
+const REQUEST_TIMEOUT_MS = 55_000;
 
 async function request<T>(init: RequestInit, signal?: AbortSignal): Promise<T> {
   const controller = new AbortController();

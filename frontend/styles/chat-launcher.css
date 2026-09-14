@@ -1,13 +1,13 @@
-.chat-launcher {
+.scroll-to-top {
   position: fixed; right: 28px; bottom: 26px; z-index: 45;
-  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
-  height: 54px; padding: 0 21px; border: 1px solid #246bf3; border-radius: 100px;
-  background: #246bf3; color: #fff; box-shadow: 0 8px 28px #194fb331;
-  font-size: 13px; font-weight: 650; transition: background .2s, transform .2s;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; padding: 0; border: 1px solid #dce3ed; border-radius: 50%;
+  background: #fff; color: #42516b; box-shadow: 0 3px 12px #194fb31a;
+  cursor: pointer; transition: background .2s, transform .2s;
 }
-.chat-launcher:hover { background: #185ce0; transform: translateY(-2px); }
+.scroll-to-top:hover { background: #f0f5ff; transform: translateY(-2px); }
+.scroll-to-top:focus-visible { outline: 2px solid #246bf3; outline-offset: 3px; }
 @media (max-width: 640px) {
-  .chat-launcher { right: 17px; bottom: calc(18px + env(safe-area-inset-bottom)); height: 49px; padding: 0 16px; font-size: 11px; gap: 7px; }
-  .chat-launcher svg { width: 21px; height: 21px; }
+  .scroll-to-top { right: 17px; bottom: calc(18px + env(safe-area-inset-bottom)); }
 }
-@media (prefers-reduced-motion: reduce) { .chat-launcher { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .scroll-to-top { transition: none; } }

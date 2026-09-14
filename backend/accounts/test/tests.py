@@ -10,6 +10,7 @@ class SignupTest(APITestCase):
             "password": "RiverStone742!Q",
             "re_password": "RiverStone742!Q",
             "email": "reader@example.com",
+            "first_name": "독자", "birth_date": "2000-01-01", "gender": "F",
         }
         response = self.client.post(reverse("signup"), payload, format="json")
         self.assertEqual(response.status_code, 201)
@@ -34,6 +35,8 @@ class SignupTest(APITestCase):
                 "username": username,
                 "password": password,
                 "re_password": password if confirmation is None else confirmation,
+                "email": f"{username}@example.test", "first_name": "회원",
+                "birth_date": "2000-01-01", "gender": "M",
             },
             format="json",
         )
@@ -42,7 +45,7 @@ class SignupTest(APITestCase):
         response = self.client.post(reverse("signup"), {}, format="json")
 
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(set(response.json()), {"username", "password", "re_password"})
+        self.assertEqual(set(response.json()), {"username", "email", "password", "re_password", "first_name", "birth_date", "gender"})
 
     def test_signup_creates_hashed_password_and_can_log_in(self):
         password = "SpacedSafe764!"

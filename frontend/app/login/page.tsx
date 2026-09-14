@@ -1,22 +1,61 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useRef, useState } from "react";
+import { memberError, saveMemberTokens } from "@/lib/member-auth-request";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { AuthDialog } from "@/components/auth-dialog";
 import { useAuthHydrated } from "@/components/auth-hydration";
 
 type LoginErrors = { username?: string; password?: string };
 
 export default function LoginPage() {
+  const [busy, setBusy] = useState(false);
   const hydrated = useAuthHydrated();
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState<LoginErrors>({});
   const [visible, setVisible] = useState(false);
-  const [help, setHelp] = useState<"id" | "password" | null>(null);
+  const [help, setHelp] = useState<"id" | "password" | "reset" | null>(null);
+  const [reset, setReset] = useState<{ uid: string; token: string } | null>(null);
+  const [helpMessage, setHelpMessage] = useState("");
+  const [helpBusy, setHelpBusy] = useState(false);
   const feedbackRef = useRef<HTMLParagraphElement>(null);
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const uid = params.get("uid"), token = params.get("token");
+    const timer = window.setTimeout(() => {
+      if (uid && token) { setReset({ uid, token }); setHelp("reset"); history.replaceState(null, "", "/login"); }
+      else if (new URLSearchParams(window.location.search).get("registered") === "1") setMessage("회원가입이 완료됐어요. 새 계정으로 로그인해 주세요.");
+    });
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  function closeHelp() {
+    if (help === "reset") { history.replaceState(null, "", "/login"); setReset(null); }
+    setHelp(null); setHelpMessage("");
+  }
+
+  async function submitHelp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (helpBusy || !help) return;
+    const form = event.currentTarget, values = new FormData(form);
+    const url = help === "id" ? "/api/auth/username/request" : help === "password" ? "/api/auth/password/request" : "/api/auth/password";
+    const newPassword = String(values.get("newPassword") ?? ""), confirmation = String(values.get("confirmPassword") ?? "");
+    const body = help === "reset" ? { ...reset, new_password: newPassword, new_password_confirm: confirmation } : { email: String(values.get("email") ?? "").trim() };
+    if (help === "reset" && newPassword !== confirmation) { setHelpMessage("새 비밀번호 확인이 일치하지 않아요."); return; }
+    setHelpBusy(true); setHelpMessage("");
+    try {
+      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(40000), body: JSON.stringify(body) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(memberError(result, "요청을 처리하지 못했어요."));
+      if (help === "reset") { history.replaceState(null, "", "/login"); setReset(null); setHelp(null); setMessage("비밀번호를 재설정했어요. 새 비밀번호로 로그인해 주세요."); }
+      else setHelpMessage(help === "id" ? "계정이 확인되면 가입 이메일로 아이디를 보냈어요." : "계정이 확인되면 가입 이메일로 재설정 링크를 보냈어요.");
+    } catch (error) { setHelpMessage(error instanceof DOMException && error.name === "TimeoutError" ? "요청 결과를 확인하지 못했어요. 메일함을 확인한 뒤 다시 요청해 주세요." : error instanceof Error ? error.message : "서버에 연결하지 못했어요."); }
+    finally { setHelpBusy(false); }
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     const form = event.currentTarget;
     const fields = new FormData(form);
     const nextErrors: LoginErrors = {};
@@ -28,7 +67,16 @@ export default function LoginPage() {
       form.querySelector<HTMLInputElement>(nextErrors.username ? "#login-id" : "#login-password")?.focus();
       return;
     }
-    setMessage("아직 로그인 서비스를 연결하지 않았어요. 입력한 정보는 전송하거나 저장하지 않았어요.");
+    setBusy(true);
+    try {
+      const response = await fetch("/api/auth/signin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: String(fields.get("username") ?? ""), password: String(fields.get("password") ?? "") }) });
+      const result = await response.json();
+      if (!response.ok || typeof result.access !== "string" || typeof result.refresh !== "string") throw new Error(memberError(result, "로그인에 실패했어요."));
+      saveMemberTokens(result.access, result.refresh);
+      window.location.assign(new URLSearchParams(window.location.search).get("next") === "admin" ? "/admin" : "/routes/new");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "로그인 서버에 연결하지 못했어요.");
+    } finally { setBusy(false); }
     requestAnimationFrame(() => feedbackRef.current?.focus());
   }
 
@@ -60,19 +108,22 @@ export default function LoginPage() {
             </div>
             {errors.password && <p className="auth-error" id="login-password-error">{errors.password}</p>}
           </div>
-          <button className="button button-primary auth-submit" type="submit" disabled={!hydrated}>로그인</button>
+          <button className="button button-primary auth-submit" type="submit" disabled={!hydrated || busy}>{busy ? "로그인 중…" : "로그인"}</button>
         </form>
         <nav className="auth-help-links" aria-label="계정 도움말">
           <button type="button" onClick={() => setHelp("id")}>아이디 찾기</button>
           <button type="button" onClick={() => setHelp("password")}>비밀번호 찾기</button>
           <Link href="/signup">회원가입</Link>
         </nav>
-        <p className="auth-service-note auth-bottom-note">회원 서비스 연결 전 미리보기 화면이에요.</p>
+        <p className="auth-service-note auth-bottom-note">팀 계정으로 로그인하면 챗봇을 이용할 수 있어요.</p>
         <Link href="/routes" className="auth-browse">먼저 직관 코스 둘러보기 <span aria-hidden="true">↗</span></Link>
       </section>
-      <AuthDialog open={help !== null} title={help === "password" ? "비밀번호 찾기" : "아이디 찾기"} onClose={() => setHelp(null)}>
-        <p>계정 찾기 서비스를 준비하고 있어요.</p>
-        <p>회원 서비스가 연결되면 가입할 때 등록한 이메일로 본인 확인을 진행할 수 있어요. 현재는 인증 메일을 발송하지 않아요.</p>
+      <AuthDialog open={help !== null} title={help === "reset" ? "비밀번호 재설정" : help === "password" ? "비밀번호 찾기" : "아이디 찾기"} onClose={closeHelp}>
+        <form onSubmit={submitHelp} className="auth-form">
+          {help === "reset" ? <><label>새 비밀번호<input name="newPassword" type="password" autoComplete="new-password" minLength={8} maxLength={128} required disabled={helpBusy} /></label><label>새 비밀번호 확인<input name="confirmPassword" type="password" autoComplete="new-password" minLength={8} maxLength={128} required disabled={helpBusy} /></label><p>영문과 숫자를 포함한 8~128자, 공백 없이 입력해 주세요.</p></> : <label>가입 이메일<input name="email" type="email" autoComplete="email" maxLength={254} required disabled={helpBusy} /></label>}
+          <button className="button button-primary" type="submit" disabled={helpBusy}>{helpBusy ? "처리 중…" : help === "reset" ? "비밀번호 재설정" : "메일 보내기"}</button>
+          {helpMessage && <p role="status">{helpMessage}</p>}
+        </form>
       </AuthDialog>
     </main>
   );

@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
+import { additionalRouteExamples } from "./additional-route-examples";
 
-export type RouteStop = { name: string; lat: number; lng: number; category: string };
+export type RouteStop = { name: string; lat: number; lng: number; category: string; placeId?: string; visitId?: string; address?: string; tourContentId?: string; isMapPoint?: boolean; isDrawnPoint?: boolean };
 export function areValidCoordinates(lat: unknown, lng: unknown): boolean {
   return typeof lat === "number" && typeof lng === "number" && Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 }
@@ -11,9 +12,37 @@ export type TripRoute = {
   tags: string[]; duration: string; cover: string; stops: RouteStop[];
   author: string; likes: number; isSample: boolean; createdAt: string;
   views?: number; contentFormat?: "html";
+  routeNumber?: string;
+  start?: { lat: number; lng: number };
 };
 
-export const sampleRoutes: TripRoute[] = [
+const sampleRouteData: TripRoute[] = [
+  ...additionalRouteExamples,
+  // Fictional member courses for browsing/liking UI; never treated as the current user's routes.
+  {
+    id: "fan-jamsil-evening", title: "잠실은 일찍 가서 밥 먹고 들어가는 게 편하더라", stadium: "잠실야구장",
+    description: "잠실새내에서 만나서 밥 먹고 천천히 구장까지 걷는 코스.",
+    content: "친구랑 너무 일찍 만나서 뭐 할까 하다가 밥부터 먹었어요ㅋㅋ\n\n잠실새내역 근처에서 먹고 구장 쪽으로 걸어가면 딱 좋더라고요. 메뉴는 그날 당기는 걸로 정하면 됩니다. 저는 면 먹고 싶었는데 친구가 밥 먹자고 해서 결국 밥 먹음.\n\n경기 끝나고 바로 지하철 타기 아쉬워서 잠깐 더 걷다가 들어갔어요. 다음엔 꼭 이기고 집에 가고 싶다…",
+    tags: ["친구와", "산책", "잠실"], duration: "경기 전후 반나절", cover: "/images/stadium-night.jpg",
+    stops: [{ name: "잠실새내역", lat: 37.5117, lng: 127.0863, category: "만남" }, { name: "잠실새내 먹자골목 부근", lat: 37.5096, lng: 127.0841, category: "식사" }, { name: "잠실야구장", lat: 37.5161987797456, lng: 127.075940589715, category: "경기 관람" }, { name: "종합운동장역", lat: 37.5111, lng: 127.0739, category: "귀가" }],
+    author: "잠실가는고양이", likes: 0, isSample: true, createdAt: "2026-09-13T07:00:00.000Z",
+  },
+  {
+    id: "fan-suwon-walk", title: "위팍 가기 전에 산책 조금만 하려다가", stadium: "수원 KT 위즈 파크",
+    description: "장안공원에서 걷고 위팍으로 넘어가는 느긋한 하루.",
+    content: "산책 조금만 하자고 했는데 얘기하다 보니까 시간이 순삭됐네요.\n\n장안공원에서 만나서 사진 몇 장 찍고 구장으로 이동했어요. 걷는 거 좋아하면 괜찮은데 더운 날에는 욕심 안 내는 걸 추천합니다ㅋㅋ\n\n구장 도착해서 물부터 찾았습니다. 다음엔 산책을 줄이고 먹는 시간을 늘릴 예정.",
+    tags: ["산책", "친구와"], duration: "반나절", cover: "/images/stadium-day.jpg",
+    stops: [{ name: "장안공원", lat: 37.2888, lng: 127.0125, category: "산책" }, { name: "수원 KT 위즈 파크", lat: 37.2978428909635, lng: 127.011348102567, category: "경기 관람" }, { name: "수원종합운동장", lat: 37.2985, lng: 127.011, category: "귀가" }],
+    author: "위팍산책러", likes: 0, isSample: true, createdAt: "2026-09-13T06:00:00.000Z",
+  },
+  {
+    id: "fan-incheon-simple", title: "복잡한 건 싫어서 문학역 왕복으로 짰어요", stadium: "인천 SSG 랜더스필드",
+    description: "역에서 만나 바로 구장으로. 경기 끝나고 같은 곳에서 해산.",
+    content: "길 잘 못 찾는 친구랑 가는 거라 최대한 단순하게 짰습니다. 문학경기장역에서 만나서 구장으로 가고 끝나면 다시 역으로ㅋㅋ\n\n대신 구장에 좀 일찍 도착해서 사진 찍고 구경하는 시간을 넉넉하게 뒀어요. 괜히 여기저기 다니는 것보다 저는 이게 편하네요.\n\n집에 가는 길에 다음 경기 언제 볼지만 계속 얘기했어요.",
+    tags: ["대중교통", "첫 직관"], duration: "경기 중심 반나절", cover: "/images/stadium-sunset.jpg",
+    stops: [{ name: "문학경기장역", lat: 37.4345, lng: 126.6987, category: "만남" }, { name: "인천 SSG 랜더스필드", lat: 37.4350819826381, lng: 126.690759830613, category: "경기 관람" }, { name: "문학경기장역", lat: 37.4345, lng: 126.6987, category: "귀가" }],
+    author: "야구끝나면배고파", likes: 0, isSample: true, createdAt: "2026-09-13T05:00:00.000Z",
+  },
   {
     id: "jamsil-day", title: "잠실에서 보내는 완벽한 야구 하루", stadium: "잠실야구장",
     description: "호수 산책부터 야구장의 함성까지, 여유롭게 즐기는 잠실 코스.",
@@ -64,6 +93,13 @@ export const sampleRoutes: TripRoute[] = [
   },
 ];
 
+// Match courses created in the planner: the first visit is the origin,
+// followed by waypoint 1, 2, ... in previews, directions and copied courses.
+export const sampleRoutes: TripRoute[] = sampleRouteData.map(route => ({
+  ...route,
+  stops: route.stops.map((stop, index) => index === 0 ? { ...stop, isDrawnPoint: true } : stop),
+}));
+
 const ROUTES_KEY = "kbo-trip-routes-v1";
 const LIKES_KEY = "kbo-trip-likes-v1";
 const VIEWS_KEY = "kbo-trip-views-v1";
@@ -83,8 +119,9 @@ function isRoute(value: unknown): value is TripRoute {
     && typeof item.likes === "number" && Number.isFinite(item.likes) && typeof item.isSample === "boolean"
     && (item.views === undefined || (typeof item.views === "number" && Number.isFinite(item.views) && item.views >= 0))
     && (item.contentFormat === undefined || item.contentFormat === "html")
+    && (item.start === undefined || (item.start !== null && typeof item.start === "object" && areValidCoordinates((item.start as Record<string, unknown>).lat, (item.start as Record<string, unknown>).lng)))
     && Array.isArray(item.tags) && item.tags.every(tag => typeof tag === "string")
-    && Array.isArray(item.stops) && item.stops.every(stop => stop && typeof stop === "object" && typeof stop.name === "string" && typeof stop.category === "string" && areValidCoordinates(stop.lat, stop.lng));
+    && Array.isArray(item.stops) && item.stops.every(stop => stop && typeof stop === "object" && typeof stop.name === "string" && typeof stop.category === "string" && (stop.placeId === undefined || typeof stop.placeId === "string") && (stop.address === undefined || typeof stop.address === "string") && (stop.tourContentId === undefined || typeof stop.tourContentId === "string") && (stop.isMapPoint === undefined || typeof stop.isMapPoint === "boolean") && (stop.isDrawnPoint === undefined || typeof stop.isDrawnPoint === "boolean") && areValidCoordinates(stop.lat, stop.lng));
 }
 
 function parseStoredRoutes(raw: string): TripRoute[] {

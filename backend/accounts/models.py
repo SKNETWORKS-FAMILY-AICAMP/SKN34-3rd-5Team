@@ -1,5 +1,7 @@
-from django.db import models
+import uuid
+
 from django.contrib.auth.models import AbstractUser
+from django.db import models
 
 class CustomUser(AbstractUser):
     """
@@ -23,3 +25,20 @@ class CustomUser(AbstractUser):
 		null=True,
 		blank=True,
 	)
+    nickname = models.CharField(max_length=12, blank=True)
+    team_code = models.CharField(max_length=2, blank=True)
+    avatar = models.TextField(blank=True)
+    nickname_changed_at = models.DateTimeField(blank=True, null=True)
+    notifications = models.JSONField(default=dict, blank=True)
+    visibility = models.JSONField(default=dict, blank=True)
+
+
+class EmailChangeChallenge(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    email = models.EmailField()
+    code_hash = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    used_at = models.DateTimeField(blank=True, null=True)

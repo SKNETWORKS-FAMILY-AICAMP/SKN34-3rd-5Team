@@ -1,3 +1,5 @@
+import { teamRequest, checkSameOrigin } from "@/lib/team-backend";
+import { createTeamReply } from "@/lib/chat/team";
 import { createChatReply, getChatStatus } from "@/lib/chat/server";
 import { ChatError, parseChatRequest } from "@/lib/chat/validation";
 import { MAX_REQUEST_BYTES } from "@/lib/chat/types";
@@ -35,6 +37,7 @@ export function GET() {
 export async function POST(request: Request) {
   let reserved = false;
   try {
+    checkSameOrigin(request);
     const origin = request.headers.get("origin");
     if (origin && new URL(origin).host !== request.headers.get("host")) throw new ChatError("같은 사이트에서 질문을 보내 주세요.", 403);
     if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) throw new ChatError("JSON 형식으로 질문을 보내 주세요.", 415);
@@ -46,6 +49,7 @@ export async function POST(request: Request) {
     try { value = JSON.parse(body); } catch { throw new ChatError("질문 형식을 확인해 주세요."); }
     const input = parseChatRequest(value);
     if (getChatStatus().provider !== "demo") { reserveRequest(); reserved = true; }
+    if (getChatStatus().provider === "backend") return json(await createTeamReply(input, (path, body) => teamRequest(path, body, true, request.signal)));
     return json(await createChatReply(input, { signal: request.signal }));
   } catch (error) {
     return failure(error);

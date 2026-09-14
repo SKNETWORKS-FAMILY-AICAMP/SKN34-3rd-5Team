@@ -1,7 +1,10 @@
 "use client";
+import type { ReactNode } from "react";
+import Link from "next/link";
 
 import { useEffect, useRef, useState } from "react";
 import type { KboApiResponse, KboGame, KboSnapshot, KboStanding } from "@/lib/kbo/types";
+import { GameWeather } from "./game-weather";
 import { Icon } from "./icons";
 import { TeamLogo } from "./team-logo";
 import { HomeTeamBoards } from "./home-team-boards";
@@ -193,7 +196,7 @@ function GameCarousel({ games }: { games: KboGame[] }) {
                   <h3 className="game-title sr-only" id={`game-${game.id}-title`}>{game.away.name} 대 {game.home.name}</h3>
                   <div className="game-matchup">
                     <TeamBadge team={game.away} side="원정" />
-                    <span className="game-versus" aria-hidden="true">VS</span>
+                    <div className="game-versus"><span aria-hidden="true">VS</span><GameWeather game={game} /></div>
                     <TeamBadge team={game.home} side="홈" />
                   </div>
                   {hasScore && (
@@ -271,7 +274,7 @@ function ScheduleSkeleton() {
   );
 }
 
-export function GameSchedule() {
+export function GameSchedule({ beforeTeamBoards }: { beforeTeamBoards?: ReactNode } = {}) {
   const { data, error, checking, retry } = useKboSnapshot();
   const loading = !data && !error;
   const stale = Boolean(data && (data.stale || error));
@@ -283,7 +286,7 @@ export function GameSchedule() {
           <div><span className="eyebrow">GAME SCHEDULE</span><h2 id="schedule-heading">경기 일정</h2>
             <p>{data ? `${formatDay(data.date, true)} · ${data.games.length ? `총 ${data.games.length}경기` : "오늘의 경기"}` : "오늘의 KBO 경기를 만나보세요."}</p>
           </div>
-          {data && <span className={`schedule-data-label${stale ? " schedule-data-label-stale" : ""}`}><i />{stale ? "이전 수집 자료" : "TVING 일정"}</span>}
+          <Link href="/schedule" className="text-link">세부 일정 <Icon name="chevron" size={17} /></Link>
         </div>
         {data && (stale || data.warning) && (
           <div className="kbo-data-warning" role="status">
@@ -298,15 +301,15 @@ export function GameSchedule() {
         ) : data.games.length ? <GameCarousel games={data.games} /> : (
           <div className="kbo-empty-state"><Icon name="stadium" size={32} /><strong>오늘은 예정된 경기가 없어요.</strong><p>다음 경기를 기다리며 직관 코스를 준비해 보세요.</p></div>
         )}
-        {data && <SourceMeta data={data} />}
+        {data && <><SourceMeta data={data} /><p className="game-weather-source">날씨: <a href="https://www.data.go.kr/data/15084084/openapi.do" target="_blank" rel="noreferrer">기상청</a> · 경기 시작에 가까운 정시 예보 · 고척은 구장 외부 기준</p></>}
       </section>
 
       <KboHighlightSection />
 
       <section className="container home-standings" aria-labelledby="standings-heading">
         <div className="section-heading">
-          <div><span className="eyebrow">TEAM STANDINGS</span><h2 id="standings-heading">KBO 순위표</h2><p>우리 팀은 지금 어디쯤 있을까요?</p></div>
-          <span className="standings-season-label">{data?.date.slice(0, 4) ?? "KBO"} 정규시즌</span>
+          <div><span className="eyebrow">TEAM STANDINGS</span><h2 id="standings-heading">KBO 순위표</h2><div style={{ marginTop: 12 }}><span className="standings-season-label">{data?.date.slice(0, 4) ?? "KBO"} 정규시즌</span></div></div>
+          <Link href="/standings" className="text-link">세부 순위표 <Icon name="chevron" size={17} /></Link>
         </div>
         {loading ? <div className="standings-loading" role="status"><span className="sr-only">팀 순위를 불러오고 있어요.</span>
           {Array.from({ length: 10 }, (_, index) => <div key={index} aria-hidden="true"><span /><span /><span /></div>)}
@@ -320,6 +323,7 @@ export function GameSchedule() {
           <SourceMeta data={data} />
         </div>}
       </section>
+      {beforeTeamBoards}
       <HomeTeamBoards standings={data?.standings ?? null} loading={loading} retry={retry} />
     </>
   );

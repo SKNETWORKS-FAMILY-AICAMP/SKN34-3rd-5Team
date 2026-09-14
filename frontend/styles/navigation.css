@@ -31,3 +31,31 @@
   .header-menu-panel { top: calc(100% + 2px); max-height: calc(100dvh - 154px - env(safe-area-inset-bottom, 0px)); }
   .header-actions { gap: 10px; }
 }
+
+.member-logout { border: 0; background: transparent; font: inherit; font-size: 12px; cursor: pointer; }
+
+.member-notifications { position: relative; }
+.notification-bell { position: relative; display: grid; place-items: center; width: 36px; height: 36px; background: transparent; border: 0; color: #657387; cursor: pointer; }
+.notification-count { position: absolute; right: -2px; bottom: -2px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 20px; background: #ed4052; color: white; font-size: 10px; font-weight: 700; display: grid; place-items: center; border: 2px solid white; }
+.notification-panel { position: absolute; top: 46px; right: 0; width: min(330px, calc(100vw - 32px)); background: white; border: 1px solid #dce5f1; border-radius: 12px; box-shadow: 0 10px 35px #18325524; z-index: 100; color: #253b57; }
+.notification-panel header { display: flex; justify-content: space-between; align-items: center; padding: 16px; }
+.notification-panel button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 12px; }
+.notification-panel p { padding: 20px 16px; font-size: 13px; color: #657790; }
+.notification-panel ul { padding: 0; margin: 0; list-style: none; max-height: 320px; overflow-y: auto; }
+.notification-panel li button { width: 100%; text-align: left; padding: 14px 16px; border-top: 1px solid #edf1f6; }
+.notification-panel li .is-unread { background: #f0f6ff; }
+.notification-panel small { display: block; margin-top: 6px; color: #7c8ba0; }
+
+.inbox-detail { padding: 0 16px 16px; overflow-wrap: anywhere; max-height: 360px; overflow-y: auto; }
+.inbox-detail small { display: block; margin-top: 8px; color: #7c8ba0; font-size: 11px; }
+.inbox-detail p { padding: 14px 0 0; white-space: pre-wrap; line-height: 1.7; }
+
+.header-brand-menu { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+@media(max-width: 640px) { .header-brand-menu { gap: 4px; } }
+
+.member-menu { position: relative; }
+.member-menu-panel { position: absolute; right: 0; top: calc(100% + 10px); z-index: 100; width: 160px; padding: 6px; border: 1px solid #e2eaf6; border-radius: 12px; background: white; box-shadow: 0 8px 28px #16345e18; }
+.member-menu-panel a, .member-menu-panel button { display: block; width: 100%; padding: 12px; border: 0; background: transparent; text-align: left; color: #34445e; font: inherit; font-size: 13px; border-radius: 6px; cursor: pointer; }
+.member-menu-panel a:hover, .member-menu-panel button:hover { background: #edf4ff; color: #246bf3; }
+
+.member-menu-divider { border: 0; border-top: 1px solid #e5ebf3; margin: 5px 8px; }

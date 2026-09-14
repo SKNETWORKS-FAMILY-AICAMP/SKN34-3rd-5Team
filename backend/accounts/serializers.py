@@ -1,9 +1,17 @@
+import base64
+import calendar
+import re
+from io import BytesIO
+from zoneinfo import ZoneInfo
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from PIL import Image, UnidentifiedImageError
 
 User = get_user_model()
 
@@ -31,16 +39,23 @@ class PasswordValidationMixin:
 
         if any(char.isspace() for char in value):
             raise serializers.ValidationError("비밀번호에는 공백을 포함할 수 없습니다.")
+        if len(value) > 128:
+            raise serializers.ValidationError("비밀번호는 128자 이하여야 합니다.")
 
         return value
 
 
 class SignupSerializer(PasswordValidationMixin, serializers.ModelSerializer):
+    username = serializers.RegexField(r"^[A-Za-z0-9]{4,20}$", validators=[UniqueValidator(queryset=User.objects.all(), message="이미 사용 중인 아이디입니다.")])
+    email = serializers.EmailField(required=True, max_length=254)
+    first_name = serializers.CharField(required=True, allow_blank=False, max_length=150)
+    birth_date = serializers.DateField(required=True)
+    gender = serializers.ChoiceField(choices=("M", "F"), required=True)
     re_password = serializers.CharField(write_only=True, trim_whitespace=False)
 
     class Meta:
         model = User
-        fields = ["username", "email", "password", "re_password"]
+        fields = ["username", "email", "password", "re_password", "first_name", "birth_date", "gender"]
         extra_kwargs = {"password": {"write_only": True, "trim_whitespace": False}}
 
     # 비밀번호 일치 검증
@@ -55,9 +70,89 @@ class SignupSerializer(PasswordValidationMixin, serializers.ModelSerializer):
 
         return attrs
 
+    def validate_birth_date(self, value):
+        from django.utils import timezone
+        if value > timezone.localdate():
+            raise serializers.ValidationError("미래 생년월일은 사용할 수 없습니다.")
+        return value
+
     def create(self, validated_data):
         validated_data.pop("re_password")
         return User.objects.create_user(**validated_data)
+
+
+TEAM_CODES = {"LG", "HH", "SK", "SS", "NC", "KT", "LT", "HT", "OB", "WO"}
+DEFAULT_NOTIFICATIONS = {"comments": True, "courses": True, "announcements": True}
+DEFAULT_VISIBILITY = {"courses": False, "posts": False, "likes": False}
+
+
+def _next_nickname_change(changed_at):
+    local = changed_at.astimezone(ZoneInfo("Asia/Seoul"))
+    month = local.month - 1 + 6
+    year, month = local.year + month // 12, month % 12 + 1
+    return local.replace(year=year, month=month, day=min(local.day, calendar.monthrange(year, month)[1]))
+
+
+def _boolean_settings(value, defaults):
+    if not isinstance(value, dict) or set(value) != set(defaults) or any(type(item) is not bool for item in value.values()):
+        raise serializers.ValidationError("설정 값을 확인해 주세요.")
+    return value
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("id", "username", "email", "first_name", "birth_date", "gender", "is_staff", "is_superuser", "is_active", "nickname", "team_code", "avatar", "nickname_changed_at", "notifications", "visibility")
+        read_only_fields = ("id", "username", "email", "is_staff", "is_superuser", "is_active", "nickname_changed_at")
+        extra_kwargs = {"first_name": {"required": False}, "birth_date": {"required": False}, "gender": {"required": False}}
+
+    def validate_nickname(self, value):
+        value = value.strip()
+        if not re.fullmatch(r"[A-Za-z가-힣]{1,12}", value):
+            raise serializers.ValidationError("닉네임은 한글·영문만 1~12자로 입력해 주세요.")
+        if value != self.instance.nickname and self.instance.nickname_changed_at:
+            from django.utils import timezone
+            if timezone.now() < _next_nickname_change(self.instance.nickname_changed_at):
+                raise serializers.ValidationError("닉네임은 변경 후 6개월이 지나야 다시 바꿀 수 있어요.")
+        return value
+
+    def validate_team_code(self, value):
+        if value and value not in TEAM_CODES:
+            raise serializers.ValidationError("응원팀을 확인해 주세요.")
+        return value
+
+    def validate_avatar(self, value):
+        if not value:
+            return ""
+        if len(value) >= 600000 or not value.startswith("data:image/jpeg;base64,"):
+            raise serializers.ValidationError("JPEG 프로필 사진을 다시 선택해 주세요.")
+        try:
+            raw = base64.b64decode(value.partition(",")[2], validate=True)
+            image = Image.open(BytesIO(raw))
+            if image.format != "JPEG" or image.width < 64 or image.height < 64 or image.width > 10000 or image.height > 10000 or image.width * image.height > 40000000:
+                raise ValueError
+            image.load()
+        except (ValueError, UnidentifiedImageError, OSError, Image.DecompressionBombError):
+            raise serializers.ValidationError("읽을 수 없는 JPEG 프로필 사진이에요.")
+        return value
+
+    def validate_notifications(self, value):
+        return _boolean_settings(value, DEFAULT_NOTIFICATIONS)
+
+    def validate_visibility(self, value):
+        return _boolean_settings(value, DEFAULT_VISIBILITY)
+
+    def update(self, instance, validated_data):
+        if "nickname" in validated_data and validated_data["nickname"] != instance.nickname:
+            from django.utils import timezone
+            instance.nickname_changed_at = timezone.now()
+        return super().update(instance, validated_data)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["notifications"] = {**DEFAULT_NOTIFICATIONS, **(instance.notifications or {})}
+        data["visibility"] = {**DEFAULT_VISIBILITY, **(instance.visibility or {})}
+        return data
 class SendEmailSerializer(serializers.ModelSerializer):
     """
         이메일을 검증합니다.

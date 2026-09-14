@@ -82,3 +82,6 @@
   .home-board-posts a{min-height:36px;font-size:12px}
   .home-community-more-wrap{margin-top:26px}
 }
+
+.home-popular-section { background: #f7faff; border-block: 1px solid #edf2f8; padding-top: 52px; }
+@media(max-width:767px) { .home-popular-section { padding-top: 32px; } }

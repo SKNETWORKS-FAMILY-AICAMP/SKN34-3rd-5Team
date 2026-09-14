@@ -110,3 +110,38 @@
 @media(max-width:767px){.route-card-grid{grid-template-columns:minmax(0,1fr)}.route-filter-tab{min-height:44px;padding:10px 17px}.route-card-content{padding:22px}.route-card-footer{font-size:11px}.route-card h3{font-size:19px}.route-list-intro .eyebrow{font-size:9px}.route-list-meta h2{scroll-margin-top:90px}.route-detail-sidebar>.route-feedback{margin-top:16px}.route-detail-byline{font-size:11px;gap:10px 16px}.route-detail-header h1{overflow-wrap:anywhere}.route-confirm-dialog{padding:27px 22px}.route-list-skeleton{padding-top:30px}.route-skeleton-heading{height:35px}.route-detail-map .route-subsection-heading h2{font-size:20px}.route-card-metrics{gap:12px}.route-card-tags{font-size:12px}.route-card-author time{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.route-skeleton{animation:none}}
 .route-card-skeleton .route-card-image:after{display:none}
+.route-public-number { display: block; margin: 6px 0 10px; color: #718097; font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.route-thumbnail, .route-thumbnail-map { position: absolute; inset: 0; }
+.route-thumbnail { pointer-events: none; }
+.route-thumbnail-map img { object-fit: initial; transition: none; }
+.route-card:hover .route-thumbnail-map img { transform: none; }
+.route-thumbnail-pin { display: grid; place-items: center; min-width: 24px; height: 24px; padding: 0 4px; border: 2px solid white; border-radius: 50%; background: #246bf3; color: white; font-size: 10px; font-weight: 700; box-shadow: 0 1px 4px #0004; }
+.route-thumbnail-status { position: absolute; top: 45%; left: 10px; right: 10px; text-align: center; background: #ffffffed; color: #52647e; padding: 8px; font-size: 12px; z-index: 6; }
+
+.route-card { position: relative; }
+.route-card-title-link::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+.course-card-share { position: relative; z-index: 2; margin: -4px 0 12px; }
+.course-card-share button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border: 1px solid #c9dcfa; border-radius: 7px; background: #f2f7ff; color: #246bf3; font-size: 12px; cursor: pointer; }
+.course-card-share p { font-size: 12px; margin: 8px 0; color: #52647e; }
+.course-card-share textarea { width: 100%; font-size: 12px; }
+
+.route-detail-course-cover::after { display: none; }
+.route-detail-course-cover .route-thumbnail-map img { object-fit: initial; object-position: initial; }
+
+/* Keep scroll space beside the map while the post body uses the full width. */
+.route-post-detail > .route-detail-map{width:100%;margin:24px 0 32px}
+.route-detail-map > .route-map{border:0;border-radius:0;overflow:visible;background:transparent}
+.route-detail-map .route-map-stage{width:84%;max-width:960px;height:300px;margin:0 auto;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.route-detail-post-content{margin-top:24px;border-bottom:1px solid var(--border);white-space:normal}
+.route-detail-map .route-map-caption{padding:16px 0}
+@media(max-width:767px){.route-detail-map .route-map-stage{width:calc(100% - 40px);height:260px}}
+
+.route-post-detail > .route-detail-layout{padding:0 24px 24px}.route-post-detail .route-map-caption,.route-post-detail .course-travel{margin-left:24px;margin-right:24px}
+@media(max-width:640px){.route-post-detail > .route-detail-layout{padding:0 16px 20px}.route-post-detail .route-map-caption,.route-post-detail .course-travel{margin-left:16px;margin-right:16px}}
+
+.route-travel-columns{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:24px;padding:0 24px;align-items:start}
+.route-post-detail .route-travel-columns > .course-travel{margin:0;min-width:0}
+.route-travel-columns > .route-detail-sidebar{position:static;display:block;min-width:0}
+.route-travel-columns .route-owner-actions{margin-top:0}
+@media(max-width:767px){.route-travel-columns{grid-template-columns:minmax(0,1fr);padding:0 16px;gap:20px}}

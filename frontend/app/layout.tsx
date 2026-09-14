@@ -12,12 +12,16 @@ import "@/styles/info.css";
 import "@/styles/auth.css";
 import "@/styles/chat-launcher.css";
 import "@/styles/map.css";
+import "@/styles/nearby-planner.css";
+import "@/styles/course-travel.css";
 import { ChatProvider } from "@/components/chat-provider";
 import { SiteFrame } from "@/components/site-frame";
+import { MemberAuthProvider } from "@/lib/member-auth";
 
 export const metadata: Metadata = {
   title: { default: "KBO ROUTE | 직관의 하루를, 나답게", template: "%s | KBO ROUTE" },
   description: "경기 전 맛집부터 경기 후 산책까지. 나만의 야구 직관 코스를 만들고 함께 나누는 공간.",
+  referrer: "no-referrer",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -25,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ko" data-scroll-behavior="smooth">
       <body>
         <ChatProvider>
-          <SiteFrame>{children}</SiteFrame>
+          <MemberAuthProvider><SiteFrame>{children}</SiteFrame></MemberAuthProvider>
         </ChatProvider>
       </body>
     </html>

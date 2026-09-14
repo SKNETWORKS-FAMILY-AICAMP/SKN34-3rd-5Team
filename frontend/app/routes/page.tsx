@@ -4,6 +4,7 @@ import { Suspense, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Icon } from "@/components/icons";
+import { RouteNumber } from "@/components/route-number";
 import { formatRouteDate } from "@/components/route-card";
 import { RouteBoardSkeleton, RouteListSkeleton } from "@/components/route-skeleton";
 import { useLikedRoutes, useRoutes, useRoutesReady, useRouteViews } from "@/lib/routes";
@@ -21,7 +22,7 @@ function CommunityBoard({ initialQuery, initialStadium, deleted }: { initialQuer
   const [activeSearchField, setActiveSearchField] = useState<SearchField>("all");
   const [stadium, setStadium] = useState(initialStadium);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [sort, setSort] = useState("newest");
   const [showDeleted, setShowDeleted] = useState(deleted);
   const resultsHeading = useRef<HTMLHeadingElement>(null);
@@ -94,12 +95,12 @@ function CommunityBoard({ initialQuery, initialStadium, deleted }: { initialQuer
             <caption className="sr-only">팬들이 남긴 직관 루트. 제목을 선택하면 본문과 지도를 볼 수 있습니다.</caption>
             <colgroup><col className="community-col-number"/><col/><col className="community-col-author"/><col className="community-col-metric"/><col className="community-col-metric"/><col className="community-col-date"/></colgroup>
             <thead><tr><th scope="col">번호</th><th scope="col" className="community-title-column">제목</th><th scope="col">글쓴이</th><th scope="col">좋아요</th><th scope="col">조회</th><th scope="col">작성일</th></tr></thead>
-            <tbody>{visible.length ? visible.map((route, index) => {
+            <tbody>{visible.length ? visible.map((route) => {
               const likeCount = route.likes + Number(liked.includes(route.id));
               const viewCount = (route.views ?? 0) + (views[route.id] ?? 0);
               const shortStadium = stadiums.slice(1).find(item => route.stadium.includes(item)) ?? route.stadium;
               return <tr key={route.id}>
-                <td className="community-number">{sorted.length - (currentPage - 1) * pageSize - index}</td>
+                <td className="community-number"><RouteNumber route={route} /></td>
                 <td className="community-post">
                   <Link href={`/routes/${encodeURIComponent(route.id)}`} className="community-post-link">
                     <span className="community-post-labels"><span className="community-stadium-label">{shortStadium}</span><span className="community-sample-label">{route.isSample ? "샘플" : "내 글"}</span></span>

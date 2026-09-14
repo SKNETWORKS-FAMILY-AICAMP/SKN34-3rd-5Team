@@ -61,7 +61,7 @@ jobs:
           script: |
             cd ~/SKN34-3rd-5Team
             git pull origin develop
-            docker compose up -d --build
+            docker compose up -d --build db backend frontend nginx
 
   # 3. Discord 알림
   notify-discord:

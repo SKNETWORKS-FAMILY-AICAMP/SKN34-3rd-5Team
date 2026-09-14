@@ -30,6 +30,7 @@ services:
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL}
+      AUTH_FRONTEND_ORIGIN: ${AUTH_FRONTEND_ORIGIN:-http://127.0.0.1:80}
 
       # Docker 내부에서는 db 서비스명으로 접근
       DB_HOST: db
@@ -78,6 +79,9 @@ services:
 
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_KAKAO_MAP_KEY: ${NEXT_PUBLIC_KAKAO_MAP_KEY:-}
+      KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:-}
+      TOUR_API_KEY: ${TOUR_API_KEY:-}
 
 
   # ========================

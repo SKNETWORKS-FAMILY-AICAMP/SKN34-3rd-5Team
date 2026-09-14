@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ChatContext, ChatMessage, ChatStatus } from "@/lib/chat/types";
 import { MAX_HISTORY_MESSAGES, MAX_MESSAGE_LENGTH } from "@/lib/chat/types";
 import { getChatStatus, sendChatMessage } from "@/lib/chat/client";
-import { Icon } from "./icons";
 import { ChatPopup } from "./chat-popup";
 
 type ConversationSnapshot = {
@@ -74,8 +73,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const returnPageRef = useRef({ url: "/", scrollY: 0 });
   const restorePageRef = useRef(false);
   const popupOpenerRef = useRef<HTMLElement | null>(null);
-  const launcherRef = useRef<HTMLButtonElement>(null);
+  const topButtonRef = useRef<HTMLButtonElement>(null);
   // Root layout keeps conversations alive across client-side page navigation.
+  const backendSessions = useRef(new Map<string, number>());
   const archivedConversations = useRef(new Map<string, ConversationSnapshot>());
 
   const loadStatus = useCallback((controller: AbortController) => {
@@ -103,17 +103,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     void loadStatus(controller);
   }, [loadStatus]);
 
-  const openPopup = useCallback(() => {
-    popupOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setPopupRequested(true);
-  }, []);
-
   const closePopup = useCallback(() => {
     setPopupRequested(false);
     requestAnimationFrame(() => {
       const opener = popupOpenerRef.current;
       if (opener?.isConnected) opener.focus({ preventScroll: true });
-      else launcherRef.current?.focus({ preventScroll: true });
+      else topButtonRef.current?.focus({ preventScroll: true });
     });
   }, []);
 
@@ -126,13 +121,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [isChatPage, router]);
 
   const minimizeChat = useCallback(() => {
-    setPopupRequested(true);
+    // Returning to the embedded assistant must not leave a hidden popup request.
+    const destination = isChatPage
+      ? new URL(returnPageRef.current.url, window.location.origin).pathname
+      : pathname;
+    setPopupRequested(destination !== "/routes/new");
     popupOpenerRef.current = null;
     if (isChatPage) {
       restorePageRef.current = true;
       router.push(returnPageRef.current.url, { scroll: false });
     }
-  }, [isChatPage, router]);
+  }, [isChatPage, pathname, router]);
 
   const cancelRequest = useCallback(() => {
     requestVersion.current += 1;
@@ -215,7 +214,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       const reply = await sendChatMessage({
         messages: [...previous.slice(-(MAX_HISTORY_MESSAGES - 2)), userMessage],
         context: selectedContext,
+        sessionId: backendSessions.current.get(activeConversationId),
       }, controller.signal);
+      if (reply.sessionId) backendSessions.current.set(activeConversationId, reply.sessionId);
       if (version !== requestVersion.current) return;
       const next: ChatMessage[] = [...previous, userMessage, { role: "assistant", content: reply.reply }];
       historyRef.current = next;
@@ -284,8 +285,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       onContextChange: setContext,
     }}>
       {children}
-      {!isChatPage && !hasEmbeddedChat && !popupOpen && <button ref={launcherRef} type="button" className="chat-launcher" aria-label="직관 도우미 열기" aria-haspopup="dialog" onClick={openPopup}>
-        <Icon name="sparkles" size={23} /><span>직관 도우미</span>
+      {!popupOpen && <button ref={topButtonRef} type="button" className="scroll-to-top" aria-label="맨 위로 이동" title="맨 위로 이동" onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" })}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 11 6-6 6 6M12 5v14" /></svg>
       </button>}
       {popupOpen && <ChatPopup />}
     </ChatControlsContext.Provider>

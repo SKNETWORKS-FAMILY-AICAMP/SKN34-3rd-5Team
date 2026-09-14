@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { PostCategory } from "./post-category";
+import { PostCommentCount } from "./post-comment-count";
 import { useState } from "react";
 import type { KboStanding } from "@/lib/kbo/types";
 import { getTeamBoard, getTeamBoardHref, getTeamBoardPosts } from "@/lib/team-community";
@@ -22,7 +24,7 @@ export function HomeTeamBoards({ standings, loading, retry }: {
   return (
     <section className="container home-community-section" aria-labelledby="home-community-heading">
       <div className="section-heading">
-        <div><span className="eyebrow">FAN COMMUNITY</span><h2 id="home-community-heading">팀별 자유게시판</h2><p>같은 팀을 응원하는 우리, 야구 이야기를 나눠요.</p></div>
+        <div><span className="eyebrow">FAN COMMUNITY</span><h2 id="home-community-heading">팀 게시판</h2><p>같은 팀을 응원하는 우리, 야구 이야기를 나눠요.</p></div>
         <Link href={getTeamBoardHref()} className="text-link">게시판 이동 <Icon name="chevron" size={17} /></Link>
       </div>
       <div className="home-community-meta"><span>예시 게시글</span><p>위 순위표 순서로 만나는 팀별 이야기</p></div>
@@ -38,11 +40,11 @@ export function HomeTeamBoards({ standings, loading, retry }: {
               <article className="home-team-board" key={team.code} aria-labelledby={`home-board-${team.code}`}>
                 <Link className="home-board-heading" href={getTeamBoardHref(team.code)}>
                   <TeamLogo code={team.code} name={team.name} className="home-board-logo" />
-                  <div><span className="home-board-rank">{team.rank}위 <span>· 자유게시판</span></span><h3 id={`home-board-${team.code}`}>{team.name}</h3></div>
+                  <div><span className="home-board-rank">{team.rank}위 <span>· 팀 게시판</span></span><h3 id={`home-board-${team.code}`}>{team.name}</h3></div>
                   <Icon name="chevron" size={16} />
                 </Link>
                 <ul className="home-board-posts">
-                  {getTeamBoardPosts(team.code).slice(0, 5).map(post => <li key={post.id}><Link href={getTeamBoardHref(team.code, post.id)}><span className="home-board-category" data-category={post.category}>[{post.category}]</span><span className="home-board-post-title">{post.title}</span></Link></li>)}
+                  {getTeamBoardPosts(team.code).slice(0, 5).map(post => <li key={post.id}><Link href={getTeamBoardHref(team.code, post.id)}><PostCategory category={post.category} /><span className="home-board-post-title">{post.title}</span><PostCommentCount count={post.commentCount} /></Link></li>)}
                 </ul>
               </article>
             ))}

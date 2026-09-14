@@ -1,0 +1,67 @@
+.page { padding-block: 44px 80px; min-height: 70vh; }
+.page h1 { font-size: 32px; margin: 12px 0 26px; }
+.profile { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; padding: 28px; border: 1px solid #dbe6f7; background: #f4f8ff; border-radius: 18px; }
+.profile h2 { font-size: 23px; margin-bottom: 7px; }
+.profile p { color: #657790; font-size: 13px; }
+.profile > a { margin-left: auto; }
+.avatar { width: 60px; height: 60px; border-radius: 50%; background: #e9ebef; color: #a6adb8; display: grid; place-items: center; font-size: 25px; font-weight: 700; }
+.note { font-size: 12px; color: #6c7d94; line-height: 1.8; margin-block: 16px 26px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid #dce5f1; margin-bottom: 26px; padding-bottom: 14px; }
+.tabs button { padding: 12px 18px; border: 1px solid #dce5f1; border-radius: 8px; color: #586e8e; background: white; cursor: pointer; }
+.tabs button[aria-pressed="true"] { background: #edf4ff; color: #246bf3; border-color: #b5cff9; }
+.tabs b { margin-left: 7px; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.actions { display: flex; gap: 18px; padding: 14px 4px; font-size: 13px; color: #246bf3; }
+.empty { text-align: center; padding: 70px 20px; border: 1px dashed #d7e2f2; border-radius: 14px; }
+.empty h2 { font-size: 21px; }
+.empty p { color: #718097; margin: 14px 0 25px; }
+.settings { max-width: 540px; }
+.settings h2 { font-size: 22px; margin-bottom: 24px; }
+.settings form, .settings label { display: flex; flex-direction: column; gap: 10px; }
+.settings form { gap: 22px; }
+.settings input, .settings select { border: 1px solid #dce5f1; padding: 13px; border-radius: 8px; background: white; font: inherit; }
+.page :is(button,input,select,a):focus-visible { outline: 2px solid #246bf3; outline-offset: 3px; }
+@media(max-width: 1000px) { .grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width: 640px) { .grid { grid-template-columns: 1fr; } .profile { padding: 20px; } .profile > a { margin-left: 0; width: 100%; } .tabs button { padding: 11px; } }
+
+.avatar { overflow: hidden; flex-shrink: 0; }
+.avatar img, .photoPreview img { width: 100%; height: 100%; object-fit: cover; }
+.photoEditor { display: flex; align-items: flex-start; gap: 20px; padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid #dce5f1; }
+.photoPreview { width: 96px; height: 96px; flex-shrink: 0; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #e9ebef; color: #a6adb8; font-size: 36px; font-weight: 700; }
+.photoControls { min-width: 0; }
+.photoControls h3 { font-size: 16px; margin-bottom: 8px; }
+.photoControls p { font-size: 12px; line-height: 1.8; color: #657790; margin: 8px 0; }
+.photoButtons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.photoButtons button { padding: 9px 12px; font-size: 12px; }
+.hiddenInput { display: none; }
+@media(max-width: 480px) { .photoEditor { flex-direction: column; } }
+
+.memberName { display: flex; align-items: center; gap: 8px; }
+.levelBadge { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid #d5dce7; }
+.nicknameRule { margin-top: -12px; font-size: 12px; line-height: 1.7; color: #657790; }
+.settings input[readonly] { background: #f1f3f6; color: #718097; }
+
+.accountSettings { margin-top: 30px; }
+.accountSettings form { padding-top: 26px; margin-top: 26px; border-top: 1px solid #dce5f1; }
+.accountSettings fieldset { display: flex; flex-direction: column; gap: 14px; border: 0; padding: 0; margin: 8px 0; }
+.accountSettings legend { font-weight: 700; margin-bottom: 16px; }
+.accountSettings fieldset label { flex-direction: row; align-items: center; }
+.accountSettings input[type=checkbox] { width: 17px; height: 17px; accent-color: #246bf3; }
+.settingNote { font-size: 12px; color: #6c7d94; line-height: 1.7; }
+
+.passwordRow { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.passwordRow button { padding: 8px 18px; }
+.accountSettings { display: flex; flex-direction: column; gap: 18px; margin-top: 0; }
+.passwordDialog form, .passwordDialog label { display: flex; flex-direction: column; gap: 10px; }
+.passwordDialog form { gap: 18px; margin-top: 20px; }
+.passwordDialog input { padding: 12px; border: 1px solid #dce5f1; border-radius: 8px; font: inherit; }
+
+.nicknameInput { width: 50%; min-width: 150px; }
+.emailValue { display: block; margin-top: 6px; color: #657790; font-size: 12px; overflow-wrap: anywhere; }
+
+.memberRank { display: inline-flex; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.memberPoints { font-size: 11px; line-height: 1; font-weight: 500; color: #657790; padding-bottom: 1px; }
+
+.avatarWrap { position: relative; width: 60px; height: 60px; flex-shrink: 0; }
+.teamBadge { position: absolute; top: -6px; left: -6px; z-index: 1; width: 24px; height: 24px; box-sizing: border-box; overflow: hidden; border-radius: 50%; border: 1px solid white; background: white; box-shadow: 0 1px 5px #18325530; display: grid; place-items: center; }
+.teamBadge img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.55); }

@@ -1,0 +1,77 @@
+"""Member administration. Only a superuser may change staff membership."""
+import json
+
+from django.contrib.auth import get_user_model
+from django.contrib.admin.models import LogEntry, CHANGE
+from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from django.db.models import Q
+from rest_framework import generics, serializers
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import BasePermission
+from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.views import APIView
+
+
+class StaffOnly(BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user.is_authenticated and request.user.is_active and request.user.is_staff)
+
+
+class MasterOnly(StaffOnly):
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and request.user.is_superuser
+
+
+class MemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ("id", "username", "is_active", "is_staff", "is_superuser", "date_joined")
+        read_only_fields = fields
+
+
+class MemberPages(PageNumberPagination):
+    page_size = 20
+
+
+class MemberList(generics.ListAPIView):
+    permission_classes = (StaffOnly,)
+    serializer_class = MemberSerializer
+    pagination_class = MemberPages
+
+    def get_queryset(self):
+        users = get_user_model().objects.order_by("id")
+        query = self.request.query_params.get("q", "").strip()[:150]
+        if query:
+            condition = Q(username__icontains=query)
+            if query.isascii() and query.isdigit() and len(query) < 19:
+                condition |= Q(pk=int(query))
+            users = users.filter(condition)
+        return users
+
+
+class MemberRole(APIView):
+    permission_classes = (MasterOnly,)
+
+    @transaction.atomic
+    def patch(self, request, pk):
+        if not isinstance(request.data, dict) or set(request.data.keys()) != {"is_staff"} or type(request.data.get("is_staff")) is not bool:
+            raise serializers.ValidationError("is_staff에 true 또는 false를 지정해 주세요.")
+        member = generics.get_object_or_404(get_user_model().objects.select_for_update(), pk=pk)
+        if member.pk == request.user.pk or member.is_superuser:
+            raise PermissionDenied("마스터 관리자와 본인 계정의 권한은 변경할 수 없습니다.")
+        if not member.is_active:
+            raise serializers.ValidationError("비활성 계정에는 권한을 변경할 수 없습니다.")
+        before = member.is_staff
+        after = request.data["is_staff"]
+        if before != after:
+            member.is_staff = after
+            member.save(update_fields=["is_staff"])
+            LogEntry.objects.create(
+                user_id=request.user.pk,
+                content_type=ContentType.objects.get_for_model(member),
+                object_id=str(member.pk), object_repr=member.get_username(), action_flag=CHANGE,
+                change_message=json.dumps({"field": "is_staff", "before": before, "after": after}),
+            )
+        return Response(MemberSerializer(member).data)

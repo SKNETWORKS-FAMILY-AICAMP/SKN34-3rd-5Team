@@ -47,6 +47,11 @@ class JWTLogoutTest(APITestCase):
         pair = self.login()
         self.assertEqual(self.get_user(pair["access"]).json(), {
             "id": self.user.pk, "username": self.user.username, "email": self.user.email,
+            "first_name": "", "birth_date": None, "gender": None, "is_staff": False,
+            "is_superuser": False, "is_active": True, "nickname": "", "team_code": "",
+            "avatar": "", "nickname_changed_at": None,
+            "notifications": {"comments": True, "courses": True, "announcements": True},
+            "visibility": {"courses": False, "posts": False, "likes": False},
         })
 
         response = self.logout(pair["refresh"])

@@ -148,6 +148,7 @@ if email_use_tls not in {"true", "false"}:
 DEFAULT_FROM_EMAIL = (
     os.getenv("DEFAULT_FROM_EMAIL") or email_host_user or "webmaster@localhost"
 )
+AUTH_FRONTEND_ORIGIN = os.getenv("AUTH_FRONTEND_ORIGIN", "http://127.0.0.1:80").rstrip("/")
 
 MAILERS = {
     "default": {

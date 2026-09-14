@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
@@ -13,18 +14,21 @@ class AuthService:
 
     @staticmethod
     def send_reset_email(email):
-        user = get_user_model().objects.filter(email=email, is_active=True).first()
-        if not user or not user.has_usable_password():
+        users = get_user_model().objects.filter(email__iexact=email, is_active=True).order_by("pk")
+        links = []
+        for user in users:
+            if not user.has_usable_password():
+                continue
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            links.append(f"{user.get_username()}: {settings.AUTH_FRONTEND_ORIGIN}/login#uid={uid}&token={token}")
+        if not links:
             return
-
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = default_token_generator.make_token(user)
-        reset_url = f"http://localhost:3000/password-reset/{uid}/{token}/"
         send_mail(
-            subject="[] 비밀번호르 재설정해주세요!",
-            message=f"비밀번호를 재설정하려면 다음 링크를 이용하세요.\n\n{reset_url}",
+            subject="[KBO ROUTE] 비밀번호 재설정",
+            message="계정별 비밀번호 재설정 링크입니다.\n\n" + "\n".join(links),
             from_email=None,
-            recipient_list=[user.email],
+            recipient_list=[email],
         )
 
     @staticmethod
