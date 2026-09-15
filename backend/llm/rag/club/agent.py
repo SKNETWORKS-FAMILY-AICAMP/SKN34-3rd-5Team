@@ -28,7 +28,7 @@ def llm():
     """LangChain ChatOpenAI — 서버 기동 후 한 번만 만든다 (chat_service.py 와 같은 방식)"""
     global _llm
     if _llm is None:
-        _llm = ChatOpenAI(model=LLM_MODEL, timeout=25, max_retries=0)
+        _llm = ChatOpenAI(model=LLM_MODEL, temperature=0, timeout=25, max_retries=0, reasoning_effort="none")
     return _llm
 
 
