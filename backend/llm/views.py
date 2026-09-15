@@ -361,8 +361,7 @@ def guest_rate_limited(request):
 
 class GuestChatView(generics.GenericAPIView):
     serializer_class = GuestChatSerializer
-    permission_classes = (AllowAny,)
-    authentication_classes = ()
+    permission_classes = (IsAuthenticated,)
     renderer_classes = (JSONRenderer, EventStreamRenderer)
 
     @extend_schema(

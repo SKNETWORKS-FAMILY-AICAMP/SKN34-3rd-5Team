@@ -37,6 +37,7 @@ class CommunityPost(models.Model):
     author = models.CharField(max_length=80)
     title = models.CharField(max_length=200)
     content = models.TextField()
+    content_doc = models.JSONField(null=True, blank=True)
     category = models.CharField(max_length=20)
     created_at = models.DateTimeField(null=True, blank=True, default=timezone.now)
     views = models.PositiveIntegerField(default=0)
@@ -72,6 +73,19 @@ class CommunityComment(models.Model):
 
     class Meta:
         ordering = ("created_at", "pk")
+
+
+class CommunityPostImage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="community_images")
+    post = models.ForeignKey(CommunityPost, null=True, blank=True, on_delete=models.CASCADE, related_name="images")
+    course = models.ForeignKey("travel.Course", null=True, blank=True, on_delete=models.SET_NULL, related_name="images")
+    file = models.ImageField(upload_to="community/images/%Y/%m/")
+    mime_type = models.CharField(max_length=16)
+    byte_size = models.PositiveIntegerField()
+    width = models.PositiveIntegerField()
+    height = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class CommunityVote(models.Model):

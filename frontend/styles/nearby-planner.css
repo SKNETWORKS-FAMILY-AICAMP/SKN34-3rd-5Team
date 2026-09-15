@@ -1,6 +1,7 @@
 .writer-layout { grid-template-areas: "planner planner" "writing chat"; }
 .writer-planner-panel { grid-area: planner; min-width: 0; }
 .planner-heading-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+.planner-heading-row > div:first-child { flex: 1; min-width: 0; }
 .planner-heading-row .writer-section-title { margin-bottom: 8px; }
 .planner-heading-row p { color: #758297; margin: 0; font-size: 13px; line-height: 1.8; }
 .planner-mode-heading { min-width: 0; }
@@ -203,7 +204,7 @@
   .writer-layout { grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "planner chat" "writing chat"; gap: 24px; }
   .writer-chat-panel { top: 92px; height: clamp(540px, calc(100dvh - 120px), 820px); }
   .writer-planner-panel { padding: 20px; }
-  .planner-heading-row { gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+  .planner-heading-row { gap: 16px; margin-bottom: 18px; }
   .planner-stadium-field { min-width: 200px; }
 }
 @media (min-width: 1600px) {

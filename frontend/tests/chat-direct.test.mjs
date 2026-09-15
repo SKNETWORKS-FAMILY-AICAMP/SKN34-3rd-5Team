@@ -175,45 +175,12 @@ test("member finalize failure reports uncertainty without losing the received an
   assert.equal(received, "받은 전체 답변");
 });
 
-test("guest uses bounded browser history, Stop before a token stays local, and no auth header is sent", async () => {
-  const controller = new AbortController();
-  let frozen = null, body, authorization;
-  global.fetch = async (url, init = {}) => {
-    assert.equal(url, "/api/chat/guest/");
-    body = JSON.parse(init.body); authorization = new Headers(init.headers).get("Authorization");
-    return new Response(new ReadableStream({
-      start(stream) { init.signal.addEventListener("abort", () => stream.error(new DOMException("Aborted", "AbortError")), { once: true }); },
-    }), { headers: { "Content-Type": "text/event-stream" } });
-  };
-  const reply = await sendGuestChatMessage(
-    { messages: [{ role: "user", content: "이전 질문" }, { role: "assistant", content: "부분" }, { role: "user", content: "후속" }] },
-    controller.signal,
-    {
-      onCheckpoint: checkpoint => { frozen = checkpoint; controller.abort(); },
-      getStop: () => frozen,
-    },
-  );
-  assert.deepEqual(body.messages.map(item => item.content), ["이전 질문", "부분", "후속"]);
-  assert.equal(authorization, null);
-  assert.equal(reply.completionStatus, "stopped");
-  assert.equal(reply.reply, "");
-});
-
-test("guest read failure is retryable while failed member auth never falls back to guest", async () => {
-  global.fetch = async url => {
-    if (String(url) === "/api/chat/guest/") return new Response("broken", { headers: { "Content-Type": "text/plain" } });
-    throw new Error("guest fallback must not be attempted");
-  };
-  await assert.rejects(sendGuestChatMessage({ messages: [{ role: "user", content: "질문" }] }), error => error instanceof ChatClientError && !error.uncertain);
-  await assert.rejects(getChatStatus(), error => error instanceof ChatClientError && error.status === 401);
-});
-
-test("provider clears guest/member state on every identity switch and renders explicit Stop", () => {
+test("provider blocks guest questions and clears state on every identity switch", () => {
   const provider = readFileSync(join(frontend, "components/chat-provider.tsx"), "utf8");
   const surfaces = ["components/chat-popup.tsx", "components/chat-workspace.tsx"].map(path => readFileSync(join(frontend, path), "utf8"));
   assert.match(provider, /const identity = memberStatus === "authenticated"/);
   for (const cleanup of ["controller.abort()", "backendSessions.current.clear()", "archivedConversations.current.clear()", "historyRef.current = []", "streamingRef.current = \"\""]) assert.ok(provider.includes(cleanup));
-  assert.match(provider, /mode === "member" \? sendChatMessage : sendGuestChatMessage/);
+  assert.match(provider, /memberStatus !== "authenticated"/);
   assert.match(provider, /deliveryUncertain = mode === "member"/);
   assert.match(provider, /active\.wantsStop = true;[\s\S]*?if \(active\.checkpoint\)/);
   assert.match(provider, /if \(active\.wantsStop && !active\.stop\) \{ active\.stop = checkpoint; controller\.abort\(\); \}/);
@@ -224,7 +191,7 @@ test("provider clears guest/member state on every identity switch and renders ex
   assert.match(provider, /받은 답변은 저장되지 않았어요/);
   for (const surface of surfaces) {
     assert.match(surface, /답변 생성 중단/);
-    assert.match(surface, /게스트 대화/);
+    assert.match(surface, /로그인하고 질문하기/);
     assert.match(surface, /aria-relevant="additions"/);
   }
 });

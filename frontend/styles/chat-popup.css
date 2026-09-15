@@ -71,6 +71,9 @@
 .chat-popup-feedback button:disabled { opacity: .5; }
 .chat-popup-notice { margin-top: 17px; color: #8ea0b8; font-size: 10px; line-height: 1.8; text-align: center; }
 .chat-popup-composer-area { flex-shrink: 0; padding: 12px 15px 13px; background: #fff; border-top: 1px solid #f2f5fa; }
+.chat-popup-guest-cta { text-align: center; }
+.chat-popup-guest-cta a { display: block; padding: 11px 15px; border-radius: 12px; background: #246bf3; color: #fff; font-size: 13px; font-weight: 700; }
+.chat-popup-guest-cta p { margin-top: 8px; color: #8e9eb3; font-size: 11px; }
 .chat-popup-composer { padding: 13px 11px 9px 15px; border: 1px solid #dce6f5; border-radius: 18px; background: #fff; box-shadow: 0 3px 12px #244c8106; }
 .chat-popup-composer:focus-within { border-color: #abc7f0; box-shadow: 0 3px 16px #246bf30d; }
 .chat-popup-composer textarea { display: block; width: 100%; min-height: 25px; max-height: 104px; padding: 0 3px 0 0; margin: 0; border: 0; outline: none; resize: none; color: #3d5575; background: transparent; font-size: 13px; line-height: 1.8; scrollbar-width: thin; }

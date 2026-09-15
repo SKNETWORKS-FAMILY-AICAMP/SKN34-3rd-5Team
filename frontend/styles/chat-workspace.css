@@ -102,6 +102,9 @@
 .workspace-feedback button:disabled { opacity: .5; }
 .workspace-notice { margin-top: 23px; color: #94a1b4; font-size: 11px; text-align: center; }
 .workspace-composer-area { flex-shrink: 0; width: 100%; max-width: 828px; margin-inline: auto; padding: 12px 34px 20px; background: #fff; }
+.workspace-guest-cta { text-align: center; }
+.workspace-guest-cta a { display: block; padding: 14px; border-radius: 12px; background: #246bf3; color: #fff; font-size: 14px; font-weight: 700; }
+.workspace-guest-cta p { margin-top: 9px; color: #8e9eb3; font-size: 12px; }
 .workspace-composer { width: 100%; padding: 19px 16px 11px 21px; border: 1px solid #dae5f5; border-radius: 24px; background: #fff; box-shadow: 0 4px 20px #223f6d08; transition: border-color .2s, box-shadow .2s; }
 .workspace-composer:focus-within { border-color: #aac6f0; box-shadow: 0 4px 24px #246bf310; }
 .workspace-composer textarea { display: block; width: 100%; min-height: 27px; max-height: 176px; padding: 0 4px 0 0; margin: 0; border: 0; outline: 0; resize: none; background: transparent; color: #384c68; font-size: 15px; line-height: 1.8; scrollbar-width: thin; }

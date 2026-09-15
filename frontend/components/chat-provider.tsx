@@ -6,7 +6,6 @@ import type { ChatContext, ChatMessage, ChatStatus } from "@/lib/chat/types";
 import { MAX_HISTORY_MESSAGES, MAX_MESSAGE_LENGTH } from "@/lib/chat/types";
 import {
   ChatClientError,
-  GUEST_STATUS,
   getChatStatus,
   sendChatMessage,
   sendGuestChatMessage,
@@ -126,7 +125,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const refreshStatus = useCallback(() => {
     statusRequestRef.current?.abort();
     if (memberStatus === "anonymous") {
-      setStatus(GUEST_STATUS);
+      setStatus(null);
       setStatusLoading(false);
       setStatusError("");
       return;
@@ -255,7 +254,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([]);
     setDraft("");
     setContext(undefined);
-    setStatus(memberStatus === "anonymous" ? GUEST_STATUS : null);
+    setStatus(null);
     setStatusLoading(memberStatus === "authenticated" || memberStatus === "loading");
     setStatusError(memberStatus === "unavailable" ? "로그인 상태를 확인하지 못했어요." : "");
     setPending("");
@@ -271,6 +270,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const selectedContext = options ? options.context : context;
     const content = text.trim();
     if (identityRef.current !== identity || !content || requestRef.current || content.length > MAX_MESSAGE_LENGTH) return;
+    if (memberStatus !== "authenticated") { setError("챗봇 질문은 로그인 후 이용할 수 있어요."); return; }
     if (uncertain) {
       setError("서버 기록이 겹치지 않도록 새 대화에서 다시 보내 주세요.");
       return;
@@ -392,7 +392,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     statusRequestRef.current?.abort();
   }, []);
 
-  const visibleStatus = memberStatus === "anonymous" ? GUEST_STATUS : memberStatus === "authenticated" ? status : null;
+  const visibleStatus = memberStatus === "authenticated" ? status : null;
   const visibleStatusLoading = memberStatus === "loading" || (memberStatus === "authenticated" && statusLoading);
   const visibleStatusError = memberStatus === "unavailable" ? "로그인 상태를 확인하지 못했어요." : memberStatus === "authenticated" ? statusError : "";
 

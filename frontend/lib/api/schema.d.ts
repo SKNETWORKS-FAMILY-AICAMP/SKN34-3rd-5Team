@@ -1234,6 +1234,38 @@ export interface paths {
         patch: operations["community_comments_partial_update"];
         trace?: never;
     };
+    "/api/community/images/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["community_images_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/community/images/{image_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["community_images_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/community/posts/": {
         parameters: {
             query?: never;
@@ -1643,6 +1675,18 @@ export interface components {
         CommunityCommentWrite: {
             content: string;
         };
+        CommunityImageResult: {
+            /** Format: uuid */
+            id: string;
+            url: string;
+            width: number;
+            height: number;
+            byteSize: number;
+        };
+        CommunityImageUpload: {
+            /** Format: uri */
+            image: string;
+        };
         CommunityPost: {
             readonly id: string;
             readonly sourceId: string;
@@ -1653,6 +1697,7 @@ export interface components {
             readonly author: string;
             title: string;
             content: string;
+            contentDoc?: unknown;
             category: components["schemas"]["CategoryEnum"];
             /** Format: date-time */
             readonly createdAt: string | null;
@@ -1668,6 +1713,7 @@ export interface components {
             category: components["schemas"]["CategoryEnum"];
             title: string;
             content: string;
+            contentDoc?: unknown;
         };
         CommunityReportResult: {
             id: number;
@@ -1705,6 +1751,7 @@ export interface components {
             stadium: string;
             description: string;
             content: string;
+            contentDoc?: unknown;
             contentFormat?: components["schemas"]["ContentFormatEnum"];
             duration: string;
             cover: string;
@@ -1727,6 +1774,7 @@ export interface components {
             title: string;
             stadium: string;
             content?: string;
+            contentDoc?: unknown;
             contentFormat?: components["schemas"]["ContentFormatEnum"] | components["schemas"]["BlankEnum"];
             duration: string;
             tags: string[];
@@ -1745,6 +1793,7 @@ export interface components {
             stadium: string;
             description: string;
             content: string;
+            contentDoc?: unknown;
             contentFormat?: components["schemas"]["ContentFormatEnum"];
             duration: string;
             cover: string;
@@ -2428,11 +2477,13 @@ export interface components {
             category?: components["schemas"]["CategoryEnum"];
             title?: string;
             content?: string;
+            contentDoc?: unknown;
         };
         PatchedCoursePatchRequest: {
             title?: string;
             stadium?: string;
             content?: string;
+            contentDoc?: unknown;
             contentFormat?: components["schemas"]["ContentFormatEnum"] | components["schemas"]["BlankEnum"];
             duration?: string;
             tags?: string[];
@@ -8188,6 +8239,71 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    community_images_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["CommunityImageUpload"];
+                "application/x-www-form-urlencoded": components["schemas"]["CommunityImageUpload"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityImageResult"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    community_images_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                image_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
                 };
             };
             404: {

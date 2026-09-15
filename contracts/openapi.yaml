@@ -4536,7 +4536,7 @@ paths:
               $ref: '#/components/schemas/GuestChat'
         required: true
       security:
-      - {}
+      - jwtAuth: []
       responses:
         '200':
           content:
@@ -4828,6 +4828,65 @@ paths:
               schema:
                 type: object
                 additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/community/images/:
+    post:
+      operationId: community_images_create
+      tags:
+      - community
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommunityImageUpload'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommunityImageUpload'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityImageResult'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/community/images/{image_id}/:
+    get:
+      operationId: community_images_retrieve
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - community
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
           description: ''
         '404':
           content:
@@ -6299,6 +6358,34 @@ components:
           maxLength: 2000
       required:
       - content
+    CommunityImageResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        byteSize:
+          type: integer
+      required:
+      - byteSize
+      - height
+      - id
+      - url
+      - width
+    CommunityImageUpload:
+      type: object
+      properties:
+        image:
+          type: string
+          format: uri
+      required:
+      - image
     CommunityPost:
       type: object
       properties:
@@ -6328,6 +6415,8 @@ components:
         content:
           type: string
           maxLength: 20000
+        contentDoc:
+          nullable: true
         category:
           $ref: '#/components/schemas/CategoryEnum'
         createdAt:
@@ -6383,6 +6472,8 @@ components:
         content:
           type: string
           maxLength: 20000
+        contentDoc:
+          nullable: true
       required:
       - board
       - category
@@ -6468,6 +6559,8 @@ components:
           type: string
         content:
           type: string
+        contentDoc:
+          nullable: true
         contentFormat:
           $ref: '#/components/schemas/ContentFormatEnum'
         duration:
@@ -6533,6 +6626,8 @@ components:
         content:
           type: string
           maxLength: 12000
+        contentDoc:
+          nullable: true
         contentFormat:
           oneOf:
           - $ref: '#/components/schemas/ContentFormatEnum'
@@ -6585,6 +6680,8 @@ components:
           type: string
         content:
           type: string
+        contentDoc:
+          nullable: true
         contentFormat:
           $ref: '#/components/schemas/ContentFormatEnum'
         duration:
@@ -8053,6 +8150,8 @@ components:
         content:
           type: string
           maxLength: 20000
+        contentDoc:
+          nullable: true
     PatchedCoursePatchRequest:
       type: object
       properties:
@@ -8065,6 +8164,8 @@ components:
         content:
           type: string
           maxLength: 12000
+        contentDoc:
+          nullable: true
         contentFormat:
           oneOf:
           - $ref: '#/components/schemas/ContentFormatEnum'

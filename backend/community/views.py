@@ -10,7 +10,7 @@ from .models import CommunityPost, TEAM_CODES
 from .serializers import CommunityPostPatchSerializer, CommunityPostSerializer, CommunityPostWriteSerializer
 
 
-POST_INPUT_FIELDS = ("board", "team_code", "category", "title", "content")
+POST_INPUT_FIELDS = ("board", "team_code", "category", "title", "content", "content_doc")
 
 
 def post_queryset():
@@ -18,11 +18,11 @@ def post_queryset():
         upvote_count=Count("votes", filter=Q(votes__value="up"), distinct=True),
         downvote_count=Count("votes", filter=Q(votes__value="down"), distinct=True),
         actual_comment_count=Count("comments", distinct=True),
-    ).order_by("post_number")
+    ).order_by("-post_number")
 
 
 def same_submission(post, validated_data):
-    return all(getattr(post, field) == validated_data[field] for field in POST_INPUT_FIELDS)
+    return all(getattr(post, field) == validated_data.get(field, None) for field in POST_INPUT_FIELDS)
 
 
 @extend_schema_view(
@@ -77,10 +77,10 @@ class CommunityPostListCreateView(generics.ListCreateAPIView):
         if not key or len(key) > 128:
             raise ValidationError({"idempotencyKey": "1~128자의 Idempotency-Key가 필요합니다."})
 
-        serializer = self.get_serializer(data=request.data)
+        existing = CommunityPost.objects.filter(owner=request.user, idempotency_key=key).first()
+        serializer = self.get_serializer(existing, data=request.data) if existing else self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         values = serializer.validated_data
-        existing = CommunityPost.objects.filter(owner=request.user, idempotency_key=key).first()
         if existing:
             if not same_submission(existing, values):
                 return Response({"idempotencyKey": "같은 키로 다른 게시글을 만들 수 없습니다."}, status=status.HTTP_409_CONFLICT)
