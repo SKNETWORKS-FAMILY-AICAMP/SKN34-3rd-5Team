@@ -51,6 +51,7 @@ import contextvars
 import inspect
 import os
 import re
+import sys
 from typing import Any, Iterator, Optional
 
 from langchain_core.messages import BaseMessage
@@ -92,9 +93,35 @@ def last_detail():
     return _LAST.get()
 
 
+def _running_tests() -> bool:
+    """지금 테스트 러너 안에서 도는 중인가.
+
+    성호 회귀 테스트는 patch("llm.chat_service.ChatService.get_chain", ...) 나
+    patch("llm.chat_service.ChatOpenAI", ...) 로 모델을 갈아끼운다.
+    RAG 를 켜면 그 자리를 우리 체인이 차지해 패치가 안 먹고 테스트가 통째로 깨진다.
+    성호 테스트 파일을 건드리지 않으려고 우리 쪽에서 막는다.
+
+    판정 (하나라도 걸리면 테스트로 본다)
+      1) manage.py test ...  → sys.argv 에 "test"
+      2) pytest              → PYTEST_CURRENT_TEST 환경변수 또는 argv[0]
+      3) 마지막 안전망        → Django 가 만든 test_* / :memory: DB
+    """
+    if "test" in sys.argv or os.getenv("PYTEST_CURRENT_TEST"):
+        return True
+    if sys.argv and sys.argv[0].endswith(("pytest", "py.test")):
+        return True
+    try:
+        from django.db import connection
+        name = str(connection.settings_dict.get("NAME") or "")
+    except Exception:
+        return False
+    return name.startswith("test_") or name == ":memory:"
+
+
 def use_rag() -> bool:
-    """CHAT_USE_RAG=1 일 때만 RAG 를 쓴다. 기본값은 0 — 켜야만 동작이 바뀐다."""
-    return os.getenv("CHAT_USE_RAG", "0").strip().lower() in ("1", "true", "yes", "on")
+    """CHAT_USE_RAG=1 일 때만 RAG 를 쓴다. 기본값 0 — 켜야만 동작이 바뀐다. 테스트 중엔 항상 끈다."""
+    on = os.getenv("CHAT_USE_RAG", "0").strip().lower() in ("1", "true", "yes", "on")
+    return on and not _running_tests()
 
 
 def split_stadium_prefix(question: str) -> tuple[str, Optional[str]]:
