@@ -107,7 +107,7 @@ def main():
             [
                 "docker", "exec", container, "psql", "-U", owner, "-d", database,
                 "-v", "ON_ERROR_STOP=1", "-c",
-                f'REVOKE CREATE, TEMPORARY ON DATABASE "{database}" FROM PUBLIC;',
+                f'REVOKE CREATE ON DATABASE "{database}" FROM PUBLIC;',
                 "-c", "REVOKE CREATE ON SCHEMA public FROM PUBLIC;",
             ]
         )
@@ -116,7 +116,15 @@ def main():
             "--with-requirements", "requirements.txt", "python",
         ]
         run([*uv, "manage.py", "migrate", "--noinput"], cwd=BACKEND, env=env)
-        run([*uv, "manage.py", "provision_baseball_reader"], cwd=BACKEND, env=env)
+        if subprocess.run(
+            [*uv, "manage.py", "provision_baseball_reader"], cwd=BACKEND, env=env
+        ).returncode == 0:
+            raise RuntimeError("provision unexpectedly accepted default PUBLIC TEMPORARY")
+        run(
+            [*uv, "manage.py", "provision_baseball_reader", "--prepare-db-permissions"],
+            cwd=BACKEND,
+            env=env,
+        )
         run([*uv, "-m", "baseball.tests.postgres_integration"], cwd=BACKEND, env=env)
         run(
             [*uv, "-c", "import django, platform, psycopg, sqlglot; "

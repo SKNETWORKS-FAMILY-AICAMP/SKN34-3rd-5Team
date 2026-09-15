@@ -9,6 +9,13 @@ from baseball.query_repository import BaseballQueryRepository
 class Command(BaseCommand):
     help = "야구 SQL 조회 전용 역할을 점검하고 19개 테이블 SELECT 권한만 부여합니다."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--prepare-db-permissions",
+            action="store_true",
+            help="현재 DB 소유자의 TEMP 권한을 보존하고 PUBLIC의 TEMP 권한만 제거합니다.",
+        )
+
     def handle(self, *args, **options):
         owner = settings.DATABASES["default"]
         reader = settings.DATABASES["baseball_readonly"]
@@ -22,6 +29,8 @@ class Command(BaseCommand):
         try:
             with transaction.atomic(using="default"):
                 with connections["default"].cursor() as cursor:
+                    if options["prepare_db_permissions"]:
+                        self._prepare_db_permissions(cursor, owner["USER"])
                     role_oid = self._audit_role(cursor, role, tables)
                     self._audit_public(cursor, tables)
                     self._audit_default_acl(cursor, role_oid)
@@ -45,6 +54,21 @@ class Command(BaseCommand):
         except DatabaseError:
             raise CommandError("조회 역할 설정에 실패해 모든 변경을 롤백했습니다.") from None
         self.stdout.write(self.style.SUCCESS(f"{role}: 야구 읽기 전용 권한 설정 완료"))
+
+    @staticmethod
+    def _prepare_db_permissions(cursor, owner):
+        cursor.execute("SELECT current_database()")
+        database = cursor.fetchone()[0]
+        cursor.execute(
+            sql.SQL("GRANT TEMPORARY ON DATABASE {} TO {}").format(
+                sql.Identifier(database), sql.Identifier(owner)
+            )
+        )
+        cursor.execute(
+            sql.SQL("REVOKE TEMPORARY ON DATABASE {} FROM PUBLIC").format(
+                sql.Identifier(database)
+            )
+        )
 
     @staticmethod
     def _audit_role(cursor, role, tables):

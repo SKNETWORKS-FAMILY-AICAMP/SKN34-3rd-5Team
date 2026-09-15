@@ -207,12 +207,33 @@ class BaseballPostgresIntegrationTest(unittest.TestCase):
                 for sql in (
                     "SELECT * FROM accounts_customuser",
                     "SELECT * FROM llm_chatmessage",
+                    "CREATE TEMP TABLE forbidden_temp (id integer)",
                     'INSERT INTO "TEAM" (id, team_code, team_name_ko) VALUES (999, \'X\', \'X\')',
                 ):
                     with self.subTest(sql=sql), self.assertRaises(psycopg.Error):
                         cursor.execute(sql)
                 cursor.execute('SELECT COUNT(*) FROM "TEAM"')
                 self.assertEqual(cursor.fetchone()[0], 202)
+
+    def test_prepared_database_permissions_are_scoped_and_idempotent(self):
+        call_command("provision_baseball_reader", prepare_db_permissions=True)
+        with psycopg.connect(**self.owner_dsn, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT a.grantee, a.privilege_type
+                       FROM pg_database d
+                       CROSS JOIN LATERAL aclexplode(d.datacl) a
+                       WHERE d.datname = current_database()
+                         AND a.privilege_type = 'TEMPORARY'
+                         AND a.grantee IN (0, (SELECT oid FROM pg_roles WHERE rolname = %s))""",
+                    [settings.DATABASES["default"]["USER"]],
+                )
+                grantees = {row[0] for row in cursor.fetchall()}
+                cursor.execute(
+                    "SELECT oid FROM pg_roles WHERE rolname = %s",
+                    [settings.DATABASES["default"]["USER"]],
+                )
+                self.assertEqual(grantees, {cursor.fetchone()[0]})
 
     def test_database_denial_is_distinct_and_connection_recovers(self):
         with psycopg.connect(**self.owner_dsn, autocommit=True) as connection:
@@ -261,7 +282,7 @@ class BaseballPostgresIntegrationTest(unittest.TestCase):
             with psycopg.connect(**self.reader_dsn, autocommit=True) as connection:
                 with connection.cursor() as cursor:
                     cursor.execute("SELECT COUNT(*) FROM accounts_customuser")
-                    self.assertEqual(cursor.fetchone()[0], 0)
+                    self.assertIsNotNone(cursor.fetchone())
                     cursor.execute("SET default_transaction_read_only = off")
                     cursor.execute('UPDATE "TEAM" SET team_name_ko=\'PUBLIC 경유\' WHERE id=1')
                     self.assertEqual(cursor.rowcount, 1)
@@ -349,21 +370,52 @@ class BaseballPostgresIntegrationTest(unittest.TestCase):
         rollback_role = "baseball_rollback_reader"
         with psycopg.connect(**self.owner_dsn, autocommit=True) as connection:
             with connection.cursor() as cursor:
+                cursor.execute(
+                    pg_sql.SQL("REVOKE TEMPORARY ON DATABASE {} FROM {}").format(
+                        pg_sql.Identifier(settings.DATABASES["default"]["NAME"]),
+                        pg_sql.Identifier(settings.DATABASES["default"]["USER"]),
+                    )
+                )
+                cursor.execute(
+                    pg_sql.SQL("GRANT TEMPORARY ON DATABASE {} TO PUBLIC").format(
+                        pg_sql.Identifier(settings.DATABASES["default"]["NAME"])
+                    )
+                )
                 cursor.execute('ALTER TABLE "FACILITY" RENAME TO "FACILITY_MISSING"')
         reader = settings.DATABASES["baseball_readonly"]
         original = reader["USER"], reader["PASSWORD"]
         reader["USER"], reader["PASSWORD"] = rollback_role, "disposable"
         try:
             with self.assertRaises(CommandError):
-                call_command("provision_baseball_reader")
+                call_command("provision_baseball_reader", prepare_db_permissions=True)
             with psycopg.connect(**self.owner_dsn, autocommit=True) as connection:
                 with connection.cursor() as cursor:
                     cursor.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", [rollback_role])
                     self.assertIsNone(cursor.fetchone())
+                    cursor.execute(
+                        """SELECT a.grantee FROM pg_database d
+                           CROSS JOIN LATERAL aclexplode(d.datacl) a
+                           WHERE d.datname = current_database()
+                             AND a.privilege_type = 'TEMPORARY'
+                             AND a.grantee IN (0, (SELECT oid FROM pg_roles WHERE rolname = %s))""",
+                        [settings.DATABASES["default"]["USER"]],
+                    )
+                    self.assertEqual([row[0] for row in cursor.fetchall()], [0])
         finally:
             reader["USER"], reader["PASSWORD"] = original
             with psycopg.connect(**self.owner_dsn, autocommit=True) as connection:
                 with connection.cursor() as cursor:
+                    cursor.execute(
+                        pg_sql.SQL("GRANT TEMPORARY ON DATABASE {} TO {}").format(
+                            pg_sql.Identifier(settings.DATABASES["default"]["NAME"]),
+                            pg_sql.Identifier(settings.DATABASES["default"]["USER"]),
+                        )
+                    )
+                    cursor.execute(
+                        pg_sql.SQL("REVOKE TEMPORARY ON DATABASE {} FROM PUBLIC").format(
+                            pg_sql.Identifier(settings.DATABASES["default"]["NAME"])
+                        )
+                    )
                     cursor.execute('ALTER TABLE "FACILITY_MISSING" RENAME TO "FACILITY"')
 
 

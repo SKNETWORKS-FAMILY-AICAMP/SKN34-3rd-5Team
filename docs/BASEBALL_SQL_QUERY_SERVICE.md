@@ -6,22 +6,24 @@
 
 1. 운영 DB에 이미 대문자 야구 테이블이 있다면 `backend/baseball/migrations/0001_initial.py`와 실제 구조 및 migration 이력을 먼저 비교합니다. 확인 없이 `--fake`, DROP 또는 재생성을 하지 않습니다.
 2. 기본 DB 소유자와 다른 `BASEBALL_DB_USER`, `BASEBALL_DB_PASSWORD`를 설정합니다. 실제 비밀번호는 `.env.example`이 아닌 비밀 저장소나 배포 환경에 둡니다.
-3. 명령이 `PUBLIC`의 DB `CREATE`/`TEMPORARY` 또는 schema `CREATE` 권한을 보고하면 영향 범위를 검토한 DBA가 별도로 제거해야 합니다. PostgreSQL 기본값으로 DB `TEMPORARY`가 열려 있을 수 있으며, 명령 자체는 공용 권한을 바꾸지 않습니다.
-4. DBA 권한의 기본 연결로 명시적으로 실행합니다.
+3. 전용 DB에서 PostgreSQL 기본 `PUBLIC TEMPORARY`만 정리하려면 `--prepare-db-permissions`를 사용합니다. 이 옵션은 현재 DB에 한해 기본 DB 사용자에게 `TEMPORARY`를 명시적으로 부여한 뒤 `PUBLIC`에서만 회수합니다. 다른 역할의 명시적 권한과 `PUBLIC CREATE`/`CONNECT`, schema 권한은 바꾸지 않습니다.
+4. 이 변경은 같은 DB를 사용하는 다른 역할이 `PUBLIC`을 통해 임시 테이블을 만들던 동작을 막습니다. 영향 범위를 확인한 운영자가 DB `GRANT`/`REVOKE` 권한과 역할 생성·변경 및 schema/table 권한을 가진 기본 연결로 실행해야 합니다.
 
 ```sql
--- 감사에서 필요하다고 확인된 전용/격리 DB에만 DBA가 직접 적용
-REVOKE CREATE, TEMPORARY ON DATABASE your_database FROM PUBLIC;
+-- 나머지 위험 권한은 영향 검토 후 DBA가 별도로 적용
+REVOKE CREATE ON DATABASE your_database FROM PUBLIC;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 ```
 
 ```bash
 cd backend
 python manage.py migrate
-python manage.py provision_baseball_reader
+python manage.py provision_baseball_reader --prepare-db-permissions
 ```
 
-명령은 대상 역할의 superuser·createdb·createrole·replication·bypassrls·inherit, role 멤버십, 객체 소유 여부를 확인합니다. 현재 ACL뿐 아니라 `pg_default_acl`의 명시적 table·sequence·schema·function grant도 검사하며, `PUBLIC` 또는 reader에 위험한 정책이 있으면 이를 자동 변경하지 않고 실패하므로 DBA가 영향을 검토해야 합니다.
+옵션을 생략하면 기존 fail-closed 동작을 유지해 `PUBLIC`의 DB `CREATE`/`TEMPORARY`를 자동 변경하지 않고 실패합니다. 옵션의 두 권한 변경과 기존 감사·역할 생성·grant는 한 트랜잭션이므로 후속 감사나 설정이 실패하면 모두 롤백되며, 반복 실행해도 같은 상태를 유지합니다. 명령은 대상 역할의 superuser·createdb·createrole·replication·bypassrls·inherit, role 멤버십, 객체 소유 여부를 확인합니다. 현재 ACL뿐 아니라 `pg_default_acl`의 명시적 table·sequence·schema·function grant도 검사하며, 그 밖의 `PUBLIC` 또는 reader 위험 정책은 자동 변경하지 않고 실패합니다.
+
+`BASEBALL_DB_USER`와 `BASEBALL_DB_PASSWORD`는 계속 배포 환경이나 비밀 저장소에 보관합니다. 이 절차와 테스트는 운영 DB를 직접 수정하지 않으며, 운영 적용은 반드시 대상이 전용 DB인지 확인한 뒤 별도로 수행합니다.
 
 ## Python 사용
 

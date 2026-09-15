@@ -229,3 +229,4 @@ frontend/.member-preview/
 # Mailpit runtime data
 /data/mailpit/
 /graphify-out/*
+/data/mailpit/*

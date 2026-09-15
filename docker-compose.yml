@@ -47,6 +47,7 @@ services:
       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
       EMAIL_USE_TLS: ${EMAIL_USE_TLS:-false}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
+      DEMO_USERS_ENABLED: ${DEMO_USERS_ENABLED:-false}
 
       # Docker 내부에서는 db 서비스명으로 접근
       DB_HOST: db
@@ -79,6 +80,7 @@ services:
 
     command: >
       sh -c "python manage.py migrate &&
+             python manage.py provision_baseball_reader --prepare-db-permissions &&
              python manage.py runserver 0.0.0.0:8000"
 
 
