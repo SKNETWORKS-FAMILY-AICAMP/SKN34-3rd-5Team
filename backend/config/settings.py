@@ -31,6 +31,10 @@ SECRET_KEY = 'django-insecure-xg6ypt+%hw2k@xak+x#7bqqpn(-^vu73^9qh3xnh*=^$pn6jg*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 DEMO_USERS_ENABLED = os.getenv("DEMO_USERS_ENABLED", "false").strip().lower() == "true"
+CHAT_CHECKPOINT_SIGNING_KEY = os.getenv("CHAT_CHECKPOINT_SIGNING_KEY", "")
+CHAT_TRUST_PROXY_HEADERS = os.getenv("CHAT_TRUST_PROXY_HEADERS", "false").strip().lower() == "true"
+CHAT_GUEST_RATE_LIMIT = int(os.getenv("CHAT_GUEST_RATE_LIMIT", "10"))
+CHAT_GUEST_RATE_WINDOW = int(os.getenv("CHAT_GUEST_RATE_WINDOW", "60"))
 
 ALLOWED_HOSTS = []
 

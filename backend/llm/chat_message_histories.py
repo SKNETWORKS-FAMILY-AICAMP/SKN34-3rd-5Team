@@ -38,8 +38,10 @@ class DjangoChatMessageHistory(BaseChatMessageHistory):
     @transaction.atomic
     def add_messages(
         self,
-        messages: Sequence[BaseMessage]
-    ) -> None:
+        messages: Sequence[BaseMessage],
+        *,
+        assistant_status: str = "completed",
+    ) -> list[ChatMessage]:
 
         session = ChatSession.objects.select_for_update().get(
             id=self.session_id, user_id=self.user_id
@@ -52,11 +54,12 @@ class DjangoChatMessageHistory(BaseChatMessageHistory):
                 sequence_no=last_sequence + index,
                 role=message.type,
                 message=message.content,
+                status=assistant_status if message.type == "ai" else "",
             )
             for index, message in enumerate(messages, start=1)
         ]
 
-        ChatMessage.objects.bulk_create(rows)
+        return ChatMessage.objects.bulk_create(rows)
 
     def clear(self) -> None:
         session = self._get_session()

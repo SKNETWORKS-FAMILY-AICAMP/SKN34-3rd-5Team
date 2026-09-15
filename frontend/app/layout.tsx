@@ -28,9 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko" data-scroll-behavior="smooth">
       <body>
-        <ChatProvider>
-          <MemberAuthProvider><SiteFrame>{children}</SiteFrame></MemberAuthProvider>
-        </ChatProvider>
+        <MemberAuthProvider>
+          <ChatProvider><SiteFrame>{children}</SiteFrame></ChatProvider>
+        </MemberAuthProvider>
       </body>
     </html>
   );

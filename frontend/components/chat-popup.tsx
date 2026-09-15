@@ -25,6 +25,7 @@ export function ChatPopup({ embedded = false, title = "직관 도우미" }: { em
   const available = Boolean(chat.status?.ready) && !chat.statusLoading && !chat.statusError;
   const empty = chat.messages.length === 0 && !chat.pending && !chat.failed;
   const demo = chat.status?.provider === "demo";
+  const guest = chat.status?.provider === "guest";
   const titleId = embedded ? "writer-chat-title" : "chat-popup-title";
   const conversationId = embedded ? "writer-chat-conversation" : "chat-popup-conversation";
   const questionId = embedded ? "writer-chat-question" : "chat-popup-question";
@@ -67,7 +68,7 @@ export function ChatPopup({ embedded = false, title = "직관 도우미" }: { em
     }}>
       <header className="chat-popup-header">
         <span className="chat-popup-mark"><Icon name="sparkles" size={21} /></span>
-        <div className="chat-popup-heading"><h2 id={titleId}>{title}</h2><span className={`chat-popup-connection${available ? " is-ready" : ""}`} aria-live="polite"><i />{chat.statusLoading ? "연결 확인 중" : demo ? "예시 대화" : available ? "직관 도우미 연결됨" : "연결 확인 필요"}</span></div>
+        <div className="chat-popup-heading"><h2 id={titleId}>{title}</h2><span className={`chat-popup-connection${available ? " is-ready" : ""}`} aria-live="polite"><i />{chat.statusLoading ? "연결 확인 중" : demo ? "예시 대화" : guest ? "게스트 대화" : available ? "직관 도우미 연결됨" : "연결 확인 필요"}</span></div>
         <div className="chat-popup-header-actions">
           <button type="button" className="chat-popup-icon-button" aria-label="채팅 크게 보기" title="채팅 크게 보기" onClick={chat.onExpand}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7" /></svg></button>
           {!embedded && <button ref={closeRef} type="button" className="chat-popup-icon-button" aria-label="직관 도우미 닫기" title="직관 도우미 닫기" onClick={chat.onClosePopup}><Icon name="close" size={20} /></button>}
@@ -75,8 +76,8 @@ export function ChatPopup({ embedded = false, title = "직관 도우미" }: { em
       </header>
 
       <div className="chat-popup-toolbar">
-        {chat.conversations.length > 1 ? <><label className="sr-only" htmlFor={conversationId}>대화 선택</label><select id={conversationId} value={chat.activeConversationId} disabled={busy} onChange={event => chat.onSelectConversation(event.target.value)}>{chat.conversations.map(conversation => <option key={conversation.id} value={conversation.id}>{conversation.title}</option>)}</select></> : <span>나의 직관 이야기</span>}
-        <button type="button" className="chat-popup-new" disabled={busy} onClick={() => { chat.onReset(); nearBottomRef.current = true; inputRef.current?.focus(); }}><span aria-hidden="true">+</span>새 대화</button>
+        {chat.conversations.length > 1 ? <><label className="sr-only" htmlFor={conversationId}>대화 선택</label><select id={conversationId} value={chat.activeConversationId} disabled={busy || chat.uncertain} onChange={event => chat.onSelectConversation(event.target.value)}>{chat.conversations.map(conversation => <option key={conversation.id} value={conversation.id}>{conversation.title}</option>)}</select></> : <span>나의 직관 이야기</span>}
+        <button type="button" className="chat-popup-new" disabled={busy || chat.uncertain} onClick={() => { chat.onReset(); nearBottomRef.current = true; inputRef.current?.focus(); }}><span aria-hidden="true">+</span>새 대화</button>
       </div>
 
       <div ref={scrollRef} className={`chat-popup-transcript${empty ? " is-empty" : ""}`} onScroll={event => { const element = event.currentTarget; nearBottomRef.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80; }}>
@@ -87,14 +88,14 @@ export function ChatPopup({ embedded = false, title = "직관 도우미" }: { em
           <div className="chat-popup-suggestions">{SUGGESTIONS.map(item => <button key={item.intent} type="button" onClick={() => { chat.onSuggestion(item.intent === "route" && chat.context?.stadium ? `${chat.context.stadium}에서 첫 직관을 해요. 경기 전후 코스를 추천해 주세요.` : item.text, item.intent); inputRef.current?.focus(); }}><Icon name={item.icon} size={17} />{item.label}</button>)}</div>
         </div>}
         {chat.context?.stadium && <p className="chat-popup-context"><Icon name="pin" size={13} />{chat.context.stadium}에서의 하루</p>}
-        <div className="chat-popup-messages" role="log" aria-label="직관 도우미 대화 내용" aria-live="polite" aria-relevant="additions text">
+        <div className="chat-popup-messages" role="log" aria-label="직관 도우미 대화 내용" aria-live="polite" aria-relevant="additions">
           {chat.messages.map((message, index) => <article key={`${chat.activeConversationId}-${index}`} className={`chat-popup-message chat-popup-message-${message.role}`}>
             {message.role === "assistant" ? <><div className="chat-popup-assistant-label"><Icon name="sparkles" size={14} />직관 도우미</div><ChatAnswer text={message.content} /></> : <><span className="sr-only">나</span><div className="chat-popup-user-bubble">{message.content}</div></>}
           </article>)}
           {(chat.pending || chat.failed) && <article className="chat-popup-message chat-popup-message-user"><span className="sr-only">나</span><div className="chat-popup-user-bubble">{chat.pending || chat.failed}</div></article>}
-          {busy && <article className="chat-popup-message chat-popup-message-assistant"><div className="chat-popup-assistant-label"><Icon name="sparkles" size={14} />직관 도우미</div><div className="chat-popup-thinking" role="status"><span className="sr-only">답변을 준비하고 있어요</span><i /><i /><i /></div></article>}
+          {busy && <article className="chat-popup-message chat-popup-message-assistant"><div className="chat-popup-assistant-label"><Icon name="sparkles" size={14} />직관 도우미</div>{chat.streaming ? <ChatAnswer text={chat.streaming} /> : <div className="chat-popup-thinking" role="status"><span className="sr-only">답변을 준비하고 있어요</span><i /><i /><i /></div>}</article>}
         </div>
-        {chat.error && <div className="chat-popup-feedback is-error" role="alert"><p>{chat.error}</p><button type="button" onClick={chat.onRetry} disabled={busy || !available}>다시 시도</button></div>}
+        {chat.error && <div className="chat-popup-feedback is-error" role="alert"><p>{chat.error}</p><button type="button" onClick={chat.uncertain ? chat.onReset : chat.onRetry} disabled={busy || (!chat.uncertain && !available)}>{chat.uncertain ? "새 대화에서 다시 보내기" : "다시 시도"}</button></div>}
         {chat.statusError && <div className="chat-popup-feedback is-error" role="alert"><p>{chat.statusError}</p><button type="button" onClick={chat.onRefreshStatus} disabled={chat.statusLoading}>연결 다시 확인</button></div>}
         {!chat.statusError && chat.status && !chat.status.ready && !chat.statusLoading && <div className="chat-popup-feedback"><p>대화 연결을 준비하고 있어요.</p><button type="button" onClick={chat.onRefreshStatus}>연결 다시 확인</button></div>}
         {chat.notice && <p className="chat-popup-notice" role="status">{chat.notice}</p>}
@@ -106,9 +107,9 @@ export function ChatPopup({ embedded = false, title = "직관 도우미" }: { em
           <textarea ref={inputRef} id={questionId} value={chat.draft} maxLength={MAX_MESSAGE_LENGTH} rows={1} placeholder="직관 도우미에게 물어보세요" disabled={busy} onChange={event => chat.onDraftChange(event.target.value)} onCompositionStart={() => { composingRef.current = true; }} onCompositionEnd={() => { composingRef.current = false; }} onKeyDown={event => {
             if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && !composingRef.current && event.keyCode !== 229) { event.preventDefault(); send(); }
           }} />
-          <div className="chat-popup-composer-bottom"><span>{chat.draft.length > MAX_MESSAGE_LENGTH * .8 ? `${chat.draft.length}/${MAX_MESSAGE_LENGTH}` : busy ? "답변을 준비하고 있어요" : "야구가 궁금한 모든 순간"}</span>{busy ? <button type="button" className="chat-popup-send chat-popup-stop" aria-label="답변 요청 취소" title="답변 요청 취소" onClick={chat.onCancel}><span /></button> : <button type="button" className="chat-popup-send" aria-label="질문 보내기" title="질문 보내기" disabled={!chat.draft.trim() || !available} onClick={send}><Icon name="arrow" size={19} /></button>}</div>
+          <div className="chat-popup-composer-bottom"><span>{chat.draft.length > MAX_MESSAGE_LENGTH * .8 ? `${chat.draft.length}/${MAX_MESSAGE_LENGTH}` : busy ? "답변을 준비하고 있어요" : "야구가 궁금한 모든 순간"}</span>{busy ? <button type="button" className="chat-popup-send chat-popup-stop" aria-label="답변 생성 중단" title="받은 답변까지 보관하고 중단" onClick={chat.onCancel}><span /></button> : <button type="button" className="chat-popup-send" aria-label="질문 보내기" title="질문 보내기" disabled={!chat.draft.trim() || !available || chat.uncertain} onClick={send}><Icon name="arrow" size={19} /></button>}</div>
         </div>
-        <p className="chat-popup-footnote">{demo ? "예시 답변이에요. 실제 검색 결과는 포함되지 않아요." : "일정과 구장 운영 정보는 방문 전 공식 안내를 확인해 주세요."}</p>
+        <p className="chat-popup-footnote">{demo ? "예시 답변이에요. 실제 검색 결과는 포함되지 않아요." : guest ? "게스트 대화는 새로고침하면 사라져요." : "일정과 구장 운영 정보는 방문 전 공식 안내를 확인해 주세요."}</p>
       </div>
     </section>
   );

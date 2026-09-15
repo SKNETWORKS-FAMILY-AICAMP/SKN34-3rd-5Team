@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
 from pgvector.django import VectorField, HnswIndex
@@ -53,5 +55,31 @@ class ChatMessage(models.Model):
         max_length=10, choices=[("human", "사용자"), ("ai", "AI")], default="human"
     )
     message = models.TextField()
+    status = models.CharField(
+        max_length=10,
+        choices=[("completed", "완료"), ("stopped", "중단")],
+        blank=True,
+        default="",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class ChatTurn(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name="turns")
+    question = models.TextField()
+    base_sequence = models.PositiveIntegerField(default=0)
+    status = models.CharField(
+        max_length=10,
+        choices=[("pending", "대기"), ("completed", "완료"), ("stopped", "중단")],
+        default="pending",
+    )
+    human_message = models.OneToOneField(
+        ChatMessage, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    assistant_message = models.OneToOneField(
+        ChatMessage, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

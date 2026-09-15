@@ -4,7 +4,15 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { usePathname, useRouter } from "next/navigation";
 import type { ChatContext, ChatMessage, ChatStatus } from "@/lib/chat/types";
 import { MAX_HISTORY_MESSAGES, MAX_MESSAGE_LENGTH } from "@/lib/chat/types";
-import { getChatStatus, sendChatMessage } from "@/lib/chat/client";
+import {
+  ChatClientError,
+  GUEST_STATUS,
+  getChatStatus,
+  sendChatMessage,
+  sendGuestChatMessage,
+  type ChatCheckpoint,
+} from "@/lib/chat/client";
+import { useMemberAuth } from "@/lib/member-auth";
 import { ChatPopup } from "./chat-popup";
 
 type ConversationSnapshot = {
@@ -15,6 +23,7 @@ type ConversationSnapshot = {
   failedContext?: ChatContext;
   error: string;
   notice: string;
+  uncertain: boolean;
 };
 type ChatControls = ConversationSnapshot & {
   openChat: (initialMessage?: string, context?: ChatContext) => void;
@@ -25,6 +34,8 @@ type ChatControls = ConversationSnapshot & {
   statusLoading: boolean;
   statusError: string;
   pending: string;
+  streaming: string;
+  uncertain: boolean;
   conversations: { id: string; title: string }[];
   activeConversationId: string;
   onDraftChange: (value: string) => void;
@@ -46,6 +57,9 @@ export function useChat() {
 }
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
+  const { status: memberStatus, user } = useMemberAuth();
+  const accountId = memberStatus === "authenticated" ? user!.id : null;
+  const identity = memberStatus === "authenticated" ? `member:${accountId}` : memberStatus;
   const pathname = usePathname();
   const router = useRouter();
   const isChatPage = pathname === "/chat";
@@ -64,8 +78,20 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [failed, setFailed] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [uncertain, setUncertain] = useState(false);
+  const [streaming, setStreaming] = useState("");
+  const [chatIdentity, setChatIdentity] = useState(identity);
+  const streamingRef = useRef("");
   const historyRef = useRef<ChatMessage[]>([]);
-  const requestRef = useRef<AbortController | null>(null);
+  const requestRef = useRef<{
+    controller: AbortController;
+    identityController: AbortController;
+    version: number;
+    mode: "member" | "guest";
+    checkpoint: ChatCheckpoint | null;
+    stop: ChatCheckpoint | null;
+    wantsStop: boolean;
+  } | null>(null);
   const statusRequestRef = useRef<AbortController | null>(null);
   const requestVersion = useRef(0);
   const pendingRef = useRef("");
@@ -74,6 +100,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const restorePageRef = useRef(false);
   const popupOpenerRef = useRef<HTMLElement | null>(null);
   const topButtonRef = useRef<HTMLButtonElement>(null);
+  const identityRef = useRef(identity);
+  const identityChanged = chatIdentity !== identity;
   // Root layout keeps conversations alive across client-side page navigation.
   const backendSessions = useRef(new Map<string, number>());
   const archivedConversations = useRef(new Map<string, ConversationSnapshot>());
@@ -96,12 +124,23 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const refreshStatus = useCallback(() => {
     statusRequestRef.current?.abort();
+    if (memberStatus === "anonymous") {
+      setStatus(GUEST_STATUS);
+      setStatusLoading(false);
+      setStatusError("");
+      return;
+    }
+    if (memberStatus !== "authenticated") {
+      setStatus(null); setStatusLoading(memberStatus === "loading");
+      setStatusError(memberStatus === "unavailable" ? "로그인 상태를 확인하지 못했어요." : "");
+      return;
+    }
     const controller = new AbortController();
     statusRequestRef.current = controller;
     setStatusLoading(true);
     setStatusError("");
     void loadStatus(controller);
-  }, [loadStatus]);
+  }, [loadStatus, memberStatus]);
 
   const closePopup = useCallback(() => {
     setPopupRequested(false);
@@ -134,46 +173,51 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [isChatPage, pathname, router]);
 
   const cancelRequest = useCallback(() => {
-    requestVersion.current += 1;
-    requestRef.current?.abort();
-    requestRef.current = null;
-    const cancelledQuestion = pendingRef.current;
-    if (cancelledQuestion) setDraft(current => current.trim() ? current : cancelledQuestion);
-    pendingRef.current = "";
-    setPending("");
-    setNotice("응답 요청을 취소했어요. 질문을 수정하거나 다시 보낼 수 있어요.");
+    const active = requestRef.current;
+    if (!active || active.wantsStop) return;
+    active.wantsStop = true;
+    if (active.checkpoint) {
+      active.stop = active.checkpoint;
+      active.controller.abort();
+    }
+    setNotice("받은 답변까지만 저장하고 있어요.");
+    setError("");
   }, []);
 
   const archiveCurrentConversation = useCallback(() => {
     archivedConversations.current.set(activeConversationId, {
       messages: historyRef.current, draft, context, failed, failedContext: failedContextRef.current, error, notice,
+      uncertain,
     });
-  }, [activeConversationId, context, draft, error, failed, notice]);
+  }, [activeConversationId, context, draft, error, failed, notice, uncertain]);
 
   const resetChat = useCallback(() => {
     if (requestRef.current) return;
-    if (!historyRef.current.length && !draft.trim() && !failed) {
+    if (!historyRef.current.length && !draft.trim() && !failed && !uncertain) {
       setContext(undefined);
       setNotice("");
       return;
     }
     archiveCurrentConversation();
+    const carryDraft = uncertain ? draft : "";
     const id = crypto.randomUUID();
     setActiveConversationId(id);
     setConversations(current => [{ id, title: "새 대화" }, ...current]);
     historyRef.current = [];
     failedContextRef.current = undefined;
     setMessages([]);
-    setDraft("");
+    setDraft(carryDraft);
     setPending("");
+    setStreaming("");
     setFailed("");
     setError("");
-    setNotice("");
+    setNotice(carryDraft ? "새 대화에서 질문을 확인한 뒤 보내 주세요." : "");
+    setUncertain(false);
     setContext(undefined);
-  }, [archiveCurrentConversation, draft, failed]);
+  }, [archiveCurrentConversation, draft, failed, uncertain]);
 
   const selectConversation = useCallback((id: string) => {
-    if (requestRef.current || id === activeConversationId) return;
+    if (requestRef.current || uncertain || id === activeConversationId) return;
     const saved = archivedConversations.current.get(id);
     if (!saved) return;
     archiveCurrentConversation();
@@ -186,21 +230,65 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setFailed(saved.failed);
     setError(saved.error);
     setNotice(saved.notice);
-  }, [activeConversationId, archiveCurrentConversation]);
+    setUncertain(saved.uncertain);
+    setStreaming("");
+  }, [activeConversationId, archiveCurrentConversation, uncertain]);
+
+  useEffect(() => {
+    if (identityRef.current === identity) return;
+    identityRef.current = identity;
+    setChatIdentity(identity);
+    requestVersion.current += 1;
+    requestRef.current?.controller.abort();
+    requestRef.current?.identityController.abort();
+    statusRequestRef.current?.abort();
+    requestRef.current = null;
+    statusRequestRef.current = null;
+    pendingRef.current = "";
+    backendSessions.current.clear();
+    archivedConversations.current.clear();
+    historyRef.current = [];
+    failedContextRef.current = undefined;
+    setActiveConversationId("initial-chat");
+    setConversations([{ id: "initial-chat", title: "새 대화" }]);
+    setMessages([]);
+    setDraft("");
+    setContext(undefined);
+    setStatus(memberStatus === "anonymous" ? GUEST_STATUS : null);
+    setStatusLoading(memberStatus === "authenticated" || memberStatus === "loading");
+    setStatusError(memberStatus === "unavailable" ? "로그인 상태를 확인하지 못했어요." : "");
+    setPending("");
+    setStreaming("");
+    setFailed("");
+    setError("");
+    setNotice("");
+    setUncertain(false);
+    streamingRef.current = "";
+  }, [identity, memberStatus]);
 
   const send = useCallback(async (text = draft, options?: { context?: ChatContext }) => {
     const selectedContext = options ? options.context : context;
     const content = text.trim();
-    if (!content || requestRef.current || content.length > MAX_MESSAGE_LENGTH) return;
+    if (identityRef.current !== identity || !content || requestRef.current || content.length > MAX_MESSAGE_LENGTH) return;
+    if (uncertain) {
+      setError("서버 기록이 겹치지 않도록 새 대화에서 다시 보내 주세요.");
+      return;
+    }
     const controller = new AbortController();
+    const identityController = new AbortController();
     const version = ++requestVersion.current;
-    requestRef.current = controller;
+    const mode: "member" | "guest" | null = memberStatus === "authenticated" ? "member" : memberStatus === "anonymous" ? "guest" : null;
+    if (!mode) { setError("로그인 상태를 확인한 뒤 다시 시도해 주세요."); return; }
+    const active = { controller, identityController, version, mode, checkpoint: null as ChatCheckpoint | null, stop: null as ChatCheckpoint | null, wantsStop: false };
+    requestRef.current = active;
     pendingRef.current = content;
     setPending(content);
     setDraft("");
     setError("");
     setNotice("");
     setFailed("");
+    setStreaming("");
+    streamingRef.current = "";
     failedContextRef.current = undefined;
     const userMessage: ChatMessage = { role: "user", content };
     const previous = historyRef.current;
@@ -211,31 +299,60 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       // Keep complete exchanges, leaving one slot for this question.
-      const reply = await sendChatMessage({
+      const sendRequest = mode === "member" ? sendChatMessage : sendGuestChatMessage;
+      const reply = await sendRequest({
         messages: [...previous.slice(-(MAX_HISTORY_MESSAGES - 2)), userMessage],
         context: selectedContext,
-        sessionId: backendSessions.current.get(activeConversationId),
-      }, controller.signal);
-      if (reply.sessionId) backendSessions.current.set(activeConversationId, reply.sessionId);
+        sessionId: mode === "member" ? backendSessions.current.get(activeConversationId) : undefined,
+      }, controller.signal, {
+        onCheckpoint: checkpoint => {
+          if (requestRef.current !== active) return;
+          active.checkpoint = checkpoint;
+          if (active.wantsStop && !active.stop) { active.stop = checkpoint; controller.abort(); }
+        },
+        getStop: () => active.stop,
+        isCurrent: () => requestRef.current === active && version === requestVersion.current,
+        finalizeSignal: identityController.signal,
+        onDelta: answer => {
+          if (version !== requestVersion.current) return;
+          streamingRef.current = answer;
+          setStreaming(answer);
+          if (mode === "guest") active.checkpoint = { turnId: "guest", receipt: "", prefix: answer };
+        },
+      });
       if (version !== requestVersion.current) return;
-      const next: ChatMessage[] = [...previous, userMessage, { role: "assistant", content: reply.reply }];
+      if (mode === "member" && reply.sessionId) backendSessions.current.set(activeConversationId, reply.sessionId);
+      const next: ChatMessage[] = [...previous, userMessage, ...(reply.reply ? [{ role: "assistant" as const, content: reply.reply }] : [])];
       historyRef.current = next;
       setMessages(next);
       setStatus({ provider: reply.provider, model: reply.model, ready: reply.ready });
+      setNotice(reply.completionStatus === "stopped" ? "받은 답변까지만 보관했어요." : "");
+      setUncertain(false);
     } catch (cause) {
-      if (version !== requestVersion.current || controller.signal.aborted) return;
-      setFailed(content);
-      failedContextRef.current = selectedContext;
+      if (version !== requestVersion.current) return;
+      if (mode === "member" && cause instanceof ChatClientError && cause.sessionId) backendSessions.current.set(activeConversationId, cause.sessionId);
+      const deliveryUncertain = mode === "member" && cause instanceof ChatClientError && cause.uncertain;
+      const received = streamingRef.current;
+      if (deliveryUncertain && received) {
+        setMessages([...previous, userMessage, { role: "assistant", content: received }]);
+      }
+      setUncertain(deliveryUncertain);
+      setFailed(deliveryUncertain ? "" : content);
+      failedContextRef.current = deliveryUncertain ? undefined : selectedContext;
       setDraft(current => current.trim() ? current : content);
-      setError(cause instanceof Error ? cause.message : "답변을 가져오지 못했어요. 다시 시도해 주세요.");
+      setError(deliveryUncertain
+        ? `${cause.message}${received ? " 받은 답변은 저장되지 않았어요." : ""} 기록이 겹치지 않도록 새 대화에서 다시 보내 주세요.`
+        : cause instanceof Error ? cause.message : "답변을 가져오지 못했어요. 다시 시도해 주세요.");
     } finally {
       if (version === requestVersion.current) {
         requestRef.current = null;
         pendingRef.current = "";
         setPending("");
+        setStreaming("");
+        streamingRef.current = "";
       }
     }
-  }, [activeConversationId, context, draft]);
+  }, [activeConversationId, context, draft, identity, memberStatus, uncertain]);
 
   const openChat = useCallback((initialMessage?: string, nextContext?: ChatContext) => {
     expandChat();
@@ -260,23 +377,41 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isChatPage && !popupOpen && !hasEmbeddedChat) return;
     statusRequestRef.current?.abort();
+    if (memberStatus !== "authenticated") return;
     const controller = new AbortController();
     statusRequestRef.current = controller;
     void loadStatus(controller);
     return () => controller.abort();
-  }, [hasEmbeddedChat, isChatPage, popupOpen, loadStatus]);
+  }, [accountId, hasEmbeddedChat, isChatPage, popupOpen, loadStatus, memberStatus]);
 
   useEffect(() => () => {
     requestVersion.current += 1;
-    requestRef.current?.abort();
+    requestRef.current?.controller.abort();
+    requestRef.current?.identityController.abort();
     statusRequestRef.current?.abort();
   }, []);
+
+  const visibleStatus = memberStatus === "anonymous" ? GUEST_STATUS : memberStatus === "authenticated" ? status : null;
+  const visibleStatusLoading = memberStatus === "loading" || (memberStatus === "authenticated" && statusLoading);
+  const visibleStatusError = memberStatus === "unavailable" ? "로그인 상태를 확인하지 못했어요." : memberStatus === "authenticated" ? statusError : "";
 
   return (
     <ChatControlsContext.Provider value={{
       openChat, onExpand: expandChat, onMinimize: minimizeChat, onClosePopup: closePopup,
-      messages, draft, context, status, statusLoading, statusError,
-      pending, failed, error, notice, conversations, activeConversationId,
+      messages: identityChanged ? [] : messages,
+      draft: identityChanged ? "" : draft,
+      context: identityChanged ? undefined : context,
+      status: visibleStatus,
+      statusLoading: visibleStatusLoading,
+      statusError: visibleStatusError,
+      pending: identityChanged ? "" : pending,
+      uncertain: identityChanged ? false : uncertain,
+      streaming: identityChanged ? "" : streaming,
+      failed: identityChanged ? "" : failed,
+      error: identityChanged ? "" : error,
+      notice: identityChanged ? "" : notice,
+      conversations: identityChanged ? [{ id: "initial-chat", title: "새 대화" }] : conversations,
+      activeConversationId: identityChanged ? "initial-chat" : activeConversationId,
       onDraftChange: setDraft, onRefreshStatus: () => void refreshStatus(),
       onSend: () => void send(), onRetry: () => void send(failed, { context: failedContextRef.current }),
       onCancel: cancelRequest, onReset: resetChat,

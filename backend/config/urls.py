@@ -16,7 +16,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from llm.views import ChatMessageView, ChatRoomDetailView, ChatRoomView
+from llm.views import (
+    ChatFinalizeView,
+    ChatMessageView,
+    ChatRoomDetailView,
+    ChatRoomView,
+    GuestChatView,
+)
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("chat/sessions/", ChatRoomView.as_view()),
@@ -30,5 +36,7 @@ urlpatterns = [
         "chat/sessions/<int:session_id>/messages/",
         ChatMessageView.as_view(),
     ),
+    path("chat/turns/<uuid:turn_id>/finalize/", ChatFinalizeView.as_view()),
+    path("chat/guest/", GuestChatView.as_view()),
     path('auth/',include('accounts.urls'))
 ]

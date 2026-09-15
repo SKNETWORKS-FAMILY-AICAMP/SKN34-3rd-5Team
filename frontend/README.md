@@ -43,9 +43,7 @@ UI/UX 가이드의 큰 항목 2~5에 맞춰 여섯 기본 화면, 반응형, 로
 
 ## 챗봇
 
-대화창과 답변 서버를 분리했으며, `.env.example`의 기본값은 API 키 없이 동작하는 예시 응답입니다. `frontend/.env.local`에서 `CHAT_PROVIDER=openai`, `OPENAI_MODEL=gpt-5.6-luna`, 서버 전용 `OPENAI_API_KEY`를 설정하고 서버를 재시작하면 Luna 연결을 사용할 수 있습니다. 설정 후 대화창에서 질문을 보내 실제 답변이 도착하는지 확인합니다.
-
-팀 챗봇이 준비되면 `CHAT_PROVIDER=backend`와 `CHAT_BACKEND_URL`로 전환합니다. 설정 방법, 요청 형식과 수정할 파일은 [챗봇 연결 가이드](docs/CHAT_SETUP.md)를 참고하세요.
+챗봇은 회원이면 보호된 session/message API, 게스트면 DB에 쓰지 않는 임시 `/api/chat/guest/` SSE를 사용합니다. 대화는 브라우저 메모리에만 있고 로그인·계정 변경 때 정리되며, 회원 Stop은 서명된 체크포인트로 받은 prefix만 저장합니다. Next.js 중계는 없습니다. 자세한 계약은 [챗봇 연결 가이드](docs/CHAT_SETUP.md)를 참고하세요.
 
 ## 실제 서비스 연결 시 남은 작업
 
