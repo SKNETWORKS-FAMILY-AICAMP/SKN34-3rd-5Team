@@ -116,7 +116,7 @@ function postInput(input: CommunityPostInput) {
 
 export async function uploadCommunityImage(file: File) {
   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("JPG, PNG, WEBP 이미지만 올릴 수 있어요.");
-  if (file.size > 20 * 1024 * 1024) throw new Error("이미지는 한 장에 20MB 이하로 올려 주세요.");
+  if (file.size > 5 * 1024 * 1024) throw new Error("이미지는 한 장에 5MB 이하로 올려 주세요.");
   const form = new FormData();
   form.append("image", file);
   const response = await memberFetch("/api/community/images/", { method: "POST", body: form, signal: AbortSignal.timeout(60000) });

@@ -20,6 +20,20 @@ CONTRACT_PYTHON=/path/to/python node --test tests/contracts-strict.test.mjs
 
 두 명령은 `PYTHON_DOTENV_DISABLED=1`과 합성 DB/메일 설정으로 스키마를 생성하므로 실제 `.env`를 읽거나 DB/메일 네트워크를 사용하지 않는다. `contracts:generate`는 여러 domain이 annotation을 작성하는 중에도 부분 스키마를 갱신할 수 있지만 경고와 오류를 그대로 출력한다. `contracts:check`는 `--fail-on-warn`으로 schema 경고/오류가 하나라도 있으면 즉시 실패하며, 경고가 없을 때만 새 결과와 체크인 파일을 바이트 단위로 비교한다.
 
+현재 커뮤니티 백엔드 통합에서는 `contracts/openapi.yaml`까지 갱신했다. 대응하는
+`frontend/lib/api/schema.d.ts` 생성은 후속 프론트 작업 범위이므로 아직 이전 상태이며,
+그 파일을 생성하기 전 `contracts:check`는 stale contract로 실패하는 것이 정상이다.
+
+## 커뮤니티 임시저장·이미지 계약
+
+- `GET|POST /api/community/drafts/`, `GET|PATCH|DELETE /api/community/drafts/{draft_id}/`는 JWT 소유자 범위다. 목록은 항상 `count`, `next`, `previous`, `results` 페이지 형태이며 링크는 공개 `/api` 경로를 사용한다.
+- 초안은 제목·본문이 비어 있어도 저장할 수 있다. `PATCH`는 현재의 strict positive integer `revision`이 필수이고, 성공할 때 1 증가한다. `imageIds`는 중복 없는 본인 소유 미게시 이미지 UUID 최대 10개다.
+- `POST /api/community/drafts/{draft_id}/publish/`는 현재 `revision` 본문과 `Idempotency-Key` 헤더가 필수다. 기존 게시글 serializer로 완전성을 검증하고, 행 잠금 아래 게시글·이미지·게시 이력을 원자적으로 저장한다. 같은 성공 요청은 `200`, 최초 성공은 `201`, 바뀐 키·revision·내용은 `409`다.
+- 게시 실패는 초안과 첨부를 유지한다. 성공한 초안은 일반 CRUD에서 숨기되 `published_post`를 보존해 재시도를 복구한다.
+- 게시글 삭제 시 소비된 초안도 함께 삭제해 삭제된 본문이 재게시되는 것을 막는다. 이미지 메타데이터는 남아 소유자가 정리할 수 있다.
+- `POST /api/community/images/`는 `image` 하나만 받으며 임의 URL을 받지 않는다. 게시글 응답의 `images`는 서버가 보유한 `{id, contentType, size, width, height}` 읽기 전용 메타데이터다.
+- 미연결·초안 이미지는 소유자만 읽고, 게시 이미지는 공개 읽기만 허용한다. 계정 삭제 후에도 이미지 메타데이터는 남지만 미연결 orphan의 자동 정리는 보존 정책이 정해질 때까지 의도적으로 제외한다.
+
 ## 서버 계약 작성 규칙
 
 - serializer와 실제 view의 status/response를 먼저 맞춘 뒤 스키마 annotation을 추가한다. 포괄적인 공통 response envelope은 사용하지 않는다.

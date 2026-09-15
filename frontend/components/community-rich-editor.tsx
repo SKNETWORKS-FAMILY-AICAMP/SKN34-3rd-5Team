@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { uploadCommunityImage } from "@/lib/community-api";
-import { readRichEditor, richColors, richFonts, richSizes, richText, writeRichEditor, type RichContentDoc } from "@/lib/community-rich-content";
+import { communityImageUrl, readRichEditor, richColors, richFonts, richSizes, richText, writeRichEditor, type RichContentDoc } from "@/lib/community-rich-content";
+import { memberFetch } from "@/lib/member-auth-request";
 import styles from "./community-post-editor.module.css";
 
 type Props = { initial?: RichContentDoc | null; disabled: boolean; onChange: (doc: RichContentDoc, content: string) => void; onUploadingChange: (uploading: boolean) => void; onError: (message: string) => void;
@@ -16,10 +17,16 @@ export function CommunityRichEditor({ initial, disabled, onChange, onUploadingCh
   const changeCallback = useRef(onChange);
   const fileInput = useRef<HTMLInputElement>(null);
   const selection = useRef<Range | null>(null);
+  const previewUrls = useRef(new Set<string>());
   const [counts, setCounts] = useState({ text: 0, images: 0 });
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => { changeCallback.current = onChange; }, [onChange]);
+
+  useEffect(() => () => {
+    for (const url of previewUrls.current) URL.revokeObjectURL(url);
+    previewUrls.current.clear();
+  }, []);
 
   useEffect(() => {
     if (!root.current) return;
@@ -28,6 +35,18 @@ export function CommunityRichEditor({ initial, disabled, onChange, onUploadingCh
     const document = readRichEditor(root.current);
     setCounts({ text: document.blocks.filter(block => block.type === "paragraph").reduce((total, block) => total + block.runs.reduce((sum, run) => sum + run.text.length, 0), 0), images: document.blocks.filter(block => block.type === "image").length });
     if (initial && notifyInitial) changeCallback.current(document, richText(document));
+    const controller = new AbortController();
+    for (const image of root.current.querySelectorAll<HTMLImageElement>("img[data-image-id]")) {
+      const imageId = image.dataset.imageId;
+      if (!imageId) continue;
+      void memberFetch(communityImageUrl(imageId), { signal: controller.signal }).then(async response => {
+        if (!response.ok || controller.signal.aborted || !image.isConnected) return;
+        const url = URL.createObjectURL(await response.blob());
+        previewUrls.current.add(url);
+        image.src = url;
+      }).catch(() => {});
+    }
+    return () => controller.abort();
   }, [initial, notifyInitial]);
 
   function rememberSelection() {
@@ -75,11 +94,16 @@ export function CommunityRichEditor({ initial, disabled, onChange, onUploadingCh
     try {
       for (const file of files) {
         const id = await uploadCommunityImage(file);
+        const preview = URL.createObjectURL(file);
+        previewUrls.current.add(preview);
         restoreSelection();
-        const inserted = document.execCommand("insertImage", false, `/api/community/images/${id}/`);
-        if ((!inserted || !Array.from(root.current?.querySelectorAll("img") ?? []).some(image => image.src.includes(id))) && root.current) {
+        const inserted = document.execCommand("insertImage", false, preview);
+        const insertedImage = Array.from(root.current?.querySelectorAll("img") ?? []).find(image => image.src === preview);
+        if (insertedImage) insertedImage.dataset.imageId = id;
+        if ((!inserted || !insertedImage) && root.current) {
           const image = document.createElement("img");
-          image.src = `/api/community/images/${id}/`;
+          image.src = preview;
+          image.dataset.imageId = id;
           image.alt = "첨부 이미지";
           const active = window.getSelection();
           const range = active?.rangeCount ? active.getRangeAt(0) : document.createRange();
@@ -101,7 +125,7 @@ export function CommunityRichEditor({ initial, disabled, onChange, onUploadingCh
   return <div className={styles.richEditor}>
     <div className={styles.attachmentBar}>
       <button type="button" onMouseDown={rememberSelection} onClick={() => fileInput.current?.click()} disabled={controlDisabled || imageUploadDisabled}>▣ 이미지 첨부</button>
-      <span>JPG·PNG·WEBP · 장당 20MB · 최대 10장{uploading ? " · 업로드 중…" : ""}</span>
+      <span>JPG·PNG·WEBP · 장당 5MB · 최대 10장{uploading ? " · 업로드 중…" : ""}</span>
       <input ref={fileInput} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={event => void addImages(event)} aria-label={`${label} 이미지 선택`} disabled={controlDisabled || imageUploadDisabled} />
     </div>
     <div className={styles.formatBar} role="toolbar" aria-label="본문 서식">

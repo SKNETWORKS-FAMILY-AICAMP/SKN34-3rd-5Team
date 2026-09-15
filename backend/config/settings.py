@@ -169,6 +169,15 @@ USE_TZ = True
 STATIC_URL = 'static/'
 MEDIA_ROOT = BASE_DIR / "media"
 
+DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+
+COMMUNITY_IMAGE_S3_ENDPOINT = os.getenv("COMMUNITY_IMAGE_S3_ENDPOINT", "http://minio:9000")
+COMMUNITY_IMAGE_S3_ACCESS_KEY = os.getenv("COMMUNITY_IMAGE_S3_ACCESS_KEY", "minioadmin")
+COMMUNITY_IMAGE_S3_SECRET_KEY = os.getenv("COMMUNITY_IMAGE_S3_SECRET_KEY", "")
+COMMUNITY_IMAGE_S3_BUCKET = os.getenv("COMMUNITY_IMAGE_S3_BUCKET", "community-images")
+COMMUNITY_IMAGE_S3_REGION = os.getenv("COMMUNITY_IMAGE_S3_REGION", "us-east-1")
+
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

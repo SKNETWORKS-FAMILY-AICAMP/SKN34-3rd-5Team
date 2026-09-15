@@ -16,7 +16,7 @@ from django.urls import Resolver404, resolve, reverse
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from community.models import CommunityPostImage
+from community.models import CommunityImage
 
 from .models import Course, CourseReaction, CourseStop, CourseView
 from .views import CourseWriteThrottle
@@ -166,9 +166,9 @@ class CourseApiTests(TestCase):
     def test_story_format_round_trips_and_images_require_jwt_owner(self):
         owner = get_user_model().objects.create_user(username="route-image-owner", password="test-pass")
         other = get_user_model().objects.create_user(username="route-image-other", password="test-pass")
-        image = CommunityPostImage.objects.create(
-            owner=owner, file="community/images/test.jpg", mime_type="image/jpeg",
-            byte_size=8, width=1, height=1,
+        image = CommunityImage.objects.create(
+            owner=owner, object_key="community/test-course-image.jpg", content_type="image/jpeg",
+            size=8, width=1, height=1,
         )
         run = {"text": "경기 전 카페", "font": "serif", "size": 20, "color": "#246bf3",
                "bold": True, "italic": False, "underline": False}

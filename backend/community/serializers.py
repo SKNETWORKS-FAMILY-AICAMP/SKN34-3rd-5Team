@@ -4,7 +4,7 @@ from django.db import models, transaction
 from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 
-from .models import CommunityComment, CommunityPost, CommunityPostImage, FREE_CATEGORIES, TEAM_CATEGORIES, TEAM_CODES
+from .models import CommunityComment, CommunityImage, CommunityPost, FREE_CATEGORIES, TEAM_CATEGORIES, TEAM_CODES
 
 
 FONT_NAMES = {"sans", "serif", "mono"}
@@ -56,16 +56,26 @@ def validate_content_doc(document, user, post=None, course=None, max_chars=20000
         raise serializers.ValidationError(f"본문은 {max_chars:,}자, 이미지는 10장까지 등록할 수 있어요.")
     if image_ids and not user.is_authenticated:
         raise serializers.ValidationError("이미지를 첨부하려면 로그인해 주세요.")
-    allowed = CommunityPostImage.objects.filter(id__in=image_ids, owner=user) if image_ids else CommunityPostImage.objects.none()
+    allowed = CommunityImage.objects.filter(id__in=image_ids, owner=user) if image_ids else CommunityImage.objects.none()
     if course is not None:
-        allowed = allowed.filter(post__isnull=True)
+        allowed = allowed.filter(draft__isnull=True, post__isnull=True).filter(models.Q(course__isnull=True) | models.Q(course=course))
     elif post is None:
-        allowed = allowed.filter(post__isnull=True, course__isnull=True)
+        allowed = allowed.filter(draft__isnull=True, post__isnull=True, course__isnull=True)
     else:
-        allowed = allowed.filter(models.Q(post__isnull=True, course__isnull=True) | models.Q(post=post))
+        allowed = allowed.filter(draft__isnull=True, course__isnull=True).filter(models.Q(post__isnull=True) | models.Q(post=post))
     if allowed.count() != len(image_ids):
         raise serializers.ValidationError("본인이 올린 이미지만 첨부할 수 있어요.")
     return "\n".join(lines).strip(), image_ids
+
+
+@extend_schema_serializer(component_name="CommunityImageMetadata")
+class CommunityImageMetadataSerializer(serializers.ModelSerializer):
+    contentType = serializers.CharField(source="content_type", read_only=True)
+
+    class Meta:
+        model = CommunityImage
+        fields = ("id", "contentType", "size", "width", "height")
+        read_only_fields = fields
 
 
 @extend_schema_serializer(component_name="CommunityPost")
@@ -81,6 +91,7 @@ class CommunityPostSerializer(serializers.ModelSerializer):
     downvotes = serializers.SerializerMethodField()
     commentCount = serializers.SerializerMethodField()
     isSample = serializers.BooleanField(source="is_sample", read_only=True)
+    images = CommunityImageMetadataSerializer(many=True, read_only=True)
     category = serializers.ChoiceField(choices=TEAM_CATEGORIES)
     content = serializers.CharField(max_length=20000, allow_blank=False, trim_whitespace=True)
     contentDoc = serializers.JSONField(source="content_doc", allow_null=True, required=False)
@@ -90,6 +101,7 @@ class CommunityPostSerializer(serializers.ModelSerializer):
         fields = (
             "id", "sourceId", "postNumber", "board", "teamCode", "authorId", "author", "title", "content", "contentDoc",
             "category", "createdAt", "views", "recommendations", "downvotes", "commentCount", "isSample",
+            "images",
         )
         read_only_fields = ("author",)
 
@@ -134,17 +146,17 @@ class CommunityPostSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         post = super().create(validated_data)
         if hasattr(self, "_image_ids"):
-            CommunityPostImage.objects.filter(id__in=self._image_ids, owner=post.owner).update(post=post)
+            CommunityImage.objects.filter(id__in=self._image_ids, owner=post.owner).update(post=post)
         return post
 
     @transaction.atomic
     def update(self, instance, validated_data):
         post = super().update(instance, validated_data)
         if hasattr(self, "_image_ids"):
-            CommunityPostImage.objects.filter(post=post).exclude(id__in=self._image_ids).update(post=None)
-            CommunityPostImage.objects.filter(id__in=self._image_ids, owner=post.owner).update(post=post)
+            CommunityImage.objects.filter(post=post).exclude(id__in=self._image_ids).update(post=None)
+            CommunityImage.objects.filter(id__in=self._image_ids, owner=post.owner).update(post=post)
         elif validated_data.get("content_doc", "not-updated") is None:
-            CommunityPostImage.objects.filter(post=post).update(post=None)
+            CommunityImage.objects.filter(post=post).update(post=None)
         return post
 
 

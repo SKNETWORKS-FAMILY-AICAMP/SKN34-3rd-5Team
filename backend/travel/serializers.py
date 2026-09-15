@@ -4,7 +4,7 @@ from django.db import transaction
 from drf_spectacular.utils import extend_schema_serializer
 from rest_framework import serializers
 
-from community.models import CommunityPostImage
+from community.models import CommunityImage
 from community.serializers import validate_content_doc
 
 from .models import Course, CourseStop
@@ -101,7 +101,7 @@ class CourseSerializer(serializers.ModelSerializer):
         course = Course.objects.create(**validated_data)
         CourseStop.objects.bulk_create(CourseStop(course=course, **stop) for stop in stops)
         if getattr(self, "_image_ids", None):
-            CommunityPostImage.objects.filter(id__in=self._image_ids, owner=self.context["request"].user).update(course=course)
+            CommunityImage.objects.filter(id__in=self._image_ids, owner=self.context["request"].user).update(course=course)
         return course
 
     @transaction.atomic
@@ -114,11 +114,11 @@ class CourseSerializer(serializers.ModelSerializer):
             instance.stops.all().delete()
             CourseStop.objects.bulk_create(CourseStop(course=instance, **stop) for stop in stops)
         if hasattr(self, "_image_ids"):
-            CommunityPostImage.objects.filter(course=instance).exclude(id__in=self._image_ids).update(course=None)
+            CommunityImage.objects.filter(course=instance).exclude(id__in=self._image_ids).update(course=None)
             if self._image_ids:
-                CommunityPostImage.objects.filter(id__in=self._image_ids, owner=self.context["request"].user).update(course=instance)
+                CommunityImage.objects.filter(id__in=self._image_ids, owner=self.context["request"].user).update(course=instance)
         elif validated_data.get("content_doc", "not-updated") is None:
-            CommunityPostImage.objects.filter(course=instance).update(course=None)
+            CommunityImage.objects.filter(course=instance).update(course=None)
         return instance
 
     def to_representation(self, instance):

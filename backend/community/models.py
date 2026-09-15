@@ -64,6 +64,72 @@ class CommunityPost(models.Model):
         )
 
 
+class CommunityDraft(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="community_drafts")
+    board = models.CharField(max_length=8, choices=(("free", "free"), ("teams", "teams")))
+    team_code = models.CharField(max_length=2, blank=True, default="")
+    category = models.CharField(max_length=20, blank=True, default="")
+    title = models.CharField(max_length=200, blank=True, default="")
+    content = models.TextField(max_length=20000, blank=True, default="")
+    revision = models.PositiveIntegerField(default=1)
+    published_post = models.ForeignKey(
+        CommunityPost,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="source_drafts",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = (
+            models.CheckConstraint(
+                condition=Q(board="free", team_code="") | Q(board="teams", team_code__in=TEAM_CODES),
+                name="community_draft_board_team_valid",
+            ),
+            models.CheckConstraint(condition=Q(revision__gte=1), name="community_draft_revision_valid"),
+        )
+
+    @property
+    def image_ids(self):
+        return list(self.images.values_list("id", flat=True))
+
+
+class CommunityImage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="community_images",
+    )
+    object_key = models.CharField(max_length=255, unique=True)
+    content_type = models.CharField(max_length=20)
+    size = models.PositiveIntegerField()
+    width = models.PositiveIntegerField()
+    height = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    draft = models.ForeignKey(CommunityDraft, null=True, blank=True, on_delete=models.SET_NULL, related_name="images")
+    post = models.ForeignKey(CommunityPost, null=True, blank=True, on_delete=models.SET_NULL, related_name="images")
+    course = models.ForeignKey("travel.Course", null=True, blank=True, on_delete=models.SET_NULL, related_name="images")
+
+    class Meta:
+        ordering = ("created_at", "id")
+        constraints = (
+            models.CheckConstraint(
+                condition=(
+                    (Q(draft__isnull=True) & Q(post__isnull=True))
+                    | (Q(draft__isnull=True) & Q(course__isnull=True))
+                    | (Q(post__isnull=True) & Q(course__isnull=True))
+                ),
+                name="community_image_single_target",
+            ),
+        )
+
+
 class CommunityComment(models.Model):
     post = models.ForeignKey(CommunityPost, on_delete=models.CASCADE, related_name="comments")
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="community_comments")
@@ -73,19 +139,6 @@ class CommunityComment(models.Model):
 
     class Meta:
         ordering = ("created_at", "pk")
-
-
-class CommunityPostImage(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="community_images")
-    post = models.ForeignKey(CommunityPost, null=True, blank=True, on_delete=models.CASCADE, related_name="images")
-    course = models.ForeignKey("travel.Course", null=True, blank=True, on_delete=models.SET_NULL, related_name="images")
-    file = models.ImageField(upload_to="community/images/%Y/%m/")
-    mime_type = models.CharField(max_length=16)
-    byte_size = models.PositiveIntegerField()
-    width = models.PositiveIntegerField()
-    height = models.PositiveIntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class CommunityVote(models.Model):

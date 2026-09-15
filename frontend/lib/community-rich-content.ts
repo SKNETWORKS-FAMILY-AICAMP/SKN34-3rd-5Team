@@ -77,6 +77,11 @@ export function readRichEditor(root: HTMLElement): RichContentDoc {
     if (!(node instanceof HTMLElement)) return;
     const tag = node.tagName.toLowerCase();
     if (tag === "img") {
+      const imageId = node.getAttribute("data-image-id");
+      if (imageId && /^[0-9a-f-]{36}$/i.test(imageId)) {
+        flush(); blocks.push({ type: "image", id: imageId.toLowerCase() });
+        return;
+      }
       const path = new URL(node.getAttribute("src") || "", location.origin);
       const match = path.origin === location.origin && path.search === "" ? path.pathname.match(imagePath) : null;
       if (match) { flush(); blocks.push({ type: "image", id: match[1].toLowerCase() }); }
@@ -111,6 +116,7 @@ export function writeRichEditor(root: HTMLElement, doc: RichContentDoc) {
     if (block.type === "image") {
       const img = document.createElement("img");
       img.src = communityImageUrl(block.id);
+      img.dataset.imageId = block.id;
       img.alt = "첨부 이미지";
       root.append(img);
       return;

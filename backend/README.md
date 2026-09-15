@@ -88,3 +88,43 @@ python backend/manage.py test accounts.test.test_logout accounts.test.test_token
 테스트 전용 환경에서 실행하고, 실행 후 저장된 토큰은 지우고 공유합니다.
 
 [전체 실행 안내](../README.md) · [VS Code 설정](../docs/환경설정_my_venv.md)
+
+## 커뮤니티 임시저장·게시 API
+
+모든 임시저장 API는 JWT가 필요하고 본인 소유의 미게시 초안만 조회합니다. `PATCH`는
+현재 `revision`과 선택적인 `imageIds`(최대 10개)를 받으며, 다른 초안·게시글에 연결된
+이미지는 가져올 수 없습니다. revision 충돌은 `409`입니다.
+
+| 기능 | Django 직접 호출 | Nginx 경유 |
+|---|---|---|
+| 목록·생성 | `GET\|POST /community/drafts/` | `GET\|POST /api/community/drafts/` |
+| 조회·수정·삭제 | `GET\|PATCH\|DELETE /community/drafts/<uuid>/` | `GET\|PATCH\|DELETE /api/community/drafts/<uuid>/` |
+| 게시 | `POST /community/drafts/<uuid>/publish/` | `POST /api/community/drafts/<uuid>/publish/` |
+
+게시는 본문 `{"revision": <현재 revision>}`과 1~128자 `Idempotency-Key` 헤더가
+필수입니다. 게시글 검증과 이미지 이동은 한 트랜잭션에서 수행하며, 같은 키·revision·
+내용의 성공 재시도는 기존 게시글을 `200`으로 반환합니다. 키·revision·내용이 달라진
+재시도는 `409`이고, 실패한 초안은 삭제하거나 비우지 않습니다. 성공한 초안은 일반
+임시저장 조회·수정·삭제에서 `404`로 숨깁니다.
+게시글을 삭제하면 소비된 초안도 함께 삭제되어 같은 내용을 다시 게시할 수 없습니다.
+
+## 커뮤니티 이미지 API
+
+Compose의 `minio` 서비스는 이미지를 private bucket에 저장하고 Django만 파일을
+읽습니다. `.env.example`의 `MINIO_ROOT_PASSWORD` placeholder를 로컬 전용 비밀값으로
+교체한 뒤 사용합니다. 업로드는 JWT와 multipart `image` 필드가 필요합니다.
+
+| 기능 | Django 직접 호출 | Nginx 경유 |
+|---|---|---|
+| 업로드 | `POST /community/images/` | `POST /api/community/images/` |
+| 읽기 | `GET /community/images/<uuid>/` | `GET /api/community/images/<uuid>/` |
+| 삭제 | `DELETE /community/images/<uuid>/` | `DELETE /api/community/images/<uuid>/` |
+
+JPEG, PNG, WebP 정지 이미지만 허용하며 입력·정규화 결과는 5MiB 이하, 해상도는
+2천만 픽셀 이하입니다. 서버가 다시 인코딩해 EXIF를 제거합니다. 연결되지 않은
+이미지와 draft 이미지는 소유자만 읽을 수 있고, 게시글에 연결된 이미지는 공개되며
+삭제 요청은 `409`입니다.
+
+오래된 미연결 이미지 자동 정리는 이번 범위에서 제외했습니다. 안전한 draft/post
+연결과 보존 기간 정책이 확정되면, DB 행을 잠근 뒤 여전히 미연결·기한 초과인지
+재검사하는 dry-run 기본 관리 명령으로 추가해야 합니다.

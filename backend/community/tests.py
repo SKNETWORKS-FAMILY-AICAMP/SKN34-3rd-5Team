@@ -16,7 +16,7 @@ from PIL import Image
 from rest_framework.test import APIClient, APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import CommunityPost, CommunityPostImage, CommunityReport, CommunityVote, TEAM_CODES
+from .models import CommunityImage, CommunityPost, CommunityReport, CommunityVote, TEAM_CODES
 
 
 SEED_FILE = Path(__file__).parent / "migrations/data/community_posts_v1.json"
@@ -46,7 +46,8 @@ class CommunityPostApiTests(APITestCase):
             "teamCode": "LG", "authorId": None, "author": "예시 작성자", "title": "잠실 외야에서 보면 타구 판단 좀 되나요?",
             "content": "늘 내야에서만 보다가 이번엔 외야로 가볼까 합니다.\n\n공이 뜨면 홈런인지 평범한 플라이인지 구분이 잘 되는지 궁금해요. 중계로 볼 때랑 느낌이 많이 다를 것 같아서요. LG 응원하면서 수비 위치도 같이 보고 싶습니다.", "contentDoc": None,
             "category": "좌석·예매", "createdAt": None, "views": 0, "recommendations": 0, "downvotes": 0,
-            "commentCount": 0, "isSample": True,
+            "commentCount": 0, "isSample": True, "images": [],
+            "images": [],
         })
         numbers = [post["postNumber"] for post in response.data]
         self.assertEqual(numbers, sorted(numbers, reverse=True))
@@ -187,7 +188,7 @@ class CommunityRichPostTests(APITestCase):
         self.assertEqual(created.data["contentDoc"], doc)
         retried = self.client.post("/community/posts/", {"board": "free", "teamCode": "", "category": "잡담", "title": "서식 글", "content": "직관 사진\n[이미지]", "contentDoc": doc}, format="json", HTTP_IDEMPOTENCY_KEY="rich-1")
         self.assertEqual((retried.status_code, retried.data["id"]), (200, created.data["id"]))
-        self.assertEqual(str(CommunityPostImage.objects.get(pk=image_id).post_id), created.data["id"])
+        self.assertEqual(str(CommunityImage.objects.get(pk=image_id).post_id), created.data["id"])
         self.client.credentials()
         fetched = self.client.get(f"/community/posts/{created.data['id']}/")
         image = self.client.get(uploaded.data["url"].removeprefix("/api"))
@@ -196,7 +197,7 @@ class CommunityRichPostTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {RefreshToken.for_user(self.owner).access_token}")
         edited = self.client.patch(f"/community/posts/{created.data['id']}/", {"title": "수정된 서식 글", "content": "직관 사진\n[이미지]", "contentDoc": doc}, format="json")
         self.assertEqual((edited.status_code, edited.data["title"], edited.data["contentDoc"]), (200, "수정된 서식 글", doc))
-        self.assertEqual(str(CommunityPostImage.objects.get(pk=image_id).post_id), created.data["id"])
+        self.assertEqual(str(CommunityImage.objects.get(pk=image_id).post_id), created.data["id"])
 
     def test_spoofed_files_and_foreign_images_are_rejected(self):
         self.assertEqual(self.client.post("/community/images/", {"image": self.image_file()}, format="multipart").status_code, 401)

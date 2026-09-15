@@ -4836,6 +4836,262 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/community/drafts/:
+    get:
+      operationId: community_drafts_list
+      tags:
+      - community
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftPageSchema'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: community_drafts_create
+      tags:
+      - community
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DraftInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DraftInput'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftOutputSchema'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/community/drafts/{draft_id}/:
+    get:
+      operationId: community_drafts_retrieve
+      parameters:
+      - in: path
+        name: draft_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - community
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftOutputSchema'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    patch:
+      operationId: community_drafts_partial_update
+      parameters:
+      - in: path
+        name: draft_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - community
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDraftPatchSchema'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDraftPatchSchema'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDraftPatchSchema'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftOutputSchema'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    delete:
+      operationId: community_drafts_destroy
+      parameters:
+      - in: path
+        name: draft_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - community
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: 본문 없음
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/community/drafts/{draft_id}/publish/:
+    post:
+      operationId: community_drafts_publish_create
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: draft_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - community
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftPublishSchema'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DraftPublishSchema'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DraftPublishSchema'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityPost'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityPost'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/community/images/:
     post:
       operationId: community_images_create
@@ -4845,10 +5101,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/CommunityImageUpload'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/CommunityImageUpload'
+              $ref: '#/components/schemas/ImageUploadRequest'
         required: true
       security:
       - jwtAuth: []
@@ -4857,9 +5110,37 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommunityImageResult'
+                $ref: '#/components/schemas/ImageUploadResponse'
           description: ''
         '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '411':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '413':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '503':
           content:
             application/json:
               schema:
@@ -4874,6 +5155,7 @@ paths:
         name: image_id
         schema:
           type: string
+          format: uuid
         required: true
       tags:
       - community
@@ -4887,8 +5169,67 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: 원본 비공개 저장소에서 스트리밍한 이미지
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    delete:
+      operationId: community_images_destroy
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - community
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '204':
+          description: 본문 없음
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
         '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '503':
           content:
             application/json:
               schema:
@@ -4913,6 +5254,31 @@ paths:
           enum:
           - '1'
       - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 200
+      - in: query
+        name: search_field
+        schema:
+          type: string
+          enum:
+          - all
+          - author
+          - title
+      - in: query
         name: team
         schema:
           type: string
@@ -4926,9 +5292,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CommunityPost'
+                $ref: '#/components/schemas/CommunityPostListResponse'
           description: ''
         '400':
           content:
@@ -4938,6 +5302,13 @@ paths:
                 additionalProperties: {}
           description: ''
         '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
           content:
             application/json:
               schema:
@@ -6358,34 +6729,31 @@ components:
           maxLength: 2000
       required:
       - content
-    CommunityImageResult:
+    CommunityImageMetadata:
       type: object
       properties:
         id:
           type: string
           format: uuid
-        url:
+          readOnly: true
+        contentType:
           type: string
+          readOnly: true
+        size:
+          type: integer
+          readOnly: true
         width:
           type: integer
+          readOnly: true
         height:
           type: integer
-        byteSize:
-          type: integer
+          readOnly: true
       required:
-      - byteSize
+      - contentType
       - height
       - id
-      - url
+      - size
       - width
-    CommunityImageUpload:
-      type: object
-      properties:
-        image:
-          type: string
-          format: uri
-      required:
-      - image
     CommunityPost:
       type: object
       properties:
@@ -6439,6 +6807,11 @@ components:
         isSample:
           type: boolean
           readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityImageMetadata'
+          readOnly: true
       required:
       - author
       - authorId
@@ -6449,6 +6822,7 @@ components:
       - createdAt
       - downvotes
       - id
+      - images
       - isSample
       - postNumber
       - recommendations
@@ -6456,6 +6830,33 @@ components:
       - teamCode
       - title
       - views
+    CommunityPostListResponse:
+      oneOf:
+      - type: array
+        items:
+          $ref: '#/components/schemas/CommunityPost'
+      - $ref: '#/components/schemas/CommunityPostPage'
+    CommunityPostPage:
+      type: object
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityPost'
+      required:
+      - count
+      - next
+      - previous
+      - results
     CommunityPostWrite:
       type: object
       properties:
@@ -6540,6 +6941,16 @@ components:
       - html
       type: string
       description: "* `` - \n* `html` - html"
+    ContentTypeEnum:
+      enum:
+      - image/jpeg
+      - image/png
+      - image/webp
+      type: string
+      description: |-
+        * `image/jpeg` - image/jpeg
+        * `image/png` - image/png
+        * `image/webp` - image/webp
     Course:
       type: object
       properties:
@@ -6858,6 +7269,107 @@ components:
           minimum: 0
       required:
       - views
+    DraftInput:
+      additionalProperties: false
+      properties:
+        board:
+          allOf:
+          - $ref: '#/components/schemas/BoardEnum'
+          title: Board
+        teamCode:
+          default: ''
+          maxLength: 2
+          title: Teamcode
+          type: string
+        category:
+          default: ''
+          maxLength: 20
+          title: Category
+          type: string
+        title:
+          default: ''
+          maxLength: 200
+          title: Title
+          type: string
+        content:
+          default: ''
+          maxLength: 20000
+          title: Content
+          type: string
+      required:
+      - board
+      title: DraftInput
+      type: object
+    DraftOutputSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        board:
+          $ref: '#/components/schemas/BoardEnum'
+        teamCode:
+          type: string
+        category:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        revision:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        imageIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+      - board
+      - category
+      - content
+      - createdAt
+      - id
+      - imageIds
+      - revision
+      - teamCode
+      - title
+      - updatedAt
+    DraftPageSchema:
+      type: object
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DraftOutputSchema'
+      required:
+      - count
+      - next
+      - previous
+      - results
+    DraftPublishSchema:
+      type: object
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+      required:
+      - revision
     EmailChangeRequestResponse:
       type: object
       properties:
@@ -7388,6 +7900,45 @@ components:
       - season
       - stadium_id
       - team_id
+    ImageUploadRequest:
+      type: object
+      properties:
+        image:
+          type: string
+          format: uri
+      required:
+      - image
+    ImageUploadResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        contentType:
+          $ref: '#/components/schemas/ContentTypeEnum'
+        size:
+          type: integer
+          maximum: 5242880
+          minimum: 1
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+        url:
+          type: string
+      required:
+      - contentType
+      - createdAt
+      - height
+      - id
+      - size
+      - url
+      - width
     LogoutRequest:
       type: object
       properties:
@@ -8193,6 +8744,32 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CourseStopWrite'
+    PatchedDraftPatchSchema:
+      type: object
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+        board:
+          $ref: '#/components/schemas/BoardEnum'
+        teamCode:
+          type: string
+          maxLength: 2
+        category:
+          type: string
+          maxLength: 20
+        title:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+          maxLength: 20000
+        imageIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 10
     PatchedFacility:
       type: object
       properties:
