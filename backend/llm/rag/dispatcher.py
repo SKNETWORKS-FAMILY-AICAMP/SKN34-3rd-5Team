@@ -1,4 +1,4 @@
-"""안내데스크 — 질문을 보고 club(구단·야구, 형준) / venue(구장 안팎, 현준) 중 누가 답할지 정한다. LLM 호출 0회.
+"""안내데스크 — 질문을 보고 course(직관 코스, 형준) / club(구단·야구, 형준) / venue(구장 안팎, 현준) 중 누가 답할지 정한다. LLM 호출 0회.
 
 두 도메인 모듈이 지켜야 하는 약속은 딱 하나:
     answer(question: str, history: list[dict] | None, hint_stadium: str | None) -> dict
@@ -13,6 +13,7 @@ import re
 
 from . import persona
 from .club import agent as club
+from .course import agent as course
 from .venue import agent as venue
 
 log = logging.getLogger(__name__)
@@ -37,6 +38,11 @@ CLUB_WORDS = [
     "재입장", "나갔다",
     "규칙", "룰", "이닝", "스트라이크", "볼넷", "삼진", "홈런", "ABS", "피치클락", "비디오 판독", "연장", "우천", "취소", "노게임",
 ]
+
+# 직관 코스 짜기 → course (메인 기능). 프론트가 intent="route" 를 주거나, 아래 표현이 있으면 코스로 간다.
+# "맛집 추천해줘" 만으로는 venue (맛집 목록) — "코스·루트·동선·경기 전후·하루" 처럼 "순서를 짜 달라"는 뜻이 있어야 course.
+COURSE = re.compile(r"코스|루트|동선|일정\s*짜|계획\s*(짜|세워)|경기\s*전\s*후|전후\s*(로|에|코스)|하루\s*(를|를\s*)?(짜|계획|보내)|"
+                    r"경기\s*전에?\s*.{0,12}(경기\s*(끝|후)|끝나고)|뭐\s*하고\s*(놀|보내)|어떻게\s*보내|첫\s*직관")
 
 # 야구 직관과 무관한 주제 — 어느 도메인으로도 보내지 않고 바로 범위 안내
 OFF_TOPIC = re.compile(r"축구|K리그|농구|배구|골프|e스포츠|롤드컵|올림픽|월드컵|"
@@ -63,10 +69,12 @@ def _hits(question: str, words: list[str]) -> list[str]:
 WEAK_CLUB_WORDS = {"얼마", "요금", "가격", "다음", "취소"}
 
 
-def route(question: str) -> str:
-    """'venue' | 'club' | 'both' | 'scope'"""
+def route(question: str, intent: str | None = None) -> str:
+    """'course' | 'venue' | 'club' | 'both' | 'scope'. intent 는 프론트 context.intent ("route"|"baseball"|"stadium")"""
     if OFF_TOPIC.search(question) and not BASEBALL.search(question):
         return "scope"
+    if intent == "route" or COURSE.search(question):
+        return "course"
     v, c = _hits(question, VENUE_WORDS), _hits(question, CLUB_WORDS)
     if v:
         c = [w for w in c if w not in WEAK_CLUB_WORDS]
@@ -91,6 +99,10 @@ def _call(domain, question, history, hint_stadium):
         return domain.answer(question, history=history, hint_stadium=hint_stadium)
     except Exception:            # 한 도메인이 죽어도 챗봇 전체가 죽지 않게
         log.exception("rag domain failed: %s", domain.__name__)
+        if domain is course:     # course 가 죽으면 venue(준비됐으면) → club 순으로 맛집 목록이라도 준다
+            r = _call(venue if venue.READY else club, question, history, hint_stadium)
+            r["route"] = f"course:error>{r['route']}"
+            return r
         if domain is venue:      # venue 가 죽으면 club 이 대신 답한다 (같은 DB 라 답은 나온다)
             try:
                 r = club.answer(question, history=history, hint_stadium=hint_stadium)
@@ -101,17 +113,22 @@ def _call(domain, question, history, hint_stadium):
         return {"answer": persona.FIXED["error"], "sources": [], "route": f"{domain.__name__}:error"}
 
 
-def answer(question: str, history: list[dict] | None = None, stadium_name: str | None = None) -> dict:
-    """진입점. 반환 {"answer", "sources", "route"} — route 는 디버깅용 (어느 길로 갔는지)."""
+def answer(question: str, history: list[dict] | None = None, stadium_name: str | None = None,
+           intent: str | None = None) -> dict:
+    """진입점. 반환 {"answer","sources","route","places","coursePayload"}
+    route 는 디버깅용, places·coursePayload 는 course 일 때만 채워진다."""
     history = history or []
     hint = stadium_code_from_name(stadium_name)
-    kind = route(question)
+    kind = route(question, intent)
 
     if kind == "scope":
-        return {"answer": persona.FIXED["scope"], "sources": [], "route": "dispatcher:scope"}
+        return {"answer": persona.FIXED["scope"], "sources": [], "route": "dispatcher:scope", "places": []}
 
     use_venue = venue.READY
-    if kind == "venue":
+    if kind == "course" and course.READY:
+        result = _call(course, question, history, hint)
+        result["route"] = f"course>{result['route']}"
+    elif kind == "venue":
         result = _call(venue if use_venue else club, question, history, hint)
         result["route"] = f"venue>{result['route']}" if use_venue else f"venue(not ready)>club>{result['route']}"
     elif kind == "both" and use_venue:
@@ -127,4 +144,6 @@ def answer(question: str, history: list[dict] | None = None, stadium_name: str |
         result["route"] = f"club>{result['route']}"
 
     result["answer"] = persona.finalize(result["answer"])
+    result.setdefault("places", [])
+    result.setdefault("coursePayload", None)   # course 만 채운다 — 프론트 "이 코스 저장하기" 버튼용
     return result

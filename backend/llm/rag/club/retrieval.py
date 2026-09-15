@@ -24,6 +24,18 @@ def embed(text: str) -> list[float]:
     return _embedder.embed_query(text)
 
 
+def embed_many(texts: list[str]) -> list[list[float]]:
+    """쿼리 여러 개를 API 호출 1회로 임베딩. embed() 와 같은 클라이언트·같은 모델을 쓴다.
+
+    course 가 "경기 전용 / 경기 후용" 쿼리 두 개를 한 번에 벡터로 만들 때 쓴다
+    (embed() 를 두 번 부르면 네트워크 왕복이 두 번이라 그만큼 느려진다).
+    """
+    global _embedder
+    if _embedder is None:
+        _embedder = OpenAIEmbeddings(model=EMBED_MODEL)
+    return _embedder.embed_documents(texts)
+
+
 def _where(stadium=None, categories=None, must_text=None):
     conds, params = [], {}
     if stadium:

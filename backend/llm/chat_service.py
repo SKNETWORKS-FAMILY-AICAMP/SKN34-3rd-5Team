@@ -1,5 +1,7 @@
 """LangChain 기반 MVP 채팅 서비스."""
 
+import os
+
 from contextlib import suppress
 from pathlib import Path
 
@@ -12,6 +14,7 @@ from langchain_openai import ChatOpenAI
 
 from .chat_message_histories import DjangoChatMessageHistory
 from .models import ChatSession
+from .rag.pipeline import chat_chain
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
@@ -20,8 +23,10 @@ class ChatService:
     MAX_ANSWER_LENGTH = 8000
 
     def __init__(self):
-        self.llm = ChatOpenAI(model="gpt-5.4-mini", timeout=30, max_retries=0)
-        self.chain = self.get_chain()
+        self.llm = ChatOpenAI(model=os.getenv("LLM_MODEL") or "gpt-5.6-luna", timeout=30, max_retries=0)
+        # CHAT_USE_RAG=1 이면 KBO 직관 RAG 체인, 아니면(기본) 기존 helpful-assistant 체인.
+        # RAG 체인도 invoke()/stream() 규격이 같아서 아래 메서드들은 그대로 돈다.
+        self.chain = chat_chain() or self.get_chain()
 
     @staticmethod
     def get_chat_history(user_id: int, conversation_id: int) -> DjangoChatMessageHistory:

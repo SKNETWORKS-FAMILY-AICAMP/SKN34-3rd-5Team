@@ -1,4 +1,7 @@
-"""RAG 체인 G0/G1/G2 (장고 없이 OpenAI SDK 직접). 가드·후처리는 프롬프트가 아니라 코드로 강제."""
+"""[채점용 로컬 도구 · 서비스 코드 아님] API 가 부르는 코드는 backend/llm/rag/club/ (LangChain).
+이 파일은 step4·step5 로 정답률·환각률을 재는 rag_test 전용이라 Django 없이 OpenAI SDK 를 직접 쓴다.
+
+RAG 체인 G0/G1/G2. 가드·후처리는 프롬프트가 아니라 코드로 강제."""
 import re
 import time
 from datetime import date

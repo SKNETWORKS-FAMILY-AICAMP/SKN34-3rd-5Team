@@ -1,14 +1,16 @@
 # llm/rag — KBO 직관 안내 RAG (도메인 분리 구조)
 
-2026-09-14 · 담당: club = 형준, venue = 현준
+2026-09-15 · 담당: club·course = 형준, venue = 현준
 
 ## 구조
 
 ```
 llm/
-├─ rag_views.py          POST /chat/ 뷰 (프론트 계약 그대로 구현해 둠) — 백엔드 담당이 urls.py 에 한 줄만 추가하면 됨
+├─ chat_service.py       성호 채팅 서비스. `self.chain = chat_chain() or self.get_chain()` 한 줄로 RAG 가 붙는다
+├─ rag_views.py          POST /chat/ 뷰 (curl·Postman 확인용. 실사용 경로는 chat/sessions/…)
 └─ rag/
-   ├─ dispatcher.py      안내데스크. 질문을 보고 club / venue / 둘 다 / 범위 밖 으로 나눔 (LLM 0회)
+   ├─ pipeline.py        ★ 백엔드 진입점. answer() + 성호 chain 규격을 만족하는 RagChatChain
+   ├─ dispatcher.py      안내데스크. 질문을 보고 course / club / venue / 둘 다 / 범위 밖 으로 나눔 (LLM 0회)
    ├─ persona.py         말투 규칙 + 후처리(soften/clean). ★ 두 도메인이 같이 쓰는 유일한 공통 파일
    ├─ club/              구단·야구: 순위·일정·가격·예매·좌석·반입·재입장·규칙   — 형준만 수정
    │    agent.py         진입점 answer() · 가드 · 검색 조합 · LangChain ChatOpenAI 호출 · 후처리
@@ -16,10 +18,35 @@ llm/
    │    retrieval.py     임베딩 · pgvector 검색 · 키워드 재정렬
    │    structured.py    순위·일정 DB 직접 조회 (LLM 0회)
    │    prompts.py       내용 규칙 · few-shot · 고정 문구
-   └─ venue/             구장 안팎: 먹거리·시설·교통·포토존·주변  — 현준만 수정
-        agent.py         test.py 이식본 (LangChain create_agent + search_documents_tool · 검색어 변환 · 안/밖 필터 · 키워드 fallback)
-        prompts.py       내용 규칙 · 검색어 변환 프롬프트 (말투는 persona 에서 가져옴)
+   ├─ venue/             구장 안팎: 먹거리·시설·교통·포토존·주변  — 현준만 수정
+   │    agent.py         test.py 이식본 (LangChain create_agent + search_documents_tool · 검색어 변환 · 안/밖 필터 · 키워드 fallback)
+   │    prompts.py       내용 규칙 · 검색어 변환 프롬프트 (말투는 persona 에서 가져옴)
+   └─ course/            ★ 직관 코스 추천 (메인 기능) — 형준만 수정
+        agent.py         진입점 answer() · 경기 조회 → 후보 검색 → LLM 1회(키만 고름) → places[] 조립
+        prompts.py       코스 프롬프트 (JSON 출력 규칙. LLM 은 키 고르기 + 인트로만)
+        slots.py         취향 · 동행(아이·부모님·연인·혼자·회식·친구) · 여유시간 · 재추천 (LLM 0회)
+        timeline.py      경기 시작에서 역산한 도착·출발 시각, 경기 종료 예상, 체류시간 (LLM 0회)
+        geo.py           하버사인 거리 · 8방위 · 총 도보 · 동선 나쁘면 가까운 후보로 교체 (LLM 0회)
+        save.py          places[] → POST /courses/ payload (travel.Course/CourseStop 계약)
 ```
+
+## 챗봇에 어떻게 붙어 있나
+
+성호 `ChatService` 는 `self.chain` 에 두 가지만 요구한다.
+
+```python
+self.chain.invoke({"question": q, "chat_history": messages}) -> str
+self.chain.stream({"question": q, "chat_history": messages}) -> str 청크들
+```
+
+`pipeline.chat_chain()` 이 그 규격을 그대로 만족하는 Runnable 을 돌려주므로, chat_service.py 변경은
+import 1줄 + chain 고르는 1줄이 전부다. 회원(`/chat/sessions/{id}/messages/`)·게스트(`/chat/guest/`)
+두 경로 모두 여기로 들어온다.
+
+- `CHAT_USE_RAG=0`(기본) 이면 `chat_chain()` 이 None → 예전 helpful-assistant 체인 그대로
+- Django 테스트 DB(`test_*`) 로 도는 동안은 자동으로 꺼진다 (기존 회귀 테스트 보호)
+- RAG 는 답을 한 번에 만들므로 `.stream()` 은 완성된 답을 잘라서 흘린다 → SSE 계약·프론트 그대로
+- `places` · `coursePayload` 처럼 문자열 말고 전부가 필요하면 `chain.detail(...)` 또는 `pipeline.answer(...)`
 
 ## 두 도메인이 지키는 약속 (이것만 맞으면 안은 자유)
 
@@ -45,7 +72,7 @@ from llm.rag_views import ChatView
 기존 `chat_service.py`(채팅방 저장 API)에 붙이고 싶으면 RAG 는 이 한 줄이면 된다.
 
 ```python
-from llm.rag import answer
+from llm.rag.pipeline import answer          # from llm.rag import answer 와 같은 함수
 
 result = answer(question,                        # 마지막 user 메시지
                 history=[{"role": "user"|"assistant", "content": "..."}, ...],   # 이번 질문 제외
