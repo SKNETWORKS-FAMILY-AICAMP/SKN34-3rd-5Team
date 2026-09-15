@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import json
 
@@ -6,13 +6,134 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db import DatabaseError
 from django.test import override_settings
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.runnables import RunnableLambda
 from openai import OpenAIError
 from rest_framework.test import APITestCase
 
 from .chat_service import ChatService
 from .models import ChatMessage, ChatSession, ChatTurn, Document, DocumentChunk
+from .tools import create_baseball_tools
+
+
+class ChatToolCallingTest(APITestCase):
+    class BaseballService:
+        def get_baseball_schema(self):
+            return {"tables": [{"quoted_name": '"STADIUM"', "columns": ["name"]}]}
+
+        def execute_baseball_select(self, sql, params=None, max_rows=100):
+            assert sql == 'SELECT "name" FROM "STADIUM"'
+            return {"columns": ["name"], "rows": [["잠실"]], "truncated": False}
+
+    @staticmethod
+    def scripted_model():
+        seen = []
+
+        def respond(prompt):
+            messages = prompt.to_messages()
+            seen.append(messages)
+            tools = [message for message in messages if isinstance(message, ToolMessage)]
+            if not tools:
+                return AIMessage(content="", tool_calls=[{
+                    "name": "get_baseball_schema", "args": {}, "id": "schema-1"
+                }])
+            if len(tools) == 1:
+                return AIMessage(content="작성 중인 SQL은 노출하지 않습니다.", tool_calls=[{
+                    "name": "execute_baseball_select",
+                    "args": {"sql": 'SELECT "name" FROM "STADIUM"'},
+                    "id": "select-1",
+                }])
+            return AIMessage(content="조회 결과는 잠실입니다.")
+
+        model = RunnableLambda(respond)
+        model.bind_tools = Mock(return_value=model)
+        return model, seen
+
+    def service(self):
+        model, seen = self.scripted_model()
+        return ChatService(llm=model, tools=create_baseball_tools(self.BaseballService())), seen
+
+    def test_member_and_guest_use_schema_select_answer_loop(self):
+        user = get_user_model().objects.create_user(username="tool-user")
+        session = ChatSession.objects.create(user=user)
+        service, member_calls = self.service()
+        answer = service.invoke(user.pk, session.pk, "DB에서 야구장 조회해줘")
+        self.assertEqual(answer, "조회 결과는 잠실입니다.")
+        self.assertEqual([m.name for m in member_calls[-1] if isinstance(m, ToolMessage)],
+                         ["get_baseball_schema", "execute_baseball_select"])
+        self.assertEqual(list(session.messages.values_list("role", "message")), [
+            ("human", "DB에서 야구장 조회해줘"), ("ai", "조회 결과는 잠실입니다.")
+        ])
+
+        guest_service, guest_calls = self.service()
+        self.assertEqual(
+            list(guest_service.stream_with_history([], "DB에서 야구장 조회해줘")),
+            ["조회 결과는 잠실입니다."],
+        )
+        self.assertEqual([m.name for m in guest_calls[-1] if isinstance(m, ToolMessage)],
+                         ["get_baseball_schema", "execute_baseball_select"])
+
+    def test_unknown_tool_is_not_dispatched(self):
+        chain = Mock()
+        chain.invoke.side_effect = [
+            AIMessage(content="", tool_calls=[{"name": "drop_database", "args": {}, "id": "bad"}]),
+            AIMessage(content="그 도구는 사용할 수 없습니다."),
+        ]
+        service = ChatService.__new__(ChatService)
+        service.chain = chain
+        service.tools = ()
+        service.tool_map = {}
+        self.assertEqual(
+            service._run({"question": "삭제", "chat_history": []}),
+            "그 도구는 사용할 수 없습니다.",
+        )
+        tool_message = chain.invoke.call_args_list[1].args[0]["tool_messages"][1]
+        self.assertIn("허용되지", tool_message.content)
+
+        chain.invoke.reset_mock()
+        chain.invoke.side_effect = None
+        chain.invoke.return_value = AIMessage(
+            content="", tool_calls=[{"name": "drop_database", "args": {}, "id": ""}]
+        )
+        self.assertIn("한도를 초과", service._run({"question": "삭제", "chat_history": []}))
+        self.assertEqual(chain.invoke.call_count, 1)
+
+    def test_stream_yields_immediately_and_close_stops_provider(self):
+        class ProviderStream:
+            def __init__(self, chunks):
+                self.chunks, self.consumed, self.closed = chunks, 0, False
+
+            def __iter__(self):
+                for chunk in self.chunks:
+                    self.consumed += 1
+                    yield chunk
+
+            def close(self):
+                self.closed = True
+
+        service, _ = self.service()
+        service.chain = Mock()
+        service.chain.invoke.return_value = AIMessage(content="계획 완료")
+        provider = ProviderStream([AIMessage(content="첫 청크"), AIMessage(content="두 번째")])
+        service.final_chain = Mock()
+        service.final_chain.stream.return_value = provider
+        output = service.stream_with_history([], "조회")
+        self.assertEqual(next(output), "첫 청크")
+        self.assertEqual(provider.consumed, 1)
+        output.close()
+        self.assertTrue(provider.closed)
+        self.assertEqual(provider.consumed, 1)
+
+        oversized = ProviderStream([
+            AIMessage(content="x" * service.MAX_ANSWER_LENGTH),
+            AIMessage(content="y"),
+            AIMessage(content="unconsumed"),
+        ])
+        service.final_chain.stream.return_value = oversized
+        with self.assertRaisesRegex(ValueError, "too long"):
+            list(service.stream_with_history([], "조회"))
+        self.assertTrue(oversized.closed)
+        self.assertEqual(oversized.consumed, 2)
 
 
 class DocumentChatCoexistenceTest(APITestCase):
@@ -144,11 +265,7 @@ class ChatApiTest(APITestCase):
         ]
 
     def stream(self, session, question="hello", chunks=("첫 ", "답변")):
-        class Chain:
-            def stream(inner_self, values):
-                yield from chunks
-
-        with patch("llm.chat_service.ChatService.get_chain", return_value=Chain()):
+        with patch.object(ChatService, "stream_with_history", side_effect=lambda *_: iter(chunks)):
             response = self.client.post(
                 f"/chat/sessions/{session.pk}/messages/",
                 {"content": question}, format="json", HTTP_ACCEPT="text/event-stream",
@@ -274,13 +391,12 @@ class ChatApiTest(APITestCase):
 
     @override_settings(CHAT_CHECKPOINT_SIGNING_KEY="test-only-signing-key")
     def test_stream_failure_is_sanitized_and_saves_no_messages(self):
-        class Chain:
-            def stream(inner_self, values):
-                yield "부분"
-                raise OpenAIError("private provider detail")
+        def fail(*_):
+            yield "부분"
+            raise OpenAIError("private provider detail")
 
         session = ChatSession.objects.create(user=self.user)
-        with patch("llm.chat_service.ChatService.get_chain", return_value=Chain()):
+        with patch.object(ChatService, "stream_with_history", side_effect=fail):
             response = self.client.post(
                 f"/chat/sessions/{session.pk}/messages/",
                 {"content": "hello"}, format="json", HTTP_ACCEPT="text/event-stream",

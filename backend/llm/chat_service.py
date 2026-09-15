@@ -1,35 +1,36 @@
 """LangChain 기반 MVP 채팅 서비스."""
 
-import os
-
+import json
 from contextlib import suppress
 from pathlib import Path
 
 from django.db import transaction
 from dotenv import load_dotenv
-from langchain_core.messages import AIMessage, HumanMessage
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 
 from .chat_message_histories import DjangoChatMessageHistory
 from .models import ChatSession
+from .tools import create_baseball_tools
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 
 class ChatService:
     MAX_ANSWER_LENGTH = 8000
+    MAX_TOOL_ROUNDS = 4
+    MAX_TOOL_CALLS = 4
 
-    def __init__(self):
-        # load_dotenv 뒤에 읽어야 backend/.env 의 LLM_MODEL·EMBEDDING_MODEL 이 반영된다.
-        # (RAG 모듈이 깨져도 서버 기동은 되도록 여기서 import 한다)
-        from .rag.pipeline import chat_chain
-
-        self.llm = ChatOpenAI(model=os.getenv("LLM_MODEL") or "gpt-5.6-luna", temperature=0, timeout=30, max_retries=0, reasoning_effort="none")
-        # CHAT_USE_RAG=1 이면 KBO 직관 RAG 체인, 아니면(기본) 기존 helpful-assistant 체인.
-        # RAG 체인도 invoke()/stream() 규격이 같아서 아래 메서드들은 그대로 돈다.
-        self.chain = chat_chain() or self.get_chain()
+    def __init__(self, llm=None, tools=None):
+        self.llm = llm or ChatOpenAI(model="gpt-5.6-luna", temperature=0, timeout=30, max_retries=0, reasoning_effort="none")
+        self.tools = tuple(tools or create_baseball_tools())
+        self.tool_map = {tool.name: tool for tool in self.tools}
+        self.prompt = self.get_prompt()
+        self.chain = self.prompt | (
+            self.llm.bind_tools(self.tools) if hasattr(self.llm, "bind_tools") else self.llm
+        )
+        self.final_chain = self.prompt | self.llm
 
     @staticmethod
     def get_chat_history(user_id: int, conversation_id: int) -> DjangoChatMessageHistory:
@@ -38,15 +39,110 @@ class ChatService:
             session_id=conversation_id,
         )
 
-    def get_chain(self):
-        prompt = ChatPromptTemplate.from_messages(
+    def get_prompt(self):
+        return ChatPromptTemplate.from_messages(
             [
-                ("system", "You are a helpful assistant."),
+                (
+                    "system",
+                    "당신은 정확한 야구 도우미입니다. DB 조회가 필요한 질문은 반드시 "
+                    "get_baseball_schema로 실제 스키마를 먼저 확인한 뒤 "
+                    "execute_baseball_select를 사용하세요. 도구 결과에 없는 테이블, SQL, "
+                    "행을 만들지 말고 0행이면 결과가 없다고 명시하세요. 도구 오류도 숨기거나 "
+                    "원시 DB 세부정보를 덧붙이지 말고 이해하기 쉽게 사실대로 답하세요.",
+                ),
                 MessagesPlaceholder(variable_name="chat_history"),
                 ("human", "{question}"),
+                MessagesPlaceholder(variable_name="tool_messages"),
             ]
         )
-        return prompt | self.llm | StrOutputParser()
+
+    @staticmethod
+    def _content(message):
+        content = message if isinstance(message, str) else message.content
+        if not isinstance(content, str):
+            raise ValueError("Malformed LLM response")
+        return content
+
+    def _tool_messages(self, message, *, schema_seen, calls):
+        results = []
+        for call in message.tool_calls:
+            if calls + len(results) >= self.MAX_TOOL_CALLS:
+                return None, schema_seen
+            name, args, call_id = call.get("name"), call.get("args"), call.get("id")
+            if not isinstance(call_id, str) or not call_id:
+                return None, schema_seen
+            if not isinstance(name, str):
+                return None, schema_seen
+            if name not in self.tool_map or not isinstance(args, dict):
+                content = "허용되지 않거나 형식이 잘못된 도구 호출입니다."
+            elif name == "execute_baseball_select" and not schema_seen:
+                content = "SQL 실행 전에 get_baseball_schema를 먼저 호출해야 합니다."
+            else:
+                result = self.tool_map[name].invoke(args)
+                content = result if isinstance(result, str) else json.dumps(result, ensure_ascii=False)
+                schema_seen |= name == "get_baseball_schema"
+            results.append(ToolMessage(content=content, tool_call_id=call_id, name=name))
+        return results, schema_seen
+
+    def _run(self, values):
+        # CHAT_USE_RAG=1 이면 KBO 직관 RAG 가 답한다 (0 이거나 테스트 중이면 None → 아래 도구 루프 그대로).
+        # 지연 import: RAG 모듈이 깨져도 서버 기동은 되게.
+        from .rag.pipeline import chat_chain
+
+        if rag := chat_chain():
+            return rag.invoke(values)
+        scratchpad, schema_seen, calls = [], False, 0
+        limit_answer = "도구 호출 한도를 초과해 조회를 완료하지 못했습니다. 질문 범위를 줄여 주세요."
+        for _ in range(self.MAX_TOOL_ROUNDS + 1):
+            inputs = {**values, "tool_messages": scratchpad}
+            message = self.chain.invoke(inputs)
+            if not getattr(message, "tool_calls", None):
+                answer = self._content(message)
+                if len(answer) > self.MAX_ANSWER_LENGTH:
+                    raise ValueError("LLM response too long")
+                return answer
+            tool_messages, schema_seen = self._tool_messages(
+                message, schema_seen=schema_seen, calls=calls
+            )
+            if tool_messages is None:
+                return limit_answer
+            calls += len(tool_messages)
+            scratchpad.extend((message, *tool_messages))
+        return limit_answer
+
+    def _plan_stream(self, values):
+        scratchpad, schema_seen, calls = [], False, 0
+        for _ in range(self.MAX_TOOL_ROUNDS + 1):
+            inputs = {**values, "tool_messages": scratchpad}
+            message = self.chain.invoke(inputs)
+            if not getattr(message, "tool_calls", None):
+                return inputs
+            tool_messages, schema_seen = self._tool_messages(
+                message, schema_seen=schema_seen, calls=calls
+            )
+            if tool_messages is None:
+                return None
+            calls += len(tool_messages)
+            scratchpad.extend((message, *tool_messages))
+        return None
+
+    def _stream_final(self, inputs):
+        provider_stream, size = None, 0
+        try:
+            provider_stream = self.final_chain.stream(inputs)
+            for chunk in provider_stream:
+                content = self._content(chunk)
+                if not content:
+                    continue
+                size += len(content)
+                if size > self.MAX_ANSWER_LENGTH:
+                    raise ValueError("LLM response too long")
+                yield content
+        finally:
+            close = getattr(provider_stream, "close", None)
+            if close:
+                with suppress(Exception):
+                    close()
 
     def invoke(self, user_id: int, conversation_id: int, question: str) -> str:
         """이전 대화로 답변을 생성하고 질문·답변을 함께 저장합니다."""
@@ -61,7 +157,7 @@ class ChatService:
             pk=conversation_id, user_id=user_id
         )
         history = self.get_chat_history(user_id, conversation_id)
-        answer = self.chain.invoke({"question": question, "chat_history": history.messages})
+        answer = self._run({"question": question, "chat_history": history.messages})
         # 저장 실패도 호출자에게 전달되도록 콜백 대신 직접 저장합니다.
         saved = history.add_messages([HumanMessage(content=question), AIMessage(content=answer)])
         session.save(update_fields=["updated_at"])
@@ -75,25 +171,13 @@ class ChatService:
 
     def stream_with_history(self, messages, question: str):
         """주어진 제한된 기록으로 모델 청크를 내보냅니다."""
-        provider_stream = None
-        try:
-            provider_stream = self.chain.stream({"question": question, "chat_history": messages})
-            size = 0
-            for chunk in provider_stream:
-                if not isinstance(chunk, str):
-                    raise ValueError("Malformed LLM stream")
-                if not chunk:
-                    continue
-                size += len(chunk)
-                if size > self.MAX_ANSWER_LENGTH:
-                    raise ValueError("LLM response too long")
-                yield chunk
-            close = getattr(provider_stream, "close", None)
-            if close:
-                close()
-            provider_stream = None
-        finally:
-            close = getattr(provider_stream, "close", None)
-            if close:
-                with suppress(Exception):
-                    close()
+        from .rag.pipeline import chat_chain
+
+        if rag := chat_chain():
+            yield from rag.stream({"question": question, "chat_history": messages})
+            return
+        inputs = self._plan_stream({"question": question, "chat_history": messages})
+        if inputs is None:
+            yield "도구 호출 한도를 초과해 조회를 완료하지 못했습니다. 질문 범위를 줄여 주세요."
+            return
+        yield from self._stream_final(inputs)

@@ -116,6 +116,7 @@ def main():
             "--with-requirements", "requirements.txt", "python",
         ]
         run([*uv, "manage.py", "migrate", "--noinput"], cwd=BACKEND, env=env)
+        run([*uv, "-m", "baseball.tests.verify_csv_migration"], cwd=BACKEND, env=env)
         if subprocess.run(
             [*uv, "manage.py", "provision_baseball_reader"], cwd=BACKEND, env=env
         ).returncode == 0:

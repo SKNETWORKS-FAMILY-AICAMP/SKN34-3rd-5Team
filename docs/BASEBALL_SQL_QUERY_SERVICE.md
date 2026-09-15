@@ -1,6 +1,6 @@
 # 야구 읽기 전용 SQL 조회 서비스
 
-`BaseballQueryService`는 `baseball` 앱의 현재 모델 19개를 스키마 정보로 제공하고, 이 테이블만 사용하는 단일 PostgreSQL SELECT를 실행합니다. LangChain tool·HTTP API·자연어 SQL 생성은 이 범위에 포함되지 않습니다.
+`BaseballQueryService`는 `baseball` 앱의 현재 모델 19개를 스키마 정보로 제공하고, 이 테이블만 사용하는 단일 PostgreSQL SELECT를 실행합니다.
 
 ## DB 준비
 
@@ -72,3 +72,23 @@ python3 backend/baseball/tests/run_postgres_integration.py
 ```
 
 runner는 UUID 기반 이름, 별도 owner/reader 암호, Docker가 배정한 임의의 loopback port를 사용합니다. 전용 test settings는 project settings나 dotenv를 import하지 않고 소유 container token과 격리 DB/role 규칙을 확인한 뒤에만 migration·fixture·grant를 허용합니다. 성공·실패와 무관하게 label과 container ID가 모두 일치하는 이번 실행의 container만 제거하며, integration test는 skip으로 성공 처리되지 않습니다.
+
+## LangChain 도구
+
+`llm.tools`는 기존 서비스를 그대로 호출하는 도구 두 개를 제공합니다.
+
+1. `get_baseball_schema`: 먼저 호출해 `public` 스키마의 허용 테이블, 대문자 quoted name, 컬럼, FK 관계를 확인합니다.
+2. `execute_baseball_select`: 스키마 결과로 작성한 PostgreSQL 단일 `SELECT`를 실행합니다. JOIN, 집계, 서브쿼리, 비재귀 CTE와 `%(name)s` named parameter를 지원하며 `max_rows`로 결과를 제한합니다.
+
+```python
+from llm.tools import execute_baseball_select, get_baseball_schema
+
+schema = get_baseball_schema.invoke({})
+result = execute_baseball_select.invoke({
+    "sql": 'SELECT t.team_name_ko, COUNT(g.id) FROM "TEAM" t JOIN "GAME" g ON g.home_team_id=t.id GROUP BY t.id',
+    "params": {},
+    "max_rows": 100,
+})
+```
+
+도구는 SQL을 생성하지 않고, 기본 DB로 우회하지 않으며, 서비스 검증과 제한을 중복 없이 사용합니다. 예상된 입력·조회 오류는 안전한 메시지로 반환하고 예상하지 못한 오류는 전파합니다. LangChain의 `.invoke()`와 `.ainvoke()`에서 사용할 수 있으며 ChatService는 제한된 도구 계획 뒤 도구가 비활성화된 최종 답변을 스트리밍합니다. RAG 흐름에는 연결하지 않습니다.

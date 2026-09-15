@@ -18,12 +18,14 @@ from django.core.management import call_command  # noqa: E402
 from django.core.management.base import CommandError  # noqa: E402
 
 from baseball import models  # noqa: E402
+from baseball.serializers import RESOURCE_MODELS  # noqa: E402
 from baseball.query_repository import (  # noqa: E402
     BaseballQueryAccessDeniedError,
     BaseballQueryLockTimeoutError,
     BaseballQueryTimeoutError,
 )
 from baseball.query_service import BaseballQueryService  # noqa: E402
+from llm.tools import create_baseball_tools  # noqa: E402
 
 
 class BaseballPostgresIntegrationTest(unittest.TestCase):
@@ -51,6 +53,8 @@ class BaseballPostgresIntegrationTest(unittest.TestCase):
 
     @classmethod
     def _create_fixtures(cls):
+        for model in reversed(RESOURCE_MODELS.values()):
+            model.objects.all().delete()
         now = datetime(2026, 9, 14, tzinfo=timezone.utc)
         team1 = models.Team.objects.create(id=1, team_code="H", team_name_ko="홈")
         team2 = models.Team.objects.create(id=2, team_code="A", team_name_ko="원정")
@@ -139,6 +143,25 @@ class BaseballPostgresIntegrationTest(unittest.TestCase):
         )
         for query in queries:
             self.assertTrue(self.service.execute_baseball_select(query, {}, 10)["rows"])
+
+    def test_langchain_tools_use_restricted_database_and_deny_writes(self):
+        schema_tool, select_tool = create_baseball_tools(self.service)
+        self.assertEqual(len(schema_tool.invoke({})["tables"]), 19)
+        result = select_tool.invoke(
+            {
+                "sql": (
+                    'SELECT t.team_name_ko, COUNT(g.id) AS games FROM "TEAM" t '
+                    'JOIN "GAME" g ON g.home_team_id=t.id GROUP BY t.id'
+                ),
+                "max_rows": 10,
+            }
+        )
+        self.assertEqual(result["columns"], ["team_name_ko", "games"])
+        self.assertEqual(result["rows"], [["홈", 1]])
+        self.assertEqual(
+            select_tool.invoke({"sql": 'DELETE FROM "TEAM"'}),
+            "단일 SELECT 문만 허용됩니다.",
+        )
 
     def test_parameters_truncation_timeout_and_recovery(self):
         injected = "홈' OR 1=1 --"
