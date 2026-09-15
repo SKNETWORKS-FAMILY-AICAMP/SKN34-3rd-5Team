@@ -20,6 +20,7 @@ from rest_framework.exceptions import APIException
 from .chat_message_histories import DjangoChatMessageHistory
 from .chat_service import ChatService
 from .models import ChatMessage, ChatSession, ChatTurn
+from .rag.pipeline import last_detail
 
 
 RECEIPT_SALT = "llm.chat-checkpoint.v1"
@@ -43,6 +44,17 @@ class EventStreamRenderer(BaseRenderer):
 
 def sse(event, data):
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+def course_meta():
+    """이번 요청의 RAG 결과에서 지도·코스 저장에 쓸 것만 추린다 (코스 추천일 때만 값이 있다).
+
+    CHAT_USE_RAG=0 이거나 코스 질문이 아니면 None → meta 이벤트를 아예 안 보낸다.
+    """
+    d = last_detail()
+    if not d or not (d.get("places") or d.get("coursePayload")):
+        return None
+    return {"places": d.get("places") or [], "coursePayload": d.get("coursePayload"), "route": d.get("route", "")}
 
 
 def checkpoint_receipt(turn, prefix, complete=False):
@@ -174,6 +186,7 @@ class ChatMessageView(generics.ListCreateAPIView):
                 "status": "completed",
                 "user_message_id": human.pk,
                 "assistant_message_id": assistant.pk,
+                **(course_meta() or {}),
             },
             status=status.HTTP_201_CREATED,
         )
@@ -214,6 +227,9 @@ class ChatMessageView(generics.ListCreateAPIView):
                     {
                         "turn_id": str(turn.pk),
                         "receipt": checkpoint_receipt(turn, answer, complete=True),
+                        # 코스 추천일 때만 붙는다. 프론트 파서는 done 의 모르는 키를 무시하므로
+                        # 화면 수정 전에도 안 깨지고, 지도 카드·코스 저장 버튼이 붙을 때 읽어 쓰면 된다.
+                        **(course_meta() or {}),
                     },
                 )
             except GeneratorExit:
@@ -377,7 +393,7 @@ class GuestChatView(generics.GenericAPIView):
                     yield sse("delta", {"text": chunk})
                 if not answer.strip():
                     raise ValueError("Empty LLM response")
-                yield sse("done", {"assistant_message": answer})
+                yield sse("done", {"assistant_message": answer, **(course_meta() or {})})
             except GeneratorExit:
                 raise
             except Exception:

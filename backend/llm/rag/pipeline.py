@@ -47,6 +47,7 @@ ChatService 쪽 변경은 import 1줄 + chain 고르는 1줄이 전부다.
 LangSmith: backend/.env 에 LANGSMITH_TRACING=true · LANGSMITH_API_KEY · LANGSMITH_PROJECT 를 넣으면
            answer() 한 번이 트리 하나로 기록된다. env 가 없으면 오버헤드 0.
 """
+import contextvars
 import inspect
 import os
 import re
@@ -73,6 +74,22 @@ _STADIUM_PREFIX = re.compile(r"^\s*\[선택한 구장:\s*([^\]]+)\]\s*")   # 프
 _HAS_INTENT = "intent" in inspect.signature(dispatcher.answer).parameters
 
 STREAM_CHUNK = 24          # RAG 답은 한 번에 완성되므로 이만큼씩 끊어 흘린다 (화면 타이핑 효과)
+
+# 이번 요청의 RAG 결과를 뷰가 꺼내 쓰라고 잠깐 놔두는 자리.
+# 체인은 문자열만 돌려주는데(성호 규격), 뷰는 places·coursePayload 도 내려줘야 해서 필요하다.
+# ContextVar 라 요청(스레드)마다 따로 놀아서 동시 요청이 섞이지 않는다.
+_LAST = contextvars.ContextVar("kbo_rag_last_detail", default=None)
+
+
+def last_detail():
+    """직전에 이 요청에서 돌린 RAG 결과 dict (없으면 None).
+
+    뷰에서 이렇게 쓴다:
+        answer = ...체인 실행...
+        d = last_detail()
+        if d: 응답에 d["places"] · d["coursePayload"] 를 실어 보낸다
+    """
+    return _LAST.get()
 
 
 def use_rag() -> bool:
@@ -166,8 +183,10 @@ class RagChatChain(Runnable[dict, str]):
         }
 
     def detail(self, inputs: Any) -> dict:
-        """places·sources 까지 필요할 때 (뷰에서 코스 저장 payload 를 쓸 때)"""
-        return answer(**self._args(inputs))
+        """places·sources 까지 필요할 때. 결과를 last_detail() 로도 꺼낼 수 있게 놔둔다."""
+        result = answer(**self._args(inputs))
+        _LAST.set(result)
+        return result
 
     def invoke(self, input: Any, config: Optional[RunnableConfig] = None, **kwargs) -> str:
         return self.detail(input)["answer"]

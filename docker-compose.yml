@@ -32,6 +32,13 @@ services:
       CHAT_CHECKPOINT_SIGNING_KEY: ${CHAT_CHECKPOINT_SIGNING_KEY:?Set CHAT_CHECKPOINT_SIGNING_KEY}
       CHAT_TRUST_PROXY_HEADERS: "true"
       EMBEDDING_MODEL: ${EMBEDDING_MODEL}
+      LLM_MODEL: ${LLM_MODEL:-gpt-5.6-luna}
+      # 챗봇을 KBO 직관 RAG 로 돌릴지. 0 이면 기존 helpful-assistant 체인 그대로 (비교 시연용)
+      CHAT_USE_RAG: ${CHAT_USE_RAG:-0}
+      # LangSmith 추적·평가. 키가 없으면 traceable 이 no-op 이라 오버헤드 0
+      LANGSMITH_TRACING: ${LANGSMITH_TRACING:-false}
+      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
+      LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-kbo-rag}
       AUTH_FRONTEND_ORIGIN: ${AUTH_FRONTEND_ORIGIN:-http://127.0.0.1:80}
       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
       EMAIL_HOST: ${EMAIL_HOST:-mailpit}
