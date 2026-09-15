@@ -230,7 +230,7 @@ _ctx: contextvars.ContextVar[dict] = contextvars.ContextVar("venue_ctx")   # 도
 def llm():
     global _llm
     if _llm is None:
-        _llm = ChatOpenAI(model=LLM_MODEL, timeout=25, max_retries=0)
+        _llm = ChatOpenAI(model=LLM_MODEL, temperature=0, timeout=25, max_retries=0, reasoning_effort="none")
     return _llm
 
 
