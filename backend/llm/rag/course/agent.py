@@ -72,7 +72,7 @@ def stadium_anchor(code):
         cur.execute("""SELECT metadata FROM llm_documentchunk
                        WHERE metadata->>'category' = 'STADIUM' AND metadata->>'stadium_code' = %s LIMIT 1""", [code])
         row = cur.fetchone()
-    m = row[0] if row else {}
+    m = _meta(row[0]) if row else {}
     return {"key": "STADIUM", "phase": "GAME", "name": m.get("stadium_name_ko") or STADIUM_KO.get(code, code),
             "lat": _f(m.get("lat_y")), "lng": _f(m.get("lng_x")), "category": "STADIUM", "detail": "",
             "placeId": None, "address": m.get("address") or "", "placeUrl": "", "distance": 0, "doc_id": m.get("doc_id")}
@@ -89,11 +89,22 @@ def search_places(qvec, code, category, k):
         cur.execute(f"SET LOCAL hnsw.ef_search = {int(EF_SEARCH)}")
         cur.execute(sql, params)
         rows = cur.fetchall()
+    rows = [(_meta(m), d) for m, d in rows]
     return [{"dist": float(d), "category": category, "name": m.get("name") or "",
              "detail": m.get("category_detail") or "", "distance": int(_f(m.get("distance_m")) or 0),
              "lat": _f(m.get("lat_y")), "lng": _f(m.get("lng_x")), "address": m.get("address") or "",
              "placeId": _kakao_id(m), "placeUrl": m.get("place_url") or "", "doc_id": m.get("doc_id")}
             for m, d in rows]
+
+
+def _meta(m):
+    """metadata 컬럼을 dict 로. jsonb 가 드라이버·적재 방식에 따라 문자열로 올 때가 있어 방어한다."""
+    if isinstance(m, str):
+        try:
+            m = json.loads(m)
+        except (json.JSONDecodeError, TypeError):
+            return {}
+    return m if isinstance(m, dict) else {}
 
 
 def _f(v):

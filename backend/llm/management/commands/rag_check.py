@@ -71,6 +71,39 @@ class Command(BaseCommand):
         except Exception as e:
             p(ng(f"    DB 조회 실패: {e!r}"))
 
+        p("\n[3-1] 코스용 메타데이터 (카카오 장소 청크)")
+        try:
+            import json as _json
+            with connection.cursor() as cur:
+                cur.execute("""SELECT metadata FROM llm_documentchunk
+                               WHERE metadata->>'category' = 'FOOD_OUT' LIMIT 1""")
+                row = cur.fetchone()
+            if not row:
+                p(ng("    FOOD_OUT 청크가 없습니다 — 카카오 장소가 적재 안 됐어요"))
+            else:
+                raw = row[0]
+                p(f"    파이썬 타입   {type(raw).__name__}"
+                  f"{'  (str 로 와서 _meta() 가 파싱합니다)' if isinstance(raw, str) else ''}")
+                m = _json.loads(raw) if isinstance(raw, str) else raw
+                need = ("name", "lat_y", "lng_x", "distance_m", "category_detail",
+                        "kakao_place_id", "address", "stadium_code", "doc_id")
+                miss = [k for k in need if not m.get(k)]
+                p(f"    필요 키      {ok('전부 있음') if not miss else ng('빠짐: ' + ', '.join(miss))}")
+                p(f"    예시         {m.get('name')} · {m.get('category_detail')} · "
+                  f"{m.get('distance_m')}m · ({m.get('lat_y')}, {m.get('lng_x')})")
+            with connection.cursor() as cur:
+                cur.execute("""SELECT metadata FROM llm_documentchunk
+                               WHERE metadata->>'category' = 'STADIUM'
+                                 AND metadata->>'stadium_code' = 'JAMSIL' LIMIT 1""")
+                row = cur.fetchone()
+            if not row:
+                p(ng("    JAMSIL STADIUM 청크 없음 — 코스에 구장 좌표를 못 붙입니다"))
+            else:
+                m = _json.loads(row[0]) if isinstance(row[0], str) else row[0]
+                p(f"    구장 앵커    {m.get('stadium_name_ko')} ({m.get('lat_y')}, {m.get('lng_x')})")
+        except Exception as e:
+            p(ng(f"    확인 실패: {e!r}"))
+
         p("\n[4] 실제 호출")
         q = "잠실에서 친구들이랑 첫 직관인데 경기 전후 코스 짜줘. 치킨 좋아해" if o["course"] else o["question"]
         p(f"    질문: {q}")
