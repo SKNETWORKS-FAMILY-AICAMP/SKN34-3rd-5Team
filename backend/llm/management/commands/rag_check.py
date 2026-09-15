@@ -35,6 +35,8 @@ class Command(BaseCommand):
         parser.add_argument("-q", "--question", default="LG 지금 몇 위야?")
         parser.add_argument("--course", action="store_true", help="코스 추천 질문으로 확인")
         parser.add_argument("--stadium", default=None, help='예: "잠실야구장"')
+        parser.add_argument("--twice", action="store_true",
+                            help="같은 프로세스에서 두 번 호출해 콜드/웜 차이를 본다 (실서버는 웜 상태로 돈다)")
 
     def handle(self, *a, **o):
         ok, ng = self.style.SUCCESS, self.style.ERROR
@@ -125,4 +127,17 @@ class Command(BaseCommand):
         if r.get("coursePayload"):
             cp = r["coursePayload"]
             p(f"    코스저장 payload: '{cp['title']}' · {cp['duration']} · stops {len(cp['stops'])}개")
+
+        if o["twice"]:
+            p("\n[5] 두 번째 호출 (같은 프로세스 = 실서버와 같은 웜 상태)")
+            t0 = time.perf_counter()
+            r2 = answer(q, stadium_name=o["stadium"])
+            ms2 = (time.perf_counter() - t0) * 1000
+            t1, t2 = r.get("timing") or {}, r2.get("timing") or {}
+            p(f"    {'단계':<12}{'1회차(콜드)':>12}{'2회차(웜)':>12}")
+            for k in ("embed_ms", "retrieval_ms", "llm_ms", "structured_ms"):
+                if k in t1 or k in t2:
+                    p(f"    {k:<12}{t1.get(k, 0):>10}ms{t2.get(k, 0):>10}ms")
+            p(f"    {'합계':<12}{ms:>10.0f}ms{ms2:>10.0f}ms")
+            p("    → 2회차가 실서버 체감 속도입니다. embed 가 여기서도 1초 넘으면 진짜 병목이에요.")
         p(ok("\n  통과 — 챗봇이 RAG 로 답하고 있습니다\n") if on else "\n")
