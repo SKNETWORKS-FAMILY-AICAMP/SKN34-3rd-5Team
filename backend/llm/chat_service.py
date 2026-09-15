@@ -14,7 +14,6 @@ from langchain_openai import ChatOpenAI
 
 from .chat_message_histories import DjangoChatMessageHistory
 from .models import ChatSession
-from .rag.pipeline import chat_chain
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
@@ -23,6 +22,10 @@ class ChatService:
     MAX_ANSWER_LENGTH = 8000
 
     def __init__(self):
+        # load_dotenv 뒤에 읽어야 backend/.env 의 LLM_MODEL·EMBEDDING_MODEL 이 반영된다.
+        # (RAG 모듈이 깨져도 서버 기동은 되도록 여기서 import 한다)
+        from .rag.pipeline import chat_chain
+
         self.llm = ChatOpenAI(model=os.getenv("LLM_MODEL") or "gpt-5.6-luna", timeout=30, max_retries=0)
         # CHAT_USE_RAG=1 이면 KBO 직관 RAG 체인, 아니면(기본) 기존 helpful-assistant 체인.
         # RAG 체인도 invoke()/stream() 규격이 같아서 아래 메서드들은 그대로 돈다.
