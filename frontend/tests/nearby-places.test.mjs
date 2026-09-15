@@ -117,47 +117,66 @@ function fakeMaps(handler) {
     } },
   };
 }
+test("place search uses the same-origin directions POST instead of the browser Places SDK", async () => {
+  const calls = [];
+  const maps = fakeMaps(() => { throw new Error("browser Places SDK must not run"); });
+  const result = await searchPage(maps, stadium, { kind: "food", method: "category", query: "FD6" }, 1, new AbortController().signal, async (url, options) => {
+    calls.push({ url, options, body: JSON.parse(options.body) });
+    return Response.json({ places: [raw()], hasNextPage: false });
+  });
+  assert.equal(result.places.length, 1);
+  assert.deepEqual(calls.map(({ url, options, body }) => ({ url, httpMethod: options.method, action: body.action, searchMethod: body.method })), [
+    { url: "/directions-api", httpMethod: "POST", action: "places", searchMethod: "category" },
+  ]);
+});
 test("search options always use the stadium, radius, distance ordering and bounded pages", async () => {
   const calls = [];
-  const maps = fakeMaps((query, callback, options) => { calls.push({ query, ...options }); queueMicrotask(() => callback([raw()], "OK", { hasNextPage: true })); });
+  const maps = fakeMaps(() => { throw new Error("browser Places SDK must not run"); });
+  const fetcher = async (_, options) => { const body = JSON.parse(options.body); calls.push(body); return Response.json({ places: [raw()], hasNextPage: true }); };
   let finalPlaces = [];
-  const result = await collectNearbyPlaces(maps, { ...stadium, code: "pagination" }, new AbortController().signal, () => "all", (items) => { finalPlaces = mergePlaces(finalPlaces, items); });
+  const result = await collectNearbyPlaces(maps, { ...stadium, code: "pagination" }, new AbortController().signal, () => "all", (items) => { finalPlaces = mergePlaces(finalPlaces, items); }, fetcher);
   assert.equal(result.failures, 0);
   assert.equal(finalPlaces.length, 1);
-  assert.ok(calls.every((call) => call.radius === 2500 && call.size === 15 && call.page <= 3 && call.sort === "distance" && call.location.lat === stadium.lat));
-  assert.ok(calls.findIndex((c) => c.query === "AD5") > calls.findLastIndex((c) => c.query === "FD6"));
+  assert.ok(calls.every((call) => call.radius === 2500 && call.size === 15 && call.page <= 3 && call.sort === "distance" && call.lat === stadium.lat));
+  assert.ok(calls.findIndex((c) => c.category === "AD5") > calls.findLastIndex((c) => c.category === "FD6"));
 });
 test("explicit lodging filter moves lodging to front of the queue", async () => {
   const calls = [];
-  const maps = fakeMaps((query, callback) => { calls.push(query); queueMicrotask(() => callback([], "ZERO_RESULT", { hasNextPage: false })); });
-  await collectNearbyPlaces(maps, { ...stadium, code: "preferred" }, new AbortController().signal, () => "stay", () => {});
+  const maps = fakeMaps(() => { throw new Error("browser Places SDK must not run"); });
+  await collectNearbyPlaces(maps, { ...stadium, code: "preferred" }, new AbortController().signal, () => "stay", () => {}, async (_, options) => { const body = JSON.parse(options.body); calls.push(body.category ?? body.keyword); return Response.json({ places: [], hasNextPage: false }); });
   assert.equal(calls[0], "AD5");
 });
 test("partial API errors retain successful results and are reported", async () => {
   let received = 0;
-  const maps = fakeMaps((query, callback) => queueMicrotask(() => callback(query === "FD6" ? [] : [raw()], query === "FD6" ? "ERROR" : "OK", { hasNextPage: false })));
-  const result = await collectNearbyPlaces(maps, { ...stadium, code: "partial" }, new AbortController().signal, () => "all", (items) => { received += items.length; });
+  const maps = fakeMaps(() => { throw new Error("browser Places SDK must not run"); });
+  const result = await collectNearbyPlaces(maps, { ...stadium, code: "partial" }, new AbortController().signal, () => "all", (items) => { received += items.length; }, async (_, options) => {
+    const body = JSON.parse(options.body), failed = body.method === "category" && body.category === "FD6";
+    return Response.json(failed ? { error: "failed" } : { places: [raw()], hasNextPage: false }, { status: failed ? 502 : 200 });
+  });
   assert.equal(result.failures, 1);
   assert.ok(received > 0);
 });
 test("aborting an in-flight request discards its eventual response", async () => {
-  let callback;
-  const maps = fakeMaps((_, cb) => { callback = cb; });
+  let finish;
+  const maps = fakeMaps(() => { throw new Error("browser Places SDK must not run"); });
   const controller = new AbortController();
-  const request = searchPage(maps, { ...stadium, code: "aborted" }, { kind: "food", method: "category", query: "FD6" }, 1, controller.signal);
+  const request = searchPage(maps, { ...stadium, code: "aborted" }, { kind: "food", method: "category", query: "FD6" }, 1, controller.signal, (_, options) => new Promise((resolve, reject) => {
+    finish = resolve;
+    options.signal.addEventListener("abort", () => reject(new DOMException("cancelled", "AbortError")), { once: true });
+  }));
   controller.abort();
   await assert.rejects(request, { name: "AbortError" });
-  callback([raw()], "OK", { hasNextPage: false });
+  finish(Response.json({ places: [raw()], hasNextPage: false }));
 });
 test("stadium resolution uses the actual baseball venue instead of a tenant or complex address", async () => {
-  const maps = fakeMaps((_, callback, options) => { assert.equal(options.sort, "accuracy"); callback([raw({ place_name: "BBQ 잠실야구장점" }), raw({ place_name: "잠실종합운동장 잠실야구장", category_name: "스포츠 > 스포츠시설 > 야구장", x: "127.071", y: "37.513" })], "OK", { hasNextPage: false }); });
-  const result = await resolveStadium(maps, { ...stadium, code: "resolve" }, new AbortController().signal);
+  const maps = fakeMaps(() => { throw new Error("browser Places SDK must not run"); });
+  const result = await resolveStadium(maps, { ...stadium, code: "resolve" }, new AbortController().signal, async (_, options) => { assert.equal(JSON.parse(options.body).sort, "accuracy"); return Response.json({ places: [raw({ place_name: "BBQ 잠실야구장점" }), raw({ place_name: "잠실종합운동장 잠실야구장", category_name: "스포츠 > 스포츠시설 > 야구장", x: "127.071", y: "37.513" })], hasNextPage: false }); });
   assert.equal(result.lat, 37.513);
   assert.equal(result.lng, 127.071);
 });
 test("stadium resolution accepts the provider's Korean KIA spelling", async () => {
-  const maps = fakeMaps((_, callback) => callback([raw({ place_name: "광주기아챔피언스필드", category_name: "스포츠,레저 > 야구 > 야구장" })], "OK", { hasNextPage: false }));
-  const result = await resolveStadium(maps, { ...stadium, code: "GWANGJU", name: "광주-KIA 챔피언스 필드" }, new AbortController().signal);
+  const maps = fakeMaps(() => { throw new Error("browser Places SDK must not run"); });
+  const result = await resolveStadium(maps, { ...stadium, code: "GWANGJU", name: "광주-KIA 챔피언스 필드" }, new AbortController().signal, async () => Response.json({ places: [raw({ place_name: "광주기아챔피언스필드", category_name: "스포츠,레저 > 야구 > 야구장" })], hasNextPage: false }));
   assert.equal(result.code, "GWANGJU");
 });
 

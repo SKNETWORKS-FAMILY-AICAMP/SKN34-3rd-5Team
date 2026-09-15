@@ -9,10 +9,12 @@ import type { RouteStop, TripRoute } from "@/lib/routes";
 import { coursePointLabel, renumberMapPoints, undoDrawnPoint } from "@/lib/drawn-course";
 import { CourseTravelPanel, useCourseDirections, useTravelOverlay } from "./course-travel";
 import type { TourResult } from "@/lib/tour-places";
+import type { TravelMode } from "@/lib/course-directions";
 
 type PlannerProps = {
   stadium: NearbyStadium; stops: RouteStop[]; onChange: (stops: RouteStop[]) => void;
   initialStart?: TripRoute["start"]; onStartChange: (start: TripRoute["start"]) => void;
+  initialTravelMode?: TravelMode; onTravelModeChange?: (mode: TravelMode) => void;
   courseName: string; onCourseNameChange: (name: string) => void;
   onSaveCourse: () => Promise<void>; saving: boolean; saveError: string;
 };
@@ -60,7 +62,7 @@ export function NearbyRoutePlanner(props: PlannerProps) {
   </div>;
 }
 
-function LoadedPlanner({ maps, stadium, stops, onChange: onStopsChange, initialStart, onStartChange, courseName, onCourseNameChange, onSaveCourse, saving, saveError }: PlannerProps & { maps: KakaoMaps }) {
+function LoadedPlanner({ maps, stadium, stops, onChange: onStopsChange, initialStart, onStartChange, initialTravelMode, onTravelModeChange, courseName, onCourseNameChange, onSaveCourse, saving, saveError }: PlannerProps & { maps: KakaoMaps }) {
   const stopSnapshot = useRef(stops);
   useLayoutEffect(() => { stopSnapshot.current = stops; }, [stops]);
   const onChange = useCallback((next: RouteStop[]) => {
@@ -77,7 +79,7 @@ function LoadedPlanner({ maps, stadium, stops, onChange: onStopsChange, initialS
     if (initialStart || !(current[0]?.isMapPoint || current[0]?.isDrawnPoint)) return false;
     onChange([{ ...point, name: "출발지", category: "출발", placeId: "route:origin", isDrawnPoint: true }, ...current.slice(1)]);
     return true;
-  });
+  }, initialTravelMode, onTravelModeChange);
   useEffect(() => { onStartChange(travel.location ?? undefined); }, [travel.location, onStartChange]);
   const canComplete = stops.length > 0 && !travel.picking && !travel.locating && (travel.origin === "first" || Boolean(travel.location));
   const canSaveCourse = canComplete && Boolean(courseName.trim()) && !saving;
@@ -263,8 +265,7 @@ function LoadedPlanner({ maps, stadium, stops, onChange: onStopsChange, initialS
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
     let active = true;
-    const params = new URLSearchParams({ stadium: stadium.code, lat: String(stadium.lat), lng: String(stadium.lng) });
-    fetch(`/tour-api?${params}`, { signal: controller.signal }).then(async (response) => {
+    fetch("/directions-api", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "tourism", stadium: stadium.code, lat: stadium.lat, lng: stadium.lng }), signal: controller.signal }).then(async (response) => {
       if (!response.ok) throw new Error("Tourism places unavailable");
       const result: TourResult = await response.json();
       if (!Array.isArray(result.places) || !["ok", "partial", "unconfigured", "error"].includes(result.status)) throw new Error("Invalid tourism response");
@@ -476,7 +477,7 @@ function LoadedPlanner({ maps, stadium, stops, onChange: onStopsChange, initialS
             <label htmlFor="planner-course-name">코스 이름</label>
             <input id="planner-course-name" value={courseName} maxLength={80} disabled={saving} placeholder="코스 이름을 입력하세요" onChange={(event) => onCourseNameChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); if (canSaveCourse) void onSaveCourse(); } }} />
             <button type="button" className="course-save-button" disabled={!canSaveCourse} onClick={() => void onSaveCourse()}>{saving ? "저장 중…" : "코스 저장"}</button>
-            <small>이 브라우저에 저장돼요.</small>
+            <small>저장한 코스는 커뮤니티에 공개돼요.</small>
             {saveError && <p role="alert" className="course-save-error">{saveError}</p>}
           </div> : undefined} onFit={fitCourse} /><RouteStops stops={stops} onChange={onChange} separateStart={separateStart} onFocus={(stop) => selectPlace(places.find((p) => sameStop(stop, p)) ?? stop)} /></> : <>
             <label className="planner-search"><span className="sr-only">불러온 장소에서 찾기</span><input type="search" value={query} placeholder="불러온 장소에서 찾기" onChange={(event) => { setQuery(event.target.value); setListLimit(30); }} onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }} /></label>

@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { getFreeBoardPosts } from "@/lib/free-community-examples";
 import { CommunityPostBottom } from "./community-post-bottom";
 import { PostCategory } from "./post-category";
 import { PostReportButton } from "./post-report-button";
 import { PostCommentCount } from "./post-comment-count";
 import { useRef, useState } from "react";
-import { getTeamBoard, getTeamBoardHref, getTeamBoardPosts, teamBoards } from "@/lib/team-community";
+import { getTeamBoard, getTeamBoardHref, teamBoards } from "@/lib/team-community";
+import { retryCommunityPosts, useCommunityPosts } from "@/lib/community-api";
 import { useCommunityVotes } from "@/lib/community-votes";
 import styles from "./community-board.module.css";
 
@@ -23,7 +23,8 @@ export function CommunityBoard({ section, teamCode = "", postId = "" }: { sectio
   const [voteError, setVoteError] = useState("");
   const board = boards.find((item) => item.id === section)!;
   const team = section === "free" ? undefined : getTeamBoard(teamCode);
-  const allPosts = section === "teams" ? teamBoards.flatMap(item => getTeamBoardPosts(item.code)) : section === "free" ? getFreeBoardPosts() : [];
+  const community = useCommunityPosts(section !== "predictions");
+  const allPosts = section === "predictions" ? [] : community.posts.filter(post => post.board === section);
   const searchContext = `${section}:${teamCode}:${postId}`;
   const [search, setSearch] = useState({ context: searchContext, team: team?.code ?? "all", field: "all", query: "" });
   const activeSearch = search.context === searchContext ? search : { team: team?.code ?? "all", field: "all", query: "" };
@@ -54,7 +55,8 @@ export function CommunityBoard({ section, teamCode = "", postId = "" }: { sectio
       <Link href={getTeamBoardHref()} aria-current={!team ? "page" : undefined}>전체</Link>
       {teamBoards.map(item => <Link key={item.code} href={getTeamBoardHref(item.code)} aria-current={team?.code === item.code ? "page" : undefined}>{item.shortName}</Link>)}
     </nav>}
-    <section aria-label={`${board.title} 글 목록`}>
+    {section !== "predictions" && community.error && community.posts.length > 0 && <p role="alert">{community.error} <button type="button" onClick={() => void retryCommunityPosts()}>다시 시도</button></p>}
+    {section !== "predictions" && community.loading && community.posts.length === 0 ? <p role="status">게시글을 불러오고 있어요.</p> : section !== "predictions" && community.error && community.posts.length === 0 ? <p role="alert">{community.error} <button type="button" onClick={() => void retryCommunityPosts()}>다시 시도</button></p> : <section aria-label={`${board.title} 글 목록`}>
       {selectedPost && <article className={styles.postDetail}>
         <header className={styles.postHeader}>
           <h2 className={styles.postHeading}>{section !== "free" && <strong>{getTeamBoard(selectedPost.teamCode)?.shortName}</strong>}<PostCategory category={selectedPost.category} freeBoard={section === "free"} /><span>{selectedPost.title}<PostCommentCount count={selectedPost.commentCount} /></span></h2>
@@ -114,6 +116,6 @@ export function CommunityBoard({ section, teamCode = "", postId = "" }: { sectio
         <input name="query" type="search" aria-label="검색어" placeholder="검색어를 입력하세요" />
         <button type="submit">검색</button>
       </form>
-    </section>
+    </section>}
   </main>;
 }

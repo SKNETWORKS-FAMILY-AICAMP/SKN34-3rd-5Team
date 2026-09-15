@@ -14,9 +14,10 @@ import type { CSSProperties, ReactNode } from "react";
 const LEG_COLORS = ["#3478dc", "#d76a32", "#8954b9", "#218777", "#c44776", "#9b7928", "#467b90", "#a65346", "#6663b5", "#52853d", "#ae549a", "#55718c"];
 const legColor = (index: number) => LEG_COLORS[index % LEG_COLORS.length];
 
-export function useCourseDirections(stops: RouteStop[], enabled = true, initialStart?: TravelPoint, replaceOrigin?: (point: TravelPoint) => boolean) {
+export function useCourseDirections(stops: RouteStop[], enabled = true, initialStart?: TravelPoint, replaceOrigin?: (point: TravelPoint) => boolean, initialMode: TravelMode = "walk", onModeChange?: (mode: TravelMode) => void) {
   const [legSelection, setLegSelection] = useState<{ key: string; index: number } | null>(null);
-  const [mode, setMode] = useState<TravelMode>("walk");
+  const [mode, setModeState] = useState<TravelMode>(initialMode);
+  const setMode = (next: TravelMode) => { setModeState(next); onModeChange?.(next); };
   const [origin, setOrigin] = useState<"first" | "current" | "custom">(initialStart ? "custom" : "first");
   const [customLocation, setCustomLocation] = useState<TravelPoint | null>(initialStart ?? null);
   const [picking, setPicking] = useState(false);
@@ -29,7 +30,7 @@ export function useCourseDirections(stops: RouteStop[], enabled = true, initialS
   const startLocation = origin === "current" ? location : origin === "custom" ? customLocation : null;
   const points = useMemo(() => startLocation ? [startLocation, ...stops] : stops, [startLocation, stops]);
   const ready = enabled && stops.length > 0 && points.length >= 2 && (origin === "first" || Boolean(startLocation)) && !locating && !picking;
-  const payload = JSON.stringify({ mode, points: points.map(({ lat, lng }) => ({ lat, lng })) });
+  const payload = JSON.stringify({ action: "directions", mode, points: points.map(({ lat, lng }) => ({ lat, lng })) });
   const requestKey = `${payload}:${attempt}`;
   useEffect(() => () => { locationRequest.current++; }, []);
   useEffect(() => {

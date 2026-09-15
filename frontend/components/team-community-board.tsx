@@ -6,7 +6,8 @@ import { PostCommentCount } from "./post-comment-count";
 import { useRef, useState } from "react";
 import { Icon } from "@/components/icons";
 import { TeamLogo } from "@/components/team-logo";
-import { getTeamBoard, getTeamBoardHref, getTeamBoardPosts, teamBoards } from "@/lib/team-community";
+import { getTeamBoard, getTeamBoardHref, teamBoards } from "@/lib/team-community";
+import { retryCommunityPosts, useCommunityPosts } from "@/lib/community-api";
 import "@/styles/team-community.css";
 
 export function CommunityBoardTabs({ active }: { active: "routes" | "free" }) {
@@ -20,7 +21,8 @@ export function CommunityBoardTabs({ active }: { active: "routes" | "free" }) {
 
 export function TeamCommunityBoard({ teamCode, postId }: { teamCode: string; postId: string }) {
   const team = getTeamBoard(teamCode);
-  const posts = team ? getTeamBoardPosts(team.code) : teamBoards.flatMap(item => getTeamBoardPosts(item.code));
+  const community = useCommunityPosts();
+  const posts = community.posts.filter(post => post.board === "teams" && (!team || post.teamCode === team.code));
   const selectedPost = postId ? posts.find(post => post.id === postId) : undefined;
   const selectedPostTeam = selectedPost ? getTeamBoard(selectedPost.teamCode) : undefined;
   const [page, setPage] = useState(1);
@@ -48,7 +50,7 @@ export function TeamCommunityBoard({ teamCode, postId }: { teamCode: string; pos
         {teamBoards.map(item => <Link key={item.code} href={getTeamBoardHref(item.code)} aria-current={team?.code === item.code ? "page" : undefined}>{item.shortName}</Link>)}
       </nav>
 
-      {postId ? selectedPost && selectedPostTeam ? (
+      {community.loading && community.posts.length === 0 ? <p role="status">게시글을 불러오고 있어요.</p> : community.error && community.posts.length === 0 ? <p role="alert">{community.error} <button type="button" onClick={() => void retryCommunityPosts()}>다시 시도</button></p> : postId ? selectedPost && selectedPostTeam ? (
         <article className="team-community-article" aria-labelledby="free-post-heading">
           <div className="team-community-article-team"><TeamLogo code={selectedPostTeam.code} name={selectedPostTeam.name} className="team-community-logo"/><Link href={getTeamBoardHref(selectedPostTeam.code)}>{selectedPostTeam.name} 자유게시판</Link></div>
           <header><div className="community-post-labels"><PostCategory category={selectedPost.category} /><span className="community-sample-label">샘플 글</span></div><h2 id="free-post-heading">{selectedPost.title}</h2></header>
@@ -80,6 +82,7 @@ export function TeamCommunityBoard({ teamCode, postId }: { teamCode: string; pos
           <p className="community-storage-note">현재는 화면 구성을 위한 샘플 글이 표시됩니다. 게시글 등록과 이용자 간 공유는 서버 연결 후 제공됩니다.</p>
         </section>
       )}
+      {community.error && community.posts.length > 0 && <p role="alert">{community.error} <button type="button" onClick={() => void retryCommunityPosts()}>다시 시도</button></p>}
     </main>
   );
 }

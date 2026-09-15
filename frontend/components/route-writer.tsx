@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { ChatPopup } from "@/components/chat-popup";
 import Editor from "@/components/editor";
@@ -10,10 +10,10 @@ import { NearbyRoutePlanner } from "@/components/nearby-route-planner";
 import { stadiums } from "@/lib/stadiums";
 import { routeContentToText, type RouteContentFormat } from "@/lib/route-content";
 import { useChat } from "@/components/chat-provider";
-import { saveRoute, useRoutes, type RouteStop, type TripRoute } from "@/lib/routes";
+import { retryRoutes, saveRoute, useRoutes, useRoutesError, useRoutesReady, type RouteStop, type TripRoute } from "@/lib/routes";
 import { withCourseStart } from "@/lib/drawn-course";
-
-const subscribeToHydration = () => () => {};
+import { browserDraftStorage, createDraftAutosave, readRouteDraft, recoverRouteDraft, removeRouteDraft, saveRouteDraft, type MemoryRouteDraft, type RouteDraftData } from "@/lib/route-draft";
+import type { TravelMode } from "@/lib/course-directions";
 
 function WriterIcon({ kind }: { kind: "spark" | "pin" | "arrow" | "save" }) {
   return (
@@ -29,31 +29,23 @@ function WriterIcon({ kind }: { kind: "spark" | "pin" | "arrow" | "save" }) {
 type WriterTab = "write" | "chat";
 type Confirmation = { title: string; description: string; label: string; action: () => void; cancelLabel?: string; cancelAction?: () => void };
 const writerTabs: { id: WriterTab; label: string }[] = [{ id: "write", label: "루트 작성" }, { id: "chat", label: "챗봇" }];
-type WriterDraft = {
-  stadiumCode: string;
-  title: string;
-  content: string;
-  contentFormat: RouteContentFormat;
-  duration: string;
-  tags: string[];
-  stops: RouteStop[];
-  start?: TripRoute["start"];
-  tab: WriterTab;
-  dirty: boolean;
-};
-
-// Client navigation can unmount the writer while the user asks the chatbot for help.
-// Keep unfinished work in memory only; saving or explicitly discarding removes it.
-const writerDrafts = new Map<string, WriterDraft>();
+const writerDrafts = new Map<string, MemoryRouteDraft>();
+const noClientChange = () => () => {};
+const clientReady = () => true;
+const serverReady = () => false;
 
 export default function RouteWriter({ editId, copyId, initialStadium }: { editId?: string; copyId?: string; initialStadium?: string }) {
+  const hydrated = useSyncExternalStore(noClientChange, clientReady, serverReady);
   const routes = useRoutes();
-  const hydrated = useSyncExternalStore(subscribeToHydration, () => true, () => false);
+  const ready = useRoutesReady();
+  const loadError = useRoutesError();
   const sourceId = copyId ?? editId;
-  const existing = sourceId ? routes.find((route) => route.id === sourceId) : undefined;
-  if (sourceId && !hydrated) return <main className="container writer-empty"><p role="status"><span className="writer-spinner" aria-hidden="true" />저장된 루트를 불러오고 있어요.</p></main>;
-  if (sourceId && !existing) return <main className="container writer-empty"><span className="eyebrow">MY ROUTE</span><h1>저장된 루트를 찾을 수 없어요</h1><p>이 기기에 저장된 루트인지 확인하거나 새로운 루트를 만들어보세요.</p><Link href="/routes" className="button button-secondary">루트 목록으로</Link></main>;
-  return <WriterForm key={`${copyId ? "copy:" : "edit:"}${existing?.id ?? initialStadium ?? "new"}`} copying={Boolean(copyId)} existing={existing} initialStadium={initialStadium} />;
+  const existing = sourceId ? routes.find((route) => route.id === sourceId || route.legacySourceId === sourceId) : undefined;
+  if (sourceId && !ready) return <main className="container writer-empty"><p role="status"><span className="writer-spinner" aria-hidden="true" />저장된 루트를 불러오고 있어요.</p></main>;
+  if (sourceId && !existing && loadError) return <main className="container writer-empty"><span className="eyebrow">MY ROUTE</span><h1>{loadError}</h1><p>이전 버전의 브라우저 코스만 목록에 남아 있을 수 있어요.</p><button type="button" className="button button-primary" onClick={() => void retryRoutes()}>다시 불러오기</button></main>;
+  if (sourceId && (!existing || (editId && !existing.owned))) return <main className="container writer-empty"><span className="eyebrow">MY ROUTE</span><h1>수정할 루트를 찾을 수 없어요</h1><p>이 브라우저에서 편집 권한을 보관한 루트인지 확인하거나 새 루트를 만들어보세요.</p><Link href="/routes" className="button button-secondary">루트 목록으로</Link></main>;
+  if (!hydrated) return <main className="container writer-empty"><p role="status"><span className="writer-spinner" aria-hidden="true" />임시저장 내용을 확인하고 있어요.</p></main>;
+  return <WriterForm key={`${copyId ? "copy:" : "edit:"}${existing?.legacySourceId ?? sourceId ?? initialStadium ?? "new"}`} copying={Boolean(copyId)} existing={existing} initialStadium={initialStadium} />;
 }
 
 function WriterForm({ existing, copying = false, initialStadium }: { existing?: TripRoute; copying?: boolean; initialStadium?: string }) {
@@ -62,7 +54,14 @@ function WriterForm({ existing, copying = false, initialStadium }: { existing?: 
   const requested = (existing?.stadium ?? initialStadium ?? "").replace(/\s/g, "").toUpperCase();
   const initial = stadiums.find((stadium) => stadium.code === requested || (requested && stadium.name.replace(/\s/g, "").toUpperCase().includes(requested))) ?? stadiums[0];
   const draftKey = existing ? `${copying ? "copy" : "edit"}:${existing.id}` : `new:${initial.code}`;
-  const [restoredDraft] = useState(() => copying ? undefined : writerDrafts.get(draftKey));
+  const [storage] = useState(browserDraftStorage);
+  const [storedDraft] = useState(() => readRouteDraft(storage, draftKey));
+  const [memoryDraft] = useState(() => writerDrafts.get(draftKey));
+  const [recovery] = useState(() => recoverRouteDraft(storedDraft, memoryDraft));
+  const [restoredDraft] = useState(() => {
+    const candidate = recovery.data;
+    return candidate && stadiums.some(stadium => stadium.code === candidate.stadiumCode) ? candidate : undefined;
+  });
   const [stadiumCode, setStadiumCode] = useState(restoredDraft?.stadiumCode ?? initial.code);
   const [title, setTitle] = useState(restoredDraft?.title ?? existing?.title ?? "");
   const [content, setContent] = useState(restoredDraft?.content ?? existing?.content ?? "");
@@ -72,44 +71,82 @@ function WriterForm({ existing, copying = false, initialStadium }: { existing?: 
   const [stops, setStops] = useState<RouteStop[]>(restoredDraft?.stops ?? existing?.stops ?? []);
   const [start, setStart] = useState<TripRoute["start"]>(restoredDraft ? restoredDraft.start : existing?.start);
   const [tab, setTab] = useState<WriterTab>(restoredDraft?.tab ?? "write");
+  const [travelMode, setTravelMode] = useState<TravelMode>(restoredDraft?.travelMode ?? "walk");
   const [error, setError] = useState("");
+  const [draftStatus, setDraftStatus] = useState(() => storedDraft.error ? "브라우저 저장 공간을 읽지 못했어요. 변경 내용은 이 화면에만 남아 있어요." : storedDraft.raw && (!storedDraft.draft || !restoredDraft) ? "기존 임시저장 데이터를 확인할 수 없어 덮어쓰지 않았어요." : memoryDraft ? "이 화면에 남아 있던 미저장 변경을 복원했어요." : restoredDraft && storedDraft.draft ? `${new Date(storedDraft.draft.updatedAt).toLocaleString("ko-KR")} 임시저장을 복원했어요.` : "변경 사항 없음");
   const [saving, setSaving] = useState(false);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
-  const dirty = useRef(restoredDraft?.dirty ?? false);
+  const dirty = useRef(recovery.dirty);
   const savingRef = useRef(false);
-  const savedRouteRef = useRef<TripRoute | undefined>(existing && !copying && !existing.isSample ? existing : undefined);
+  const expectedRaw = useRef(recovery.expectedRaw);
+  const draftContext = useRef(draftKey);
+  const autosaveRef = useRef<ReturnType<typeof createDraftAutosave> | null>(null);
+  const savedRouteRef = useRef<TripRoute | undefined>(existing && !copying && existing.owned ? existing : undefined);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const current = stadiums.find((stadium) => stadium.code === stadiumCode)!;
   const plainContent = routeContentToText(content, contentFormat);
   const canSave = Boolean(title.trim() && plainContent.length <= 12000 && stops.length);
+  const latest = useRef<RouteDraftData>({ stadiumCode, title, content, contentFormat, duration, tags, stops, start, tab, travelMode });
+  useLayoutEffect(() => {
+    latest.current = { stadiumCode, title, content, contentFormat, duration, tags, stops, start, tab, travelMode };
+    if (dirty.current) writerDrafts.set(draftContext.current, { data: latest.current, expectedRaw: expectedRaw.current });
+  }, [stadiumCode, title, content, contentFormat, duration, tags, stops, start, tab, travelMode]);
+
+  const flushDraft = useCallback(() => {
+    if (!dirty.current) return true;
+    const context = draftContext.current;
+    const result = saveRouteDraft(storage, context, latest.current, expectedRaw.current);
+    if (result.status === "saved") {
+      expectedRaw.current = result.raw; dirty.current = false; writerDrafts.delete(context);
+      setDraftStatus(`${new Date(result.draft.updatedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 임시저장됨`);
+      return true;
+    }
+    if (result.status === "unchanged") { expectedRaw.current = result.raw; dirty.current = false; writerDrafts.delete(context); setDraftStatus("변경 없이 임시저장 상태예요."); return true; }
+    writerDrafts.set(context, { data: latest.current, expectedRaw: expectedRaw.current });
+    setDraftStatus(result.status === "conflict" ? "다른 탭의 새 임시저장을 발견해 자동 저장을 멈췄어요. 새로고침 후 확인해 주세요." : "브라우저 저장 공간에 임시저장하지 못했어요. 변경 내용은 이 화면에만 남아 있어요.");
+    return false;
+  }, [storage]);
+
   useEffect(() => {
-    writerDrafts.set(draftKey, {
-      stadiumCode, title, content, contentFormat, duration, tags, stops, start,
-      tab, dirty: dirty.current,
-    });
-  }, [draftKey, stadiumCode, title, content, contentFormat, duration, tags, stops, start, tab]);
+    let active = false;
+    const activate = window.setTimeout(() => { active = true; }, 0);
+    const autosave = createDraftAutosave(flushDraft);
+    autosaveRef.current = autosave;
+    if (dirty.current) autosave.changed();
+    const pagehide = () => autosave.flush();
+    const visibility = () => { if (document.visibilityState === "hidden") autosave.flush(); };
+    window.addEventListener("pagehide", pagehide);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      clearTimeout(activate);
+      autosave.stop(active);
+      if (autosaveRef.current === autosave) autosaveRef.current = null;
+      window.removeEventListener("pagehide", pagehide);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, [flushDraft]);
 
   useEffect(() => {
     onContextChange({ stadium: current.name, intent: "route" });
   }, [current.name, onContextChange]);
 
   useEffect(() => {
-    const protect = (event: BeforeUnloadEvent) => { if (dirty.current) event.preventDefault(); };
+    const protect = (event: BeforeUnloadEvent) => { if (dirty.current && !flushDraft()) event.preventDefault(); };
     const protectLink = (event: MouseEvent) => {
       if (!dirty.current || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
       const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>("a[href]");
       if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) return;
       const next = new URL(anchor.href, window.location.href);
       if (next.origin === window.location.origin && next.pathname === window.location.pathname && next.search === window.location.search) return;
-      if (next.origin === window.location.origin && next.pathname === "/chat") return;
+      if (flushDraft()) return;
       event.preventDefault(); event.stopPropagation();
-      setConfirmation({ title: "작성 중인 루트가 있어요", description: "아직 저장하지 않은 내용이 있어요. 페이지를 나가면 작성한 내용이 사라져요.", label: "저장하지 않고 나가기", action: () => { writerDrafts.delete(draftKey); dirty.current = false; if (next.origin === window.location.origin) router.push(`${next.pathname}${next.search}${next.hash}`); else window.location.assign(next.href); } });
+      setConfirmation({ title: "임시저장하지 못한 변경이 있어요", description: "브라우저 저장에 실패해 최신 변경은 이 화면에만 있어요. 나가면 해당 변경을 잃을 수 있어요.", label: "그래도 나가기", action: () => { dirty.current = false; if (next.origin === window.location.origin) router.push(`${next.pathname}${next.search}${next.hash}`); else window.location.assign(next.href); } });
     };
     window.addEventListener("beforeunload", protect);
     document.addEventListener("click", protectLink, true);
     return () => { window.removeEventListener("beforeunload", protect); document.removeEventListener("click", protectLink, true); };
-  }, [router, draftKey]);
+  }, [router, flushDraft]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -119,15 +156,24 @@ function WriterForm({ existing, copying = false, initialStadium }: { existing?: 
     return () => { if (dialog.open) dialog.close(); opener?.focus(); };
   }, [confirmation]);
 
-  const markDirty = useCallback(() => { dirty.current = true; setError(""); }, []);
+  const markDirty = useCallback(() => { dirty.current = true; writerDrafts.set(draftContext.current, { data: latest.current, expectedRaw: expectedRaw.current }); setDraftStatus("저장되지 않은 변경이 있어요. 1초 뒤 자동 저장하고, 작성 중에는 5초마다 확인해요."); setError(""); autosaveRef.current?.changed(); }, []);
   const changeStops = useCallback((next: RouteStop[]) => { setStops(next); markDirty(); }, [markDirty]);
+  const changeStart = useCallback((next: TripRoute["start"]) => {
+    const previous = latest.current.start;
+    if (next?.lat === previous?.lat && next?.lng === previous?.lng) return;
+    setStart(next); markDirty();
+  }, [markDirty]);
+  const changeTravelMode = useCallback((next: TravelMode) => {
+    if (next === latest.current.travelMode) return;
+    setTravelMode(next); markDirty();
+  }, [markDirty]);
   function changeStadium(code: string) {
     if (code === stadiumCode) return;
     const change = () => { setStadiumCode(code); setStops([]); setStart(undefined); markDirty(); };
     if (!stops.length) { change(); return; }
     setConfirmation({ title: "다른 구장 주변을 둘러볼까요?", description: "구장을 바꾸면 선택한 방문 장소가 비워져요. 작성한 제목과 이야기는 그대로 남아요.", label: "구장 바꾸기", action: change });
   }
-  function changeTab(next: WriterTab) { setTab(next); }
+  function changeTab(next: WriterTab) { if (next !== tab) { setTab(next); markDirty(); } }
   function tabKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     let next = index;
     if (event.key === "ArrowRight") next = (index + 1) % writerTabs.length;
@@ -135,7 +181,7 @@ function WriterForm({ existing, copying = false, initialStadium }: { existing?: 
     else if (event.key === "Home") next = 0;
     else if (event.key === "End") next = writerTabs.length - 1;
     else return;
-    event.preventDefault(); setTab(writerTabs[next].id); document.getElementById(`writer-tab-${writerTabs[next].id}`)?.focus();
+    event.preventDefault(); changeTab(writerTabs[next].id); document.getElementById(`writer-tab-${writerTabs[next].id}`)?.focus();
   }
   async function saveCourse(askReview = true) {
     if (savingRef.current) return;
@@ -143,22 +189,29 @@ function WriterForm({ existing, copying = false, initialStadium }: { existing?: 
     if (!canSave) { setError("코스 이름과 방문 장소를 확인해 주세요. 본문은 선택 사항이며 12,000자까지 작성할 수 있어요."); return; }
     savingRef.current = true; setSaving(true);
     const saved = savedRouteRef.current;
-    const id = saved?.id ?? `local-${crypto.randomUUID()}`;
     const route: TripRoute = {
-      id, title: title.trim(), stadium: current.name, description: (plainContent.trim() || withCourseStart(stops, start).map((stop) => stop.name).join(" → ")).replace(/\s+/g, " ").slice(0, 100),
+      id: saved?.id ?? "", title: title.trim(), stadium: current.name, description: (plainContent.trim() || withCourseStart(stops, start).map((stop) => stop.name).join(" → ")).replace(/\s+/g, " ").slice(0, 100),
       content: content.trim(), ...(contentFormat ? { contentFormat } : {}), tags, duration, cover: existing?.cover ?? "/images/stadium-night.jpg", stops, ...(start ? { start } : {}),
-      author: "나의 코스", likes: saved?.likes ?? 0, views: saved?.views ?? 0,
-      isSample: false, createdAt: saved?.createdAt ?? new Date().toISOString(),
+      author: "익명", likes: saved?.likes ?? 0, views: saved?.views ?? 0, owned: true,
+      isSample: false, createdAt: saved?.createdAt ?? new Date().toISOString(), ...(saved?.legacy ? { legacy: true } : {}), ...(saved?.legacySourceId ? { legacySourceId: saved.legacySourceId } : {}),
     };
     try {
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-      saveRoute(route); savedRouteRef.current = route; writerDrafts.delete(draftKey); dirty.current = false;
+      const persisted = await saveRoute(route);
+      const oldContext = draftContext.current;
+      removeRouteDraft(storage, oldContext, expectedRaw.current); writerDrafts.delete(oldContext);
+      const canonicalContext = `edit:${persisted.id}`;
+      draftContext.current = canonicalContext; expectedRaw.current = null;
+      const url = new URL(window.location.href); url.searchParams.delete("copy"); url.searchParams.delete("stadium"); url.searchParams.set("edit", persisted.id); window.history.replaceState(window.history.state, "", url);
+      savedRouteRef.current = persisted; dirty.current = false;
+      setDraftStatus("공개 저장을 완료했어요. 이후 변경은 이 코스의 새 임시저장으로 보관해요.");
       savingRef.current = false; setSaving(false);
-      const showSavedCourse = () => router.push(`/routes/${encodeURIComponent(id)}`);
+      if (persisted.saveWarning) setError(persisted.saveWarning);
+      const showSavedCourse = () => router.push(`/routes/${encodeURIComponent(persisted.id)}`);
       if (askReview) {
         setConfirmation({
           title: "코스 후기를 작성하시겠어요?",
-          description: "코스가 이 브라우저에 저장됐어요. 후기를 추가로 작성할 수 있어요.",
+          description: persisted.saveWarning ? `코스가 커뮤니티에 저장됐어요. ${persisted.saveWarning}` : "코스가 커뮤니티에 저장됐어요. 후기를 추가로 작성할 수 있어요.",
           label: "예", cancelLabel: "아니요", cancelAction: showSavedCourse,
           action: () => {
             setTab("write");
@@ -169,8 +222,8 @@ function WriterForm({ existing, copying = false, initialStadium }: { existing?: 
             }));
           },
         });
-      } else router.push("/routes");
-    } catch { savingRef.current = false; setSaving(false); setError("저장하지 못했어요. 브라우저 저장 공간이나 개인정보 보호 설정을 확인해 주세요. 작성 내용은 이 화면에 남아 있어요."); }
+      } else if (!persisted.saveWarning) router.push("/routes");
+    } catch (caught) { savingRef.current = false; setSaving(false); dirty.current = true; autosaveRef.current?.changed(); setError(caught instanceof Error ? caught.message : "저장하지 못했어요. 다시 시도해 주세요. 작성 내용은 이 화면에 남아 있어요."); }
   }
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -193,7 +246,7 @@ function WriterForm({ existing, copying = false, initialStadium }: { existing?: 
                 <div><div className="writer-section-title"><span>01</span><h2 id="planner-heading">핀을 골라, 나만의 코스로</h2></div><p>경기 전 식사부터 경기 후 산책까지. 가고 싶은 장소를 직접 이어보세요.</p></div>
                 <div className="writer-field planner-stadium-field"><label htmlFor="route-stadium">어느 구장으로 떠나나요?</label><select id="route-stadium" value={stadiumCode} onChange={(event) => changeStadium(event.target.value)}>{stadiums.map((stadium) => <option key={stadium.code} value={stadium.code}>{stadium.name}</option>)}</select></div>
               </div>
-              <NearbyRoutePlanner key={stadiumCode} stadium={current} stops={stops} onChange={changeStops} initialStart={start} onStartChange={setStart} courseName={title} onCourseNameChange={(name) => { setTitle(name); markDirty(); }} onSaveCourse={() => saveCourse()} saving={saving} saveError={error} />
+              <NearbyRoutePlanner key={stadiumCode} stadium={current} stops={stops} onChange={changeStops} initialStart={start} onStartChange={changeStart} initialTravelMode={travelMode} onTravelModeChange={changeTravelMode} courseName={title} onCourseNameChange={(name) => { setTitle(name); markDirty(); }} onSaveCourse={() => saveCourse()} saving={saving} saveError={error} />
             </section>
             <div className="writer-writing writer-panel" id="writer-panel-write" role="tabpanel" aria-labelledby="writer-tab-write" tabIndex={0}>
               <section className="writer-card">
@@ -210,7 +263,8 @@ function WriterForm({ existing, copying = false, initialStadium }: { existing?: 
           </fieldset>
           <div className="writer-save-area">
             {error && <div role="alert" className="writer-error">{error}</div>}
-            <div className="writer-save-row"><p><strong>{canSave ? "나의 직관 루트가 준비됐어요." : "코스 이름과 방문 장소를 채워주세요."}</strong><span>이 브라우저에 저장돼요. 다른 사용자에게 공개되지 않아요.</span></p><button className="button button-primary" type="submit" disabled={!canSave || saving}>{saving ? <><span className="writer-spinner" aria-hidden="true" />저장하고 있어요</> : <><WriterIcon kind="save" />작성 완료</>}</button></div>
+            <p className="writer-draft-status" role="status" aria-live="polite"><strong>{draftStatus}</strong><span>이 브라우저에만 임시저장되며 공개되지 않아요. 변경 1초 후 자동 저장하며 작성 중에는 5초마다 확인해요.</span></p>
+            <div className="writer-save-row"><p><strong>{canSave ? "나의 직관 루트가 준비됐어요." : "코스 이름과 방문 장소를 채워주세요."}</strong><span>{existing?.legacy ? "이전 코스는 다시 저장하면 커뮤니티에 공개돼요." : "코스는 커뮤니티에 공개되고 편집 권한만 이 브라우저에 저장돼요."}</span></p><div className="writer-save-actions"><button className="button button-secondary" type="button" disabled={saving} onClick={() => { dirty.current = true; flushDraft(); }}>임시저장</button><button className="button button-primary" type="submit" disabled={!canSave || saving}>{saving ? <><span className="writer-spinner" aria-hidden="true" />저장하고 있어요</> : <><WriterIcon kind="save" />작성 완료</>}</button></div></div>
           </div>
         </form>
         <dialog ref={dialogRef} className="writer-confirm-dialog" aria-labelledby="writer-confirm-title" aria-describedby="writer-confirm-description" onCancel={(event) => { event.preventDefault(); setConfirmation(null); }}>

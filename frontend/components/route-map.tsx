@@ -2,6 +2,7 @@
 
 import { useEffect, useEffectEvent, useId, useRef, useState, type ReactNode } from "react";
 import { loadKakaoMaps, type KakaoMap, type KakaoMaps, type KakaoOverlay, type KakaoPlace, type MapClickEvent } from "@/lib/kakao-maps";
+import { searchKakaoPlaces } from "@/lib/nearby-search";
 import { areValidCoordinates, type RouteStop } from "@/lib/routes";
 import { coursePointLabel } from "@/lib/drawn-course";
 import { CourseTravelPanel, useCourseDirections, useTravelOverlay } from "./course-travel";
@@ -26,7 +27,7 @@ export function RouteMap({ stops, searchable = false, allowOriginSelection = tru
   const [selected, setSelected] = useState<RouteStop | null>(null);
   const [notice, setNotice] = useState("");
   const sequence = useRef(0);
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const searchController = useRef<AbortController | null>(null);
   const searchId = useId();
   const first = stops[0];
   useTravelOverlay(mapState, sdk, travel);
@@ -41,7 +42,7 @@ export function RouteMap({ stops, searchable = false, allowOriginSelection = tru
     loadKakaoMaps().then(value => { if (!cancelled) { setSdk(value); setError(""); } }).catch(() => {
       if (!cancelled) setError("지도를 불러오지 못했어요. 다시 시도하거나 카카오맵에서 장소를 확인해 주세요.");
     });
-    return () => { cancelled = true; sequence.current += 1; clearTimeout(searchTimer.current); };
+    return () => { cancelled = true; sequence.current += 1; searchController.current?.abort(); };
   }, [attempt]);
 
   const isPickingStart = useEffectEvent(() => travel.picking);
@@ -81,24 +82,24 @@ export function RouteMap({ stops, searchable = false, allowOriginSelection = tru
 
   useEffect(() => { if (mapState && sdk && travel.data) fitRoute(mapState, sdk); }, [mapState, sdk, travel.data, fitRequest]);
 
-  function search() {
+  async function search() {
     if (!query.trim() || !sdk || !mapRef.current || searching) return;
     const request = ++sequence.current;
+    searchController.current?.abort();
+    const controller = new AbortController();
+    searchController.current = controller;
     setSearching(true); setSearchNote(""); setResults([]); setSelected(null); setNotice("");
-    searchTimer.current = setTimeout(() => {
-      if (request !== sequence.current) return;
-      sequence.current += 1; setSearching(false); setSearchNote("검색이 오래 걸리고 있어요. 다시 검색해 주세요.");
-    }, 10000);
-    new sdk.services.Places().keywordSearch(query.trim(), (places, status) => {
-      if (request !== sequence.current) return;
-      clearTimeout(searchTimer.current); setSearching(false);
-      if (status === sdk.services.Status.OK) {
-        const validPlaces = places.filter(place => place.x.trim() && place.y.trim() && areValidCoordinates(Number(place.y), Number(place.x)));
-        setResults(validPlaces);
-        if (!validPlaces.length) setSearchNote("위치가 확인되는 장소가 없어요. 다른 이름으로 검색해 주세요.");
-      }
-      else setSearchNote(status === sdk.services.Status.ZERO_RESULT ? "검색 결과가 없어요. 지역이나 장소 이름을 바꿔 보세요." : "장소 검색에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.");
-    }, { location: mapRef.current.getCenter(), size: 5 });
+    const center = mapRef.current.getCenter();
+    try {
+      const result = await searchKakaoPlaces({ method: "keyword", keyword: query.trim(), lat: center.getLat(), lng: center.getLng(), page: 1, size: 5, sort: "accuracy" }, controller.signal);
+      if (request !== sequence.current || controller.signal.aborted) return;
+      const validPlaces = result.places.filter(place => place.x.trim() && place.y.trim() && areValidCoordinates(Number(place.y), Number(place.x)));
+      setResults(validPlaces);
+      if (!validPlaces.length) setSearchNote("검색 결과가 없어요. 지역이나 장소 이름을 바꿔 보세요.");
+    } catch (reason) {
+      if (request !== sequence.current || controller.signal.aborted) return;
+      setSearchNote(reason instanceof DOMException && reason.name === "TimeoutError" ? "검색이 오래 걸리고 있어요. 다시 검색해 주세요." : "장소 검색에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    } finally { if (request === sequence.current) setSearching(false); }
   }
 
   function add(stop: RouteStop) {
@@ -115,7 +116,7 @@ export function RouteMap({ stops, searchable = false, allowOriginSelection = tru
       {searchable && <div className="route-map-search" role="search">
         <label htmlFor={searchId} className="sr-only">지도에서 장소 검색</label>
         <Icon name="search" size={19} />
-        <input id={searchId} value={query} maxLength={100} onChange={event => { setQuery(event.target.value); sequence.current += 1; clearTimeout(searchTimer.current); setSearching(false); setResults([]); setSearchNote(""); }} onKeyDown={event => { if (event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); search(); } }} placeholder="구장, 맛집, 카페 이름으로 검색" />
+        <input id={searchId} value={query} maxLength={100} onChange={event => { setQuery(event.target.value); sequence.current += 1; searchController.current?.abort(); setSearching(false); setResults([]); setSearchNote(""); }} onKeyDown={event => { if (event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); search(); } }} placeholder="구장, 맛집, 카페 이름으로 검색" />
         <button type="button" onClick={search} disabled={!sdk || searching || !query.trim()}>{searching ? <><span className="ui-spinner" />검색 중</> : "검색"}</button>
       </div>}
       <div className={`route-map-stage${travel.picking ? " is-picking-start" : ""}`}>

@@ -2,8 +2,8 @@ import "server-only";
 import { cookies } from "next/headers";
 import { ChatError } from "./chat/validation";
 
-export function teamBackendUrl(path: string) {
-  const base = process.env.CHAT_BACKEND_URL?.trim();
+export function teamBackendUrl(path: string, configuredBase = process.env.CHAT_BACKEND_URL) {
+  const base = configuredBase?.trim();
   if (!base) throw new ChatError("팀 백엔드 주소가 설정되지 않았어요.", 503);
   const url = new URL(base.endsWith("/") ? base : `${base}/`);
   if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw new ChatError("팀 백엔드 주소 설정을 확인해 주세요.", 503);

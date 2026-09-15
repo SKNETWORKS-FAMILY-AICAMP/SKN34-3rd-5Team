@@ -1,0 +1,137 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { readFileSync } from "node:fs";
+import ts from "typescript";
+
+const source = readFileSync(new URL("../lib/course-api.ts", import.meta.url), "utf8");
+const { outputText } = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } });
+
+function harness() {
+  const storage = new Map();
+  let blocked = false;
+  const window = { localStorage: {
+    getItem: key => storage.get(key) ?? null,
+    setItem: (key, value) => { if (blocked) throw new Error("quota"); storage.set(key, value); },
+    removeItem: key => storage.delete(key),
+  } };
+  const testModule = { exports: {} };
+  new Function("module", "exports", "window", outputText)(testModule, testModule.exports, window);
+  return { ...testModule.exports, storage, block: () => { blocked = true; } };
+}
+
+const apiCourse = changes => ({
+  id: "123e4567-e89b-12d3-a456-426614174000", title: "잠실 직관 코스", stadium: "잠실야구장",
+  content: "", duration: "반나절", tags: [], author: "익명", createdAt: "2026-09-12T12:00:00Z",
+  updatedAt: "2026-09-12T12:00:00Z", stops: [{ position: 0, name: "카페", category: "카페", lat: 37.51, lng: 127.07 }],
+  ...changes,
+});
+const route = changes => ({
+  id: "", title: "잠실 직관 코스", stadium: "잠실야구장", description: "카페", content: "", tags: [], duration: "반나절",
+  cover: "/images/stadium-night.jpg", author: "익명", likes: 0, isSample: false, owned: true,
+  createdAt: "2026-09-12T12:00:00Z", start: { lat: 37.5, lng: 127.1 },
+  stops: [{ name: "카페", category: "카페", placeId: "p1", lat: 37.51, lng: 127.07 }], ...changes,
+});
+
+test("create sends ordered stops and stores only the returned edit token", async () => {
+  const api = harness();
+  const saved = await api.persistCourse(route(), async (url, init) => {
+    assert.equal(url, "/api/courses/");
+    assert.equal(init.method, "POST");
+    assert.equal(init.redirect, "error");
+    assert.ok(init.signal instanceof AbortSignal);
+    assert.deepEqual(JSON.parse(init.body), {
+      title: "잠실 직관 코스", stadium: "잠실야구장", content: "", contentFormat: "", duration: "반나절", tags: [],
+      startLat: 37.5, startLng: 127.1, stops: [{ name: "카페", category: "카페", placeId: "p1", lat: 37.51, lng: 127.07, position: 0 }],
+    });
+    return Response.json(apiCourse({ editToken: "edit-secret" }), { status: 201 });
+  });
+  assert.equal(saved.id, apiCourse({}).id);
+  assert.equal(saved.owned, true);
+  assert.deepEqual([...api.storage], [[`kbo-course-edit-token:${saved.id}`, "edit-secret"]]);
+});
+
+test("list ownership, update, and delete all use the per-course token", async () => {
+  const api = harness();
+  const id = apiCourse({}).id;
+  api.storage.set(`kbo-course-edit-token:${id}`, "edit-secret");
+  const listed = await api.fetchCourses(async () => Response.json([apiCourse({})]));
+  assert.equal(listed[0].owned, true);
+  await api.persistCourse(route({ id }), async (url, init) => {
+    assert.equal(url, `/api/courses/${id}/`);
+    assert.equal(init.method, "PATCH");
+    assert.equal(init.headers["X-Course-Edit-Token"], "edit-secret");
+    return Response.json(apiCourse({}));
+  });
+  await api.removeCourse(id, async (url, init) => {
+    assert.equal(url, `/api/courses/${id}/`);
+    assert.equal(init.headers["X-Course-Edit-Token"], "edit-secret");
+    return new Response(null, { status: 204 });
+  });
+  assert.equal(api.storage.size, 0);
+});
+
+test("a missing edit token fails closed", async () => {
+  const api = harness();
+  await assert.rejects(api.persistCourse(route({ id: apiCourse({}).id }), async () => { throw new Error("must not fetch"); }), /편집 토큰/);
+});
+
+test("token storage failure keeps session edit access and never retries POST", async () => {
+  const api = harness();
+  api.block();
+  const created = await api.persistCourse(route(), async (_url, init) => {
+    assert.equal(init.method, "POST");
+    return Response.json(apiCourse({ editToken: "edit-secret" }), { status: 201 });
+  });
+  assert.match(created.saveWarning, /새로고침하면 읽기 전용/);
+  assert.equal(api.storage.size, 0);
+  await api.persistCourse({ ...created, title: "변경" }, async (url, init) => {
+    assert.equal(url, `/api/courses/${created.id}/`);
+    assert.equal(init.method, "PATCH");
+    assert.equal(init.headers["X-Course-Edit-Token"], "edit-secret");
+    return Response.json(apiCourse({ title: "변경" }));
+  });
+});
+
+test("clearing an existing start sends explicit null coordinates", async () => {
+  const api = harness();
+  const id = apiCourse({}).id;
+  api.storage.set(`kbo-course-edit-token:${id}`, "edit-secret");
+  await api.persistCourse(route({ id, start: undefined }), async (_url, init) => {
+    const body = JSON.parse(init.body);
+    assert.equal(body.startLat, null);
+    assert.equal(body.startLng, null);
+    return Response.json(apiCourse({}));
+  });
+});
+
+test("course requests have a bounded timeout and a useful network error", async () => {
+  const api = harness();
+  await assert.rejects(api.fetchCourses(async (_url, init) => {
+    assert.ok(init.signal instanceof AbortSignal);
+    throw new TypeError("network failed");
+  }), /코스 서버에 연결하지 못했어요/);
+  assert.match(source, /AbortSignal\.timeout\(40000\)/);
+  assert.doesNotMatch(source, /COURSE_BACKEND_URL|["'`]\/course-api/);
+});
+
+test("database sample metadata keeps legacy links and original display fields", async () => {
+  const api = harness();
+  const [sample] = await api.fetchCourses(async () => Response.json([apiCourse({
+    sampleId: "fan-sajik-date", description: "원본 설명", cover: "/images/stadium-day.jpg",
+    likes: 7, views: 9, isSample: true,
+    stops: [
+      { position: 0, name: "사직야구장", category: "경기 관람", lat: 35.194, lng: 129.059, isDrawnPoint: true },
+      { position: 1, name: "산책 후보 지점", category: "직접 지정", lat: 35.197, lng: 129.057 },
+      { position: 2, name: "마무리 지점", category: "직접 지정", lat: 35.199, lng: 129.059 },
+    ],
+  })]));
+  assert.equal(sample.id, "fan-sajik-date");
+  assert.equal(sample.description, "원본 설명");
+  assert.equal(sample.cover, "/images/stadium-day.jpg");
+  assert.equal(sample.isSample, true);
+  assert.equal(sample.owned, false);
+  assert.equal(sample.likes, 7);
+  assert.equal(sample.views, 9);
+  assert.equal(sample.stops.length, 3);
+  assert.equal(sample.stops[0].isDrawnPoint, true);
+});

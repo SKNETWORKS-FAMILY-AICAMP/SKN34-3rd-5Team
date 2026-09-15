@@ -256,5 +256,8 @@ const examples = [
 ] as const;
 
 export function getFreeBoardPosts(): TeamCommunityPost[] {
-  return examples.map((post, index) => ({ ...post, id: `free-sample-${index + 1}`, postNumber: formatCommunityPostNumber(String(20001 + index)), author: "예시 작성자", createdAt: null, views: 0, recommendations: 0, teamCode: "", isSample: true }));
+  return examples.map((post, index) => {
+    const id = `free-sample-${index + 1}`;
+    return { ...post, id, sourceId: id, postNumber: formatCommunityPostNumber(String(20001 + index)), board: "free", author: "예시 작성자", createdAt: null, views: 0, recommendations: 0, teamCode: "", isSample: true };
+  });
 }

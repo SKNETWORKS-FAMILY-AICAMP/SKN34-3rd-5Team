@@ -20,7 +20,7 @@ const walk = (seconds = 70) => ({ status: "OK", route: { properties: { totalDist
 test("validate mode, numeric coordinates and up to 12 stops plus current location", () => {
   const point = { lat: 37.5, lng: 127.1 };
   assert.ok(parseCourseRequest({ mode: "walk", points: Array(13).fill(point) }));
-  for (const input of [null, {}, { mode: "fly", points: [point, point] }, { mode: "walk", points: [point] }, { mode: "car", points: Array(14).fill(point) }, { mode: "walk", points: [point, { lat: "37", lng: 127 }] }, { mode: "walk", points: [point, { lat: 91, lng: 127 }] }]) assert.equal(parseCourseRequest(input), null);
+  for (const input of [null, {}, ...[null, { toString: null }, [], ["walk"], 1, true, false, "fly"].map((mode) => ({ mode, points: [point, point] })), { mode: "walk", points: [point] }, { mode: "car", points: Array(14).fill(point) }, { mode: "walk", points: [point, { lat: "37", lng: 127 }] }, { mode: "walk", points: [point, { lat: 91, lng: 127 }] }]) assert.equal(parseCourseRequest(input), null);
 });
 test("walking uses provider seconds and actual coordinates, not straight-line estimates", () => {
   const result = parseDirections("walk", walk());

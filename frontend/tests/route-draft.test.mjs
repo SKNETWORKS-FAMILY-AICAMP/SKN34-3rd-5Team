@@ -1,0 +1,85 @@
+import assert from "node:assert/strict";
+import { after, test } from "node:test";
+import { createRequire } from "node:module";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import ts from "typescript";
+
+const frontend = dirname(dirname(fileURLToPath(import.meta.url)));
+const scratch = mkdtempSync(join(tmpdir(), "kbo-route-draft-test-"));
+after(() => rmSync(scratch, { recursive: true }));
+for (const name of ["route-draft", "stadiums"]) {
+  const source = readFileSync(join(frontend, "lib", `${name}.ts`), "utf8");
+  const { outputText } = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } });
+  writeFileSync(join(scratch, `${name}.js`), outputText);
+}
+const requireModule = createRequire(join(scratch, "entry.cjs"));
+const { ROUTE_DRAFT_PREFIX, createDraftAutosave, parseRouteDraft, readRouteDraft, recoverRouteDraft, removeRouteDraft, saveRouteDraft } = requireModule("./route-draft.js");
+const data = { stadiumCode: "JAMSIL", title: "", content: "이야기", duration: "반나절", tags: ["첫 직관"], stops: [{ name: "잠실", category: "야구장", lat: 37.5, lng: 127, visitId: "v1", isMapPoint: true }], start: { lat: 37.4, lng: 127.1 }, tab: "chat", travelMode: "transit" };
+const memory = () => {
+  const values = new Map();
+  return { values, getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
+};
+
+test("versioned draft round-trips incomplete fields and route details", () => {
+  const storage = memory();
+  const saved = saveRouteDraft(storage, "copy:42", data, null);
+  assert.equal(saved.status, "saved");
+  assert.deepEqual(readRouteDraft(storage, "copy:42").draft?.data, data);
+  assert.equal(readRouteDraft(storage, "edit:42").draft, undefined);
+});
+
+test("invalid JSON, versions, types, and coordinates fail closed without deletion", () => {
+  for (const raw of ["{", JSON.stringify({ version: 2, data }), JSON.stringify({ version: 1, revision: "r", updatedAt: new Date().toISOString(), data: { ...data, stadiumCode: "UNKNOWN_STADIUM" } }), JSON.stringify({ version: 1, revision: "r", updatedAt: new Date().toISOString(), data: { ...data, accessToken: "must-not-survive" } }), JSON.stringify({ version: 1, revision: "r", updatedAt: new Date().toISOString(), data: { ...data, stops: [{ ...data.stops[0], lat: 999 }] } })]) assert.equal(parseRouteDraft(raw), undefined);
+  const storage = memory(); storage.values.set(ROUTE_DRAFT_PREFIX + "new:JAMSIL", "{");
+  assert.equal(saveRouteDraft(storage, "new:JAMSIL", data, null).status, "conflict");
+  assert.equal(storage.values.get(ROUTE_DRAFT_PREFIX + "new:JAMSIL"), "{");
+  assert.equal(saveRouteDraft(memory(), "new:UNKNOWN", { ...data, stadiumCode: "UNKNOWN_STADIUM" }, null).status, "error");
+});
+
+test("clean reentry prefers latest disk while unsaved memory retains its original conflict base", () => {
+  const storage = memory();
+  const old = saveRouteDraft(storage, "new:JAMSIL", { ...data, title: "A old" }, null); assert.equal(old.status, "saved");
+  const latest = saveRouteDraft(storage, "new:JAMSIL", { ...data, title: "B latest" }, old.raw); assert.equal(latest.status, "saved");
+  assert.equal(recoverRouteDraft(readRouteDraft(storage, "new:JAMSIL")).data.title, "B latest");
+  const recovered = recoverRouteDraft(readRouteDraft(storage, "new:JAMSIL"), { data: { ...data, title: "A unsaved" }, expectedRaw: old.raw });
+  assert.equal(recovered.dirty, true); assert.equal(recovered.expectedRaw, old.raw);
+  assert.equal(saveRouteDraft(storage, "new:JAMSIL", { ...recovered.data, travelMode: "car" }, recovered.expectedRaw).status, "conflict");
+  assert.equal(readRouteDraft(storage, "new:JAMSIL").draft.data.title, "B latest");
+});
+
+test("unchanged writes are skipped and another tab revision is not overwritten", () => {
+  const storage = memory();
+  const first = saveRouteDraft(storage, "new:JAMSIL", data, null); assert.equal(first.status, "saved");
+  assert.equal(saveRouteDraft(storage, "new:JAMSIL", data, first.raw).status, "unchanged");
+  const other = saveRouteDraft(storage, "new:JAMSIL", { ...data, title: "다른 탭" }, first.raw); assert.equal(other.status, "saved");
+  assert.equal(saveRouteDraft(storage, "new:JAMSIL", { ...data, title: "현재 탭" }, first.raw).status, "conflict");
+  assert.equal(readRouteDraft(storage, "new:JAMSIL").draft.data.title, "다른 탭");
+  assert.equal(removeRouteDraft(storage, "new:JAMSIL", first.raw), false);
+  assert.equal(readRouteDraft(storage, "new:JAMSIL").draft.data.title, "다른 탭");
+  assert.equal(removeRouteDraft(storage, "new:JAMSIL", other.raw), true);
+  assert.equal(readRouteDraft(storage, "new:JAMSIL").draft, undefined);
+});
+
+test("autosave debounces at 1s, flushes continuous edits at 5s, and stops resurrection", () => {
+  let now = 0, id = 0, calls = 0; const jobs = new Map();
+  const timers = {
+    setTimeout(fn, ms) { const key = ++id; jobs.set(key, { fn, at: now + ms, interval: 0 }); return key; },
+    clearTimeout(key) { jobs.delete(key); },
+    setInterval(fn, ms) { const key = ++id; jobs.set(key, { fn, at: now + ms, interval: ms }); return key; },
+    clearInterval(key) { jobs.delete(key); },
+  };
+  const tick = ms => { const end = now + ms; while (true) { const next = [...jobs].sort((a, b) => a[1].at - b[1].at)[0]; if (!next || next[1].at > end) break; now = next[1].at; const [key, job] = next; if (job.interval) job.at += job.interval; else jobs.delete(key); job.fn(); } now = end; };
+  const autosave = createDraftAutosave(() => calls++, timers);
+  for (let index = 0; index < 5; index++) { autosave.changed(); tick(900); }
+  autosave.changed(); assert.equal(calls, 0); tick(500); assert.equal(calls, 1); // periodic flush despite continuous debounce resets
+  autosave.stop(); tick(10000); assert.equal(calls, 1);
+});
+
+test("storage failures report error and keep caller-owned snapshot usable", () => {
+  const storage = { getItem: () => null, setItem: () => { throw new Error("quota"); }, removeItem: () => {} };
+  assert.equal(saveRouteDraft(storage, "new:JAMSIL", data, null).status, "error");
+  assert.equal(data.content, "이야기");
+});

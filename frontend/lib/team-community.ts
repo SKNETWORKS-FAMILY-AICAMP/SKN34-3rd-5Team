@@ -1,6 +1,5 @@
 import type { CommunityPostCategory } from "./community-post-category";
-import { teamCommunityExamples } from "./team-community-examples";
-import { formatCommunityPostNumber, type CommunityPostNumber } from "./community-post-number";
+import type { CommunityPostNumber } from "./community-post-number";
 
 export const teamBoards = [
   { code: "LG", name: "LG 트윈스", shortName: "LG", stadium: "잠실야구장" },
@@ -17,7 +16,9 @@ export const teamBoards = [
 
 export type TeamCommunityPost = {
   id: string;
+  sourceId: string;
   postNumber: CommunityPostNumber;
+  board: "free" | "teams";
   author: string;
   createdAt: string | null;
   views: number;
@@ -27,25 +28,11 @@ export type TeamCommunityPost = {
   category: CommunityPostCategory;
   title: string;
   content: string;
-  isSample: true;
+  isSample: boolean;
 };
 
 export function getTeamBoard(code: string) {
   return teamBoards.find(team => team.code === code.toUpperCase());
-}
-
-// Preview fixtures shared by the home page and community. Replace this adapter with the post API later.
-// These examples are separate from saved route posts and do not imply real users or activity.
-// Fixed fixture namespaces; production post numbers must come from the backend's unique ID.
-const sampleNumberBase: Record<string, number> = { LG: 1000, HH: 2000, SK: 3000, SS: 4000, NC: 5000, KT: 6000, LT: 7000, HT: 8000, OB: 9000, WO: 10000 };
-
-export function getTeamBoardPosts(code: string): TeamCommunityPost[] {
-  const team = getTeamBoard(code);
-  if (!team) return [];
-
-  const examples = teamCommunityExamples[team.code] ?? [];
-
-  return examples.map((post, index) => ({ ...post, id: `${team.code.toLowerCase()}-sample-${index + 1}`, postNumber: formatCommunityPostNumber(String(sampleNumberBase[team.code] + index + 1)), author: "예시 작성자", createdAt: null, views: 0, recommendations: 0, teamCode: team.code, isSample: true }));
 }
 
 export function getTeamBoardHref(code?: string, postId?: string) {

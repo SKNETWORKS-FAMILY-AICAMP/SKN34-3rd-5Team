@@ -4,33 +4,22 @@ import { NEARBY_RADIUS, NEARBY_SEARCHES, normalizePlace, type CategoryFilter, ty
 type SearchPage = { places: KakaoPlace[]; hasNextPage: boolean };
 const cache = new Map<string, { expires: number; result: SearchPage }>();
 
-export async function searchPage(maps: KakaoMaps, stadium: NearbyStadium, spec: SearchSpec, page: number, signal: AbortSignal): Promise<SearchPage> {
+type PlaceRequest = { method: "keyword" | "category"; keyword?: string; category?: string; lat: number; lng: number; radius?: number; page: number; size: number; sort: "accuracy" | "distance" };
+export async function searchKakaoPlaces(query: PlaceRequest, signal: AbortSignal, fetcher: typeof fetch = fetch): Promise<SearchPage> {
   signal.throwIfAborted();
+  const response = await fetcher("/directions-api", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "places", ...query }), signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]) });
+  let body: unknown;
+  try { body = await response.json(); } catch { throw new Error("장소 검색 응답을 확인하지 못했어요."); }
+  if (!response.ok) throw new Error(body && typeof body === "object" && typeof (body as { error?: unknown }).error === "string" ? (body as { error: string }).error : "일부 장소를 불러오지 못했어요.");
+  if (!body || typeof body !== "object" || !Array.isArray((body as SearchPage).places) || typeof (body as SearchPage).hasNextPage !== "boolean") throw new Error("장소 검색 응답을 확인하지 못했어요.");
+  return body as SearchPage;
+}
+
+export async function searchPage(_maps: KakaoMaps, stadium: NearbyStadium, spec: SearchSpec, page: number, signal: AbortSignal, fetcher: typeof fetch = fetch): Promise<SearchPage> {
   const key = `${stadium.code}:${stadium.lat}:${stadium.lng}:${spec.method}:${spec.query}:${spec.accuracy ?? false}:${page}`;
   const saved = cache.get(key);
   if (saved && saved.expires > Date.now()) return saved.result;
-  const result = await new Promise<SearchPage>((resolve, reject) => {
-    let settled = false;
-    const finish = (result?: SearchPage, error?: Error) => {
-      if (settled) return;
-      settled = true; clearTimeout(timer); signal.removeEventListener("abort", abort);
-      if (error) reject(error); else resolve(result!);
-    };
-    const abort = () => finish(undefined, new DOMException("Search cancelled", "AbortError"));
-    const timer = setTimeout(() => finish(undefined, new Error("장소 검색 응답이 늦어지고 있어요.")), 8000);
-    signal.addEventListener("abort", abort, { once: true });
-    try {
-      const service = new maps.services.Places();
-      const callback = (places: KakaoPlace[], status: string, pagination: { hasNextPage: boolean }) => {
-        if (status === maps.services.Status.ZERO_RESULT) finish({ places: [], hasNextPage: false });
-        else if (status === maps.services.Status.OK) finish({ places, hasNextPage: pagination?.hasNextPage ?? false });
-        else finish(undefined, new Error("일부 장소를 불러오지 못했어요."));
-      };
-      const options = { location: new maps.LatLng(stadium.lat, stadium.lng), radius: NEARBY_RADIUS, size: 15, page, sort: spec.accuracy ? maps.services.SortBy.ACCURACY : maps.services.SortBy.DISTANCE, ...(spec.group ? { category_group_code: spec.group } : {}) };
-      if (spec.method === "category") service.categorySearch(spec.query, callback, options);
-      else service.keywordSearch(spec.query, callback, options);
-    } catch { finish(undefined, new Error("장소 검색을 시작하지 못했어요.")); }
-  });
+  const result = await searchKakaoPlaces({ method: spec.method, ...(spec.method === "keyword" ? { keyword: spec.query, ...(spec.group ? { category: spec.group } : {}) } : { category: spec.query }), lat: stadium.lat, lng: stadium.lng, radius: NEARBY_RADIUS, size: 15, page, sort: spec.accuracy ? "accuracy" : "distance" }, signal, fetcher);
   signal.throwIfAborted();
   if (cache.size > 600) cache.clear();
   cache.set(key, { expires: Date.now() + 5 * 60_000, result });
@@ -39,15 +28,15 @@ export async function searchPage(maps: KakaoMaps, stadium: NearbyStadium, spec: 
 
 // Address geocodes may point at the entire sports complex (not the ballpark).
 // Resolve the actual baseball venue before setting the search radius.
-export async function resolveStadium(maps: KakaoMaps, stadium: NearbyStadium, signal: AbortSignal): Promise<NearbyStadium> {
-  const result = await searchPage(maps, stadium, { kind: "sight", method: "keyword", query: stadium.name, accuracy: true }, 1, signal);
+export async function resolveStadium(maps: KakaoMaps, stadium: NearbyStadium, signal: AbortSignal, fetcher: typeof fetch = fetch): Promise<NearbyStadium> {
+  const result = await searchPage(maps, stadium, { kind: "sight", method: "keyword", query: stadium.name, accuracy: true }, 1, signal, fetcher);
   const compact = (value: string) => value.replace(/[\s-]/g, "").toLowerCase().replace(/kia/g, "기아");
   const venue = result.places.find((place) => /야구장/.test(place.category_name ?? "") && compact(place.place_name).includes(compact(stadium.name).replace(/^인천/, "")));
   if (!venue || !venue.x.trim() || !venue.y.trim() || !Number.isFinite(Number(venue.x)) || !Number.isFinite(Number(venue.y))) throw new Error("구장 위치를 확인하지 못했어요. 다시 불러와 주세요.");
   return { ...stadium, lat: Number(venue.y), lng: Number(venue.x), address: venue.road_address_name || stadium.address };
 }
 
-export async function collectNearbyPlaces(maps: KakaoMaps, stadium: NearbyStadium, signal: AbortSignal, preferred: () => CategoryFilter, onUpdate: (places: NearbyPlace[], completed: number, failures: number) => void) {
+export async function collectNearbyPlaces(maps: KakaoMaps, stadium: NearbyStadium, signal: AbortSignal, preferred: () => CategoryFilter, onUpdate: (places: NearbyPlace[], completed: number, failures: number) => void, fetcher: typeof fetch = fetch) {
   const queue = NEARBY_SEARCHES.map((spec, order) => ({ spec, order, page: 1 }));
   let completed = 0, failures = 0;
   async function worker() {
@@ -59,7 +48,7 @@ export async function collectNearbyPlaces(maps: KakaoMaps, stadium: NearbyStadiu
       });
       const job = queue.shift()!;
       try {
-        const result = await searchPage(maps, stadium, job.spec, job.page, signal);
+        const result = await searchPage(maps, stadium, job.spec, job.page, signal, fetcher);
         signal.throwIfAborted();
         const normalized = result.places.map((place) => normalizePlace(place, stadium)).filter((place): place is NearbyPlace => place !== null);
         if (result.hasNextPage && job.page < 3) queue.push({ ...job, page: job.page + 1 });

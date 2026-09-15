@@ -74,6 +74,9 @@
 .writer-save-row p span { color: #919eaf; font-size: 11px; line-height: 1.7; max-width: 340px; }
 .writer-save-row .button { white-space: nowrap; flex-shrink: 0; }
 .writer-save-row svg { width: 18px; }
+.writer-save-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.writer-draft-status { display: flex; flex-direction: column; gap: 5px; margin: 0 0 18px; padding-bottom: 16px; border-bottom: 1px solid #edf1f6; color: #536985; font-size: 12px; line-height: 1.7; }
+.writer-draft-status span { color: #7889a0; font-size: 11px; }
 .writer-error, .writer-success { padding: 14px 17px; border-radius: 10px; font-size: 13px; line-height: 1.8; margin-bottom: 18px; }
 .writer-error { color: #a23c42; border: 1px solid #f2d5d9; background: #fff6f7; }
 .writer-success { color: #256a60; border: 1px solid #cee9e2; background: #f1fbf7; }
@@ -233,6 +236,7 @@
   .writer-save-area { padding: 20px; }
   .writer-save-row { flex-direction: column; align-items: stretch; gap: 18px; }
   .writer-save-row .button { width: 100%; justify-content: center; }
+  .writer-save-actions { width: 100%; flex-direction: column; }
   .writer-save-row p span { font-size: 11px; }
   .writer-editor textarea { min-height: 290px; font-size: 16px; }
   .writer-field input, .writer-field select { font-size: 16px; }

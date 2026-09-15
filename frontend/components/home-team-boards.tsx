@@ -5,7 +5,8 @@ import { PostCategory } from "./post-category";
 import { PostCommentCount } from "./post-comment-count";
 import { useState } from "react";
 import type { KboStanding } from "@/lib/kbo/types";
-import { getTeamBoard, getTeamBoardHref, getTeamBoardPosts } from "@/lib/team-community";
+import { getTeamBoard, getTeamBoardHref } from "@/lib/team-community";
+import { retryCommunityPosts, useCommunityPosts } from "@/lib/community-api";
 import { Icon } from "./icons";
 import { TeamLogo } from "./team-logo";
 
@@ -15,6 +16,7 @@ export function HomeTeamBoards({ standings, loading, retry }: {
   retry: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const community = useCommunityPosts();
   const teams = [...(standings ?? [])].sort((a, b) => a.rank - b.rank).flatMap(standing => {
     const team = getTeamBoard(standing.teamCode);
     return team ? [{ ...team, rank: standing.rank }] : [];
@@ -28,11 +30,14 @@ export function HomeTeamBoards({ standings, loading, retry }: {
         <Link href={getTeamBoardHref()} className="text-link">게시판 이동 <Icon name="chevron" size={17} /></Link>
       </div>
       <div className="home-community-meta"><span>예시 게시글</span><p>위 순위표 순서로 만나는 팀별 이야기</p></div>
-      {loading ? (
+      {community.error && community.posts.length > 0 && <p role="alert">{community.error} <button type="button" className="text-link" onClick={() => void retryCommunityPosts()}>다시 확인</button></p>}
+      {loading || community.loading && community.posts.length === 0 ? (
         <div className="home-community-grid home-community-loading" role="status">
           <span className="sr-only">팀 순위에 맞춰 게시판을 불러오고 있어요.</span>
           {Array.from({ length: 6 }, (_, index) => <div className="home-team-board" key={index} aria-hidden="true"><div className="route-skeleton home-board-skeleton-title" />{Array.from({ length: 5 }, (_, row) => <div key={row} className="route-skeleton home-board-skeleton-row" />)}</div>)}
         </div>
+      ) : community.error && community.posts.length === 0 ? (
+        <div className="home-community-empty" role="alert"><p>{community.error}</p><button type="button" className="text-link" onClick={() => void retryCommunityPosts()}>다시 확인 <Icon name="arrow" size={15} /></button></div>
       ) : teams.length ? (
         <>
           <div className="home-community-grid" id="home-team-boards">
@@ -44,7 +49,7 @@ export function HomeTeamBoards({ standings, loading, retry }: {
                   <Icon name="chevron" size={16} />
                 </Link>
                 <ul className="home-board-posts">
-                  {getTeamBoardPosts(team.code).slice(0, 5).map(post => <li key={post.id}><Link href={getTeamBoardHref(team.code, post.id)}><PostCategory category={post.category} /><span className="home-board-post-title">{post.title}</span><PostCommentCount count={post.commentCount} /></Link></li>)}
+                  {community.posts.filter(post => post.board === "teams" && post.teamCode === team.code).slice(0, 5).map(post => <li key={post.id}><Link href={getTeamBoardHref(team.code, post.id)}><PostCategory category={post.category} /><span className="home-board-post-title">{post.title}</span><PostCommentCount count={post.commentCount} /></Link></li>)}
                 </ul>
               </article>
             ))}

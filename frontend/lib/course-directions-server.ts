@@ -39,7 +39,7 @@ export function parseDirections(mode: TravelMode, value: unknown): TravelLeg {
 
 export function parseCourseRequest(value: unknown): { mode: TravelMode; points: TravelPoint[] } | null {
   const body = obj(value);
-  if (!["walk", "car", "transit"].includes(String(body.mode)) || !Array.isArray(body.points) || body.points.length < 2 || body.points.length > 13 || !body.points.every(validTravelPoint)) return null;
+  if (typeof body.mode !== "string" || !["walk", "car", "transit"].includes(body.mode) || !Array.isArray(body.points) || body.points.length < 2 || body.points.length > 13 || !body.points.every(validTravelPoint)) return null;
   return { mode: body.mode as TravelMode, points: body.points.map(({ lat, lng }) => ({ lat, lng })) };
 }
 

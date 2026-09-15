@@ -36,7 +36,13 @@ CHAT_TRUST_PROXY_HEADERS = os.getenv("CHAT_TRUST_PROXY_HEADERS", "false").strip(
 CHAT_GUEST_RATE_LIMIT = int(os.getenv("CHAT_GUEST_RATE_LIMIT", "10"))
 CHAT_GUEST_RATE_WINDOW = int(os.getenv("CHAT_GUEST_RATE_WINDOW", "60"))
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in (os.getenv("DJANGO_ALLOWED_HOSTS") or "localhost,127.0.0.1,[::1]").split(",")
+    if host.strip()
+]
+if "*" in ALLOWED_HOSTS:
+    raise ValueError("DJANGO_ALLOWED_HOSTS must list explicit hosts")
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
@@ -54,7 +60,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.postgres',
     'llm',
-    'accounts'
+    'accounts',
+    'travel',
+    'community',
 ]
 
 MIDDLEWARE = [
@@ -170,9 +178,13 @@ if email_backend == "django.core.mail.backends.smtp.EmailBackend":
 
 
 REST_FRAMEWORK = {
+    'NUM_PROXIES': 1,
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ]
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'course_write': '30/hour',
+    },
 }
 
 
