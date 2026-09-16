@@ -14,6 +14,7 @@ export type ChatDoneEventDto = Schemas["ChatDoneEvent"];
 export type GuestChatDeltaEventDto = Schemas["GuestChatDeltaEvent"];
 export type GuestChatDoneEventDto = Schemas["GuestChatDoneEvent"];
 export type ChatErrorEventDto = Schemas["ChatErrorEvent"];
+export type ChatCoursePlaceDto = Schemas["ChatCoursePlace"];
 
 export type MemberChatSseEvent =
   | { event: "checkpoint"; data: ChatCheckpointEventDto }

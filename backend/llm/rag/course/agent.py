@@ -151,6 +151,16 @@ def _brand(p):
     return re.sub(r"\s.*$", "", p["name"])              # "BBQ 한강버스잠실선착장점" → "BBQ"
 
 
+def relevance(p, sl):
+    """질문·취향·동행과 얼마나 맞는가 (벡터 순위 + 취향/동행 가산). 거리는 넣지 않는다."""
+    s = 1 - p["dist"]
+    if sl["prefs"] and any(w in p["detail"] for w in sl["prefs"]):
+        s += 0.5
+    if sl["boost"] and any(w in p["detail"] for w in sl["boost"]):
+        s += 0.4
+    return s
+
+
 def pick(cands, k, sl, radius, seen_names=None):
     """벡터 순위 + 취향/동행 가산, 동행 금지 업종·반경 밖·중복 제외.
 
@@ -158,16 +168,12 @@ def pick(cands, k, sl, radius, seen_names=None):
     radius      이번 질문에 적용할 도보 반경(m)
     seen_names  이미 다른 검색에서 뽑힌 이름 (FOOD_OUT 을 두 번 검색하므로 중복 방지)
     """
-    ban, boost, prefs = sl["ban"], sl["boost"], sl["prefs"]
+    ban = sl["ban"]
     exclude = {n.strip() for n in (sl.get("exclude") or set())}
     seen_names = seen_names if seen_names is not None else set()
 
     def score(p):
-        s = 1 - p["dist"]
-        if prefs and any(w in p["detail"] for w in prefs):
-            s += 0.5
-        if boost and any(w in p["detail"] for w in boost):
-            s += 0.4
+        s = relevance(p, sl)
         if p["distance"]:
             s += max(0, 0.3 - p["distance"] / 5000)     # 0m → +0.3, 1500m → 0
         return s
@@ -192,6 +198,26 @@ def pick(cands, k, sl, radius, seen_names=None):
         if len(out) >= k:
             break
     return out
+
+
+# ── 출발지 ──────────────────────────────────────────────────────────────────
+def valid_origin(origin):
+    """프론트가 보낸 출발지 {"lat","lng"} 를 검사한다. 국내 좌표가 아니면 None."""
+    if not isinstance(origin, dict):
+        return None
+    lat, lng = _f(origin.get("lat")), _f(origin.get("lng"))
+    if lat is None or lng is None or not (33.0 <= lat <= 39.0 and 124.0 <= lng <= 132.0):
+        return None
+    return {"lat": lat, "lng": lng}
+
+
+def _origin_text(origin, anchor):
+    meters = geo.haversine_m(anchor.get("lat"), anchor.get("lng"), origin["lat"], origin["lng"])
+    if meters is None:
+        return "사용자가 지도에서 고른 출발지에서 출발한다."
+    where = geo.bearing_label(anchor, origin)
+    return (f"사용자가 지도에서 고른 출발지(구장 {where}쪽 {int(meters)}m)에서 출발한다. "
+            "경기 전 장소는 출발지에서 구장으로 오는 길목에서, 앞 장소와 가까운 순서로 고른다.")
 
 
 # ── 3. 경기 정보 ─────────────────────────────────────────────────────────────
@@ -246,20 +272,24 @@ def _date_ko(iso):
 
 
 # ── 4. LLM 호출 + JSON 파싱 ───────────────────────────────────────────────────
-def _candidates_text(cands, anchor):
+def _candidates_text(cands, anchor, origin=None):
     """후보 목록. 방위를 같이 줘서 LLM 이 한쪽 방향으로 모아 고르게 한다 (동선 짧아짐)."""
     lines = []
     for p in cands:
         where = f"{geo.bearing_label(anchor, p)}쪽 {p['distance']}m" if p["distance"] else "거리 정보 없음"
         walk = f"·도보 {timeline.walk_min(p['distance'])}분" if p["distance"] else ""
-        lines.append(f"{p['key']} [{CAT_LABEL[p['category']]}] {p['name']} · {p['detail'] or '-'} · 구장 {where}{walk}")
+        from_origin = ""
+        if origin and (m := geo.haversine_m(origin["lat"], origin["lng"], p.get("lat"), p.get("lng"))) is not None:
+            from_origin = f" · 출발지에서 {int(m)}m"
+        lines.append(f"{p['key']} [{CAT_LABEL[p['category']]}] {p['name']} · {p['detail'] or '-'} · 구장 {where}{walk}{from_origin}")
     return "\n".join(lines)
 
 
-def call_llm(question, game_text, cands, anchor, sl, evening, live_data=None):
+def call_llm(question, game_text, cands, anchor, sl, evening, live_data=None, origin=None):
+    situation = " ".join(x for x in (slots.prompt_line(sl), _origin_text(origin, anchor) if origin else "") if x)
     user = USER_TEMPLATE.format(
-        game=game_text, candidates=_candidates_text(cands, anchor), question=question,
-        situation=slots.prompt_line(sl) or "(특별한 조건 없음)",
+        game=game_text, candidates=_candidates_text(cands, anchor, origin), question=question,
+        situation=situation or "(특별한 조건 없음)",
         after_hint="야식·술집·카페" if evening else "카페·명소·산책",
     )
     if live_data:
@@ -371,6 +401,117 @@ def _live_candidates(code, anchor, question, game):
     return candidates, prompt_data
 
 
+# ── 출발지부터 단계별로 검색 ─────────────────────────────────────────────────────
+# 출발지 → (출발지 주변에서 찾은) 1번 → (1번 주변에서 찾은) 2번 → 구장 → (구장 주변) 경기 후.
+# 각 단계는 앞 지점을 중심으로 카카오 장소 검색을 새로 하고, 구장 쪽으로 다가가는 곳을 우선한다.
+STEP_RADII_M = (800, 1500, 3000)     # 앞 지점 주변에서 이 반경부터 넓혀 가며 찾는다
+AFTER_MAX_FROM_STADIUM_M = 1500      # 경기 후 장소는 구장에서 이 거리 안에서 고른다
+STEP_KAKAO = {"FOOD": "FD6", "BAR": "FD6", "CAFE": "CE7", "SPOT": "AT4"}
+STEP_CATEGORY = {"FOOD": "FOOD_OUT", "BAR": "FOOD_OUT", "CAFE": "CAFE", "SPOT": "SPOT"}
+CAFE_PREFS = {"카페", "커피", "디저트", "베이커리", "케이크"}
+BAR_PREFS = {"술집", "호프", "포장마차", "이자카야"}
+
+
+def plan_steps(sl, evening):
+    """단계 구성. 촉박하면 식사만, 여유 있으면 명소 → 식사 → 카페."""
+    before = {"tight": ["FOOD"], "long": ["SPOT", "FOOD", "CAFE"]}.get(sl["spare"], ["FOOD", "CAFE"])
+    bar_banned = any(w in (sl["ban"] or []) for w in BAR_PREFS)
+    after = ["BAR"] if evening and not bar_banned else ["CAFE"]
+    return before, after
+
+
+def _step_keyword(kind, sl):
+    prefs = sl["prefs"] or []
+    if kind == "FOOD":
+        return next((w for w in prefs if w not in CAFE_PREFS and w not in BAR_PREFS and "," not in w), None)
+    if kind == "BAR":
+        return next((w for w in prefs if w in BAR_PREFS), "술집")
+    return None
+
+
+def _step_matches(kind, p):
+    if p["category"] != STEP_CATEGORY[kind]:
+        return False
+    return (timeline.kind_of(p) == "BAR") == (kind == "BAR")
+
+
+def _kakao_step(kind, center, radius, anchor, sl):
+    keyword = _step_keyword(kind, sl)
+    args = {"method": "keyword" if keyword else "category", "category": STEP_KAKAO[kind],
+            "latitude": float(center["lat"]), "longitude": float(center["lng"]),
+            "radius": int(radius), "limit": 15, "sort": "distance"}
+    if keyword:
+        args["query"] = keyword
+    try:
+        payload = invoke_domain_tool("course", "search_places", args)
+    except Exception:
+        log.exception("course step search failed")
+        return []
+    found = []
+    for item in payload.get("places", []) if isinstance(payload, dict) else []:
+        lat, lng = _f(item.get("y")), _f(item.get("x"))
+        if lat is None or lng is None:
+            continue
+        detail = str(item.get("category_name") or item.get("category_group_name") or "")[:255]
+        if kind == "BAR" and keyword and not any(w in detail for w in timeline.BAR_WORDS):
+            detail = f"{detail} > 술집"[:255]               # 술집 검색 결과는 체류시간을 술집 기준으로
+        found.append({
+            "dist": 0.3, "category": STEP_CATEGORY[kind], "name": str(item.get("place_name") or "")[:255],
+            "detail": detail, "distance": int(geo.haversine_m(anchor.get("lat"), anchor.get("lng"), lat, lng) or 0),
+            "lat": lat, "lng": lng,
+            "address": str(item.get("road_address_name") or item.get("address_name") or "")[:500],
+            "placeId": str(item.get("id") or "") or None, "placeUrl": str(item.get("place_url") or "")[:500],
+            "doc_id": f"kakao:{item.get('id')}",
+        })
+    return found
+
+
+def build_origin_course(origin, anchor, pool, sl, evening):
+    """출발지부터 한 단계씩 앞 지점 주변을 검색해 코스를 만든다. 한 곳도 못 고르면 None.
+
+    pool: 구장 주변에서 이미 찾아 둔 후보 (DB·공개 서비스). 앞 지점 반경 안에 있으면 같이 쓴다.
+    반환: [{"phase", "place"(GAME 이면 None), "reason"}]
+    """
+    before, after = plan_steps(sl, evening)
+    exclude = {n.strip() for n in (sl.get("exclude") or set())}
+    ban = sl["ban"] or []
+    used_names, used_brands = set(), set()
+    steps, prev, prev_label = [], origin, "출발지"
+
+    def choose(kind, phase):
+        for radius in STEP_RADII_M:
+            found = _kakao_step(kind, prev, radius, anchor, sl) + [
+                p for p in pool
+                if _step_matches(kind, p) and (geo.haversine_m(prev["lat"], prev["lng"], p.get("lat"), p.get("lng")) or 1e9) <= radius
+            ]
+            ok = [p for p in found
+                  if p["name"] and p["name"] not in used_names and p["name"] not in exclude
+                  and _brand(p) not in used_brands and not any(w in p["detail"] for w in ban)
+                  and not ("야구장" in p["name"] and kind != "SPOT")
+                  and geo.step_allowed(p, prev, anchor, phase, AFTER_MAX_FROM_STADIUM_M)]
+            if ok:
+                return max(ok, key=lambda p: geo.step_score(p, prev, anchor, lambda q: relevance(q, sl)))
+        return None
+
+    for phase, kinds in (("BEFORE", before), ("AFTER", after)):
+        if phase == "AFTER":
+            steps.append({"phase": "GAME", "place": None, "reason": "경기 관람"})
+            if geo._has_xy(anchor):
+                prev, prev_label = anchor, "구장"
+        for kind in kinds:
+            place = choose(kind, phase)
+            if place is None:
+                continue
+            place = dict(place)
+            meters = geo.haversine_m(prev["lat"], prev["lng"], place["lat"], place["lng"]) or 0
+            steps.append({"phase": phase, "place": place,
+                          "reason": f"{prev_label}에서 도보 {max(1, round(meters / geo.WALK_M_PER_MIN))}분"})
+            used_names.add(place["name"])
+            used_brands.add(_brand(place))
+            prev, prev_label = place, "앞 장소"
+    return steps if any(s["place"] for s in steps) else None
+
+
 # ── 5. 답변 조립 ─────────────────────────────────────────────────────────────
 def build_answer(intro, course, lookup, tl, walk, sl, assumed):
     lines = [intro] if intro else []
@@ -389,8 +530,10 @@ def build_answer(intro, course, lookup, tl, walk, sl, assumed):
 
 
 # ── 6. 진입점 ─────────────────────────────────────────────────────────────────
-def answer(question, history=None, hint_stadium=None):
+def answer(question, history=None, hint_stadium=None, origin=None):
+    """origin: 사용자가 지도에서 고른 출발지 {"lat","lng"}. 있으면 각 장소를 앞 지점 기준으로 이어서 고른다."""
     history = history or []
+    origin = valid_origin(origin)
     if PUBLIC_COURSE_LOOKUP.search(question):
         return answer_public_course(question, history)
     today = date.today().isoformat()
@@ -450,33 +593,60 @@ def answer(question, history=None, hint_stadium=None):
     anchor = stadium_anchor(code)
     live_candidates, live_data = _live_candidates(code, anchor, question, game)
     cands, seen = [], set()
+    widen = 2 if origin else 1                           # 출발지 기준으로 고르려면 방향별 후보가 더 필요하다
     for category, _, k in SEARCHES:
         cands += pick([item for item in live_candidates if item["category"] == category], k, sl, radius, seen_names=seen)
     for category, which, k in SEARCHES:
         if sl["spare"] == "tight" and category == "SPOT":
             continue                                     # 촉박하면 명소는 후보에서 뺀다
-        raw = search_places(vec_meal if which == "meal" else vec_after, code, category, k * 3)
-        cands += pick(raw, k, sl, radius, seen_names=seen)
+        raw = search_places(vec_meal if which == "meal" else vec_after, code, category, k * 3 * widen)
+        cands += pick(raw, k * widen, sl, radius, seen_names=seen)
     timings["retrieval_ms"] = round((time.perf_counter() - t0) * 1000)
-    if not cands:
+    origin_steps = None
+    if origin:
+        t0 = time.perf_counter()
+        origin_steps = build_origin_course(origin, anchor, cands, sl, evening)
+        timings["origin_ms"] = round((time.perf_counter() - t0) * 1000)
+    if not cands and not origin_steps:
         msg = NO_PLACES.format(stadium_ko=STADIUM_KO.get(code, code))
         if sl["retry"]:
             msg = "앞서 추천한 곳 말고는 조건에 맞는 데를 더 못 찾았어요. 취향이나 구장을 바꿔서 말씀해 주시면 다시 찾아볼게요!"
         return {"answer": msg, "sources": [], "route": f"course:{code}:no_places", "places": [], "timing": timings}
 
-    for i, p in enumerate(cands, 1):
-        p["key"] = f"P{i}"
-    lookup = {p["key"]: p for p in cands}
-    lookup["STADIUM"] = anchor
+    if origin_steps:
+        # 출발지부터 단계별로 고른 코스 — LLM 은 인트로와 장소별 한 줄 이유만 쓴다
+        cands = [s["place"] for s in origin_steps if s["place"]]
+        for i, p in enumerate(cands, 1):
+            p["key"] = f"P{i}"
+        lookup = {p["key"]: p for p in cands}
+        lookup["STADIUM"] = anchor
+        course = [{"key": s["place"]["key"] if s["place"] else "STADIUM", "phase": s["phase"], "reason": s["reason"]}
+                  for s in origin_steps]
+        intro = None
+        try:
+            raw, ms = call_llm(question, game_text, cands, anchor, sl, evening, live_data, origin)
+            timings["llm_ms"] = round(ms)
+            picked, intro = parse_course(raw, set(lookup))
+            reasons = {c["key"]: c["reason"] for c in picked or [] if c["reason"] and c["key"] != "STADIUM"}
+            course = [{**c, "reason": reasons.get(c["key"], c["reason"])} for c in course]
+        except Exception:
+            log.exception("course llm failed")
+        intro = intro or f"{game_text.split(' (')[0]} 기준으로, 찍어 주신 출발지에서 구장까지 이어지는 코스를 짜 봤어요."
+        route.append("origin:steps")
+    else:
+        for i, p in enumerate(cands, 1):
+            p["key"] = f"P{i}"
+        lookup = {p["key"]: p for p in cands}
+        lookup["STADIUM"] = anchor
 
-    # ④ LLM 1회 — 키만 고르고 인트로만 쓴다
-    course, intro = None, None
-    try:
-        raw, ms = call_llm(question, game_text, cands, anchor, sl, evening, live_data)
-        timings["llm_ms"] = round(ms)
-        course, intro = parse_course(raw, set(lookup))
-    except Exception:
-        log.exception("course llm failed")
+        # ④ LLM 1회 — 키만 고르고 인트로만 쓴다
+        course, intro = None, None
+        try:
+            raw, ms = call_llm(question, game_text, cands, anchor, sl, evening, live_data, origin)
+            timings["llm_ms"] = round(ms)
+            course, intro = parse_course(raw, set(lookup))
+        except Exception:
+            log.exception("course llm failed")
     if not course:
         course = fallback_course(cands, evening, sl)
         intro = f"{game_text.split(' (')[0]} 기준으로 코스를 짜 봤어요."
@@ -489,10 +659,20 @@ def answer(question, history=None, hint_stadium=None):
         course = before + [c for c in course if c["phase"] != "BEFORE"]
     course.sort(key=lambda c: {"BEFORE": 0, "GAME": 1, "AFTER": 2}[c["phase"]])
 
-    # ⑤ 동선 — 총 도보가 길면 같은 카테고리의 가까운 후보로 교체
-    course, swapped = geo.optimize(course, lookup, cands)
-    if swapped:
-        route.append("geo:swap")
+    # ⑤ 동선 — 출발지가 있으면 앞 지점 기준으로 이어 짜고, 없으면 총 도보가 길 때만 가까운 후보로 교체
+    if origin_steps:
+        pass                                              # 이미 단계별로 골랐다
+    elif origin:
+        course, chained = geo.chain_course(
+            course, lookup, cands, origin, anchor,
+            relevance=lambda p: relevance(p, sl),
+            same_kind=lambda a, b: a["category"] == b["category"] and timeline.kind_of(a) == timeline.kind_of(b),
+        )
+        route.append("origin:chain" if chained else "origin")
+    else:
+        course, swapped = geo.optimize(course, lookup, cands)
+        if swapped:
+            route.append("geo:swap")
     points = [lookup[c["key"]] for c in course]
     walk = geo.summary(points)
     directions = None
@@ -528,6 +708,11 @@ def answer(question, history=None, hint_stadium=None):
                for c in course if lookup[c["key"]].get("doc_id")]
 
     text = build_answer(intro, course, lookup, tl, walk, sl, assumed)
+    if origin and points:
+        first = points[0]
+        meters = geo.haversine_m(origin["lat"], origin["lng"], first.get("lat"), first.get("lng"))
+        if meters is not None:
+            text += f"\n출발지에서 {first['name']}까지는 직선거리 약 {meters / 1000:.1f}km예요."
     if isinstance(schedule_result, dict) and schedule_result.get("warning"):
         text += f"\n{schedule_result['warning']}"
     weather = live_data.get("weather")

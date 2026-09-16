@@ -297,13 +297,23 @@ export async function getChatStatus(signal?: AbortSignal): Promise<ChatStatus> {
   return MEMBER_STATUS;
 }
 
+// The backend reads the selected stadium and map origin from these leading tags (llm/rag/pipeline.py).
+export function contextPrefix(context?: ChatRequest["context"]) {
+  if (!context) return "";
+  const tags = [
+    ...(context.stadium ? [`[선택한 구장: ${context.stadium}]`] : []),
+    ...(context.origin ? [`[출발지: ${context.origin.lat.toFixed(6)},${context.origin.lng.toFixed(6)}]`] : []),
+  ];
+  return tags.length ? `${tags.join("\n")}\n` : "";
+}
+
 export async function sendChatMessage(body: ChatRequest, signal?: AbortSignal, callbacks: ChatStreamCallbacks = {}): Promise<ChatReply> {
   const input = parseChatRequest(body), question = input.messages.at(-1)!.content;
   let sessionId = input.sessionId;
   if (!sessionId) {
     sessionId = (await createChatSession(question.slice(0, 80), signal)).id;
   }
-  const content = `${input.context?.stadium ? `[선택한 구장: ${input.context.stadium}]\n` : ""}${question}`;
+  const content = `${contextPrefix(input.context)}${question}`;
   try {
     return await memberRequest(`/api/chat/sessions/${sessionId}/messages/`, {
       method: "POST", headers: { "Content-Type": "application/json", Accept: "text/event-stream" }, body: JSON.stringify({ content }),
@@ -318,8 +328,7 @@ export async function sendGuestChatMessage(body: ChatRequest, signal?: AbortSign
   const input = parseChatRequest(body);
   const messages = input.messages.map((message, index) => ({
     ...message,
-    content: index === input.messages.length - 1 && input.context?.stadium
-      ? `[선택한 구장: ${input.context.stadium}]\n${message.content}` : message.content,
+    content: index === input.messages.length - 1 ? `${contextPrefix(input.context)}${message.content}` : message.content,
   }));
   return guestRequest("/api/chat/guest/", {
     method: "POST", headers: { "Content-Type": "application/json", Accept: "text/event-stream" }, body: JSON.stringify({ messages }),

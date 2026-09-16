@@ -28,7 +28,7 @@ global.sessionStorage = {
 };
 const require = createRequire(join(scratch, "entry.cjs"));
 const { clearMemberTokens, saveMemberTokens } = require("./lib/member-auth-request.js");
-const { ChatClientError, deleteChatSession, fetchChatHistory, getChatStatus, renameChatSession, sendChatMessage, sendGuestChatMessage, sendNonStreamChatMessage } = require("./lib/chat/client.js");
+const { ChatClientError, contextPrefix, deleteChatSession, fetchChatHistory, getChatStatus, renameChatSession, sendChatMessage, sendGuestChatMessage, sendNonStreamChatMessage } = require("./lib/chat/client.js");
 const json = (value, status = 200) => Response.json(value, { status });
 const sse = events => new Response(new ReadableStream({
   start(controller) {
@@ -200,4 +200,11 @@ test("authenticated chat has no legacy Next cookie relay", () => {
   assert.equal(existsSync(join(frontend, "app/chat-api/route.ts")), false);
   assert.equal(existsSync(join(frontend, "lib/chat/team.ts")), false);
   assert.equal(existsSync(join(frontend, "app/baseball-admin-api/route.ts")), false);
+});
+
+test("selected stadium and map origin are sent as leading tags the backend strips", () => {
+  assert.equal(contextPrefix(undefined), "");
+  assert.equal(contextPrefix({ intent: "route" }), "");
+  assert.equal(contextPrefix({ stadium: "잠실야구장" }), "[선택한 구장: 잠실야구장]\n");
+  assert.equal(contextPrefix({ stadium: "잠실야구장", origin: { lat: 37.5, lng: 127.0712345 } }), "[선택한 구장: 잠실야구장]\n[출발지: 37.500000,127.071235]\n");
 });

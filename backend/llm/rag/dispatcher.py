@@ -94,9 +94,9 @@ def stadium_code_from_name(name: str | None) -> str | None:
     return None
 
 
-def _call(domain, question, history, hint_stadium):
+def _call(domain, question, history, hint_stadium, **extra):
     try:
-        return domain.answer(question, history=history, hint_stadium=hint_stadium)
+        return domain.answer(question, history=history, hint_stadium=hint_stadium, **extra)
     except Exception:            # 한 도메인이 죽어도 챗봇 전체가 죽지 않게
         log.exception("rag domain failed: %s", domain.__name__)
         if domain is course:     # course 가 죽으면 venue(준비됐으면) → club 순으로 맛집 목록이라도 준다
@@ -114,7 +114,7 @@ def _call(domain, question, history, hint_stadium):
 
 
 def answer(question: str, history: list[dict] | None = None, stadium_name: str | None = None,
-           intent: str | None = None) -> dict:
+           intent: str | None = None, origin: dict | None = None) -> dict:
     """진입점. 반환 {"answer","sources","route","places","coursePayload"}
     route 는 디버깅용, places·coursePayload 는 course 일 때만 채워진다."""
     history = history or []
@@ -126,7 +126,7 @@ def answer(question: str, history: list[dict] | None = None, stadium_name: str |
 
     use_venue = venue.READY
     if kind == "course" and course.READY:
-        result = _call(course, question, history, hint)
+        result = _call(course, question, history, hint, **({"origin": origin} if origin else {}))
         result["route"] = f"course>{result['route']}"
     elif kind == "venue":
         result = _call(venue if use_venue else club, question, history, hint)

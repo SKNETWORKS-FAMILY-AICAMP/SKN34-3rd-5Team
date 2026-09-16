@@ -11,6 +11,7 @@ import {
   sendGuestChatMessage,
   type ChatCheckpoint,
 } from "@/lib/chat/client";
+import type { ChatCoursePlaceDto } from "@/lib/chat/wire";
 import { useMemberAuth } from "@/lib/member-auth";
 import { createClientId } from "@/lib/client-id";
 import { ChatPopup } from "./chat-popup";
@@ -25,7 +26,9 @@ type ConversationSnapshot = {
   notice: string;
   uncertain: boolean;
 };
+export type ChatCourseState = { places: ChatCoursePlaceDto[]; stadiumCode: string | null };
 type ChatControls = ConversationSnapshot & {
+  course: ChatCourseState | null;
   openChat: (initialMessage?: string, context?: ChatContext) => void;
   onExpand: () => void;
   onMinimize: () => void;
@@ -56,6 +59,25 @@ export function useChat() {
   return value;
 }
 
+/**
+ * 가이드 샘플 화면용 챗봇: 실제 대화·요청 없이 빈 대화 화면만 보여 준다 (연결 상태 표시는 실제 값을 따른다).
+ */
+export function ChatSampleProvider({ children }: { children: React.ReactNode }) {
+  const real = useChat();
+  const noop = () => {};
+  const value: ChatControls = {
+    ...real,
+    messages: [], course: null, draft: "", context: undefined,
+    failed: "", failedContext: undefined, error: "", notice: "", uncertain: false,
+    pending: "", streaming: "",
+    conversations: [{ id: "guide-sample", title: "새 대화" }], activeConversationId: "guide-sample",
+    openChat: noop, onExpand: noop, onMinimize: noop, onClosePopup: noop,
+    onDraftChange: noop, onRefreshStatus: noop, onSend: noop, onRetry: noop, onCancel: noop, onReset: noop,
+    onSuggestion: noop, onSelectConversation: noop, onContextChange: noop,
+  };
+  return <ChatControlsContext.Provider value={value}>{children}</ChatControlsContext.Provider>;
+}
+
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { status: memberStatus, user } = useMemberAuth();
   const accountId = memberStatus === "authenticated" ? user!.id : null;
@@ -69,6 +91,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [activeConversationId, setActiveConversationId] = useState("initial-chat");
   const [conversations, setConversations] = useState([{ id: "initial-chat", title: "새 대화" }]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [course, setCourse] = useState<ChatCourseState | null>(null);
   const [draft, setDraft] = useState("");
   const [context, setContext] = useState<ChatContext | undefined>();
   const [status, setStatus] = useState<ChatStatus | null>(null);
@@ -214,6 +237,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setNotice(carryDraft ? "새 대화에서 질문을 확인한 뒤 보내 주세요." : "");
     setUncertain(false);
     setContext(undefined);
+    setCourse(null);
   }, [archiveCurrentConversation, draft, failed, uncertain]);
 
   const selectConversation = useCallback((id: string) => {
@@ -232,6 +256,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setNotice(saved.notice);
     setUncertain(saved.uncertain);
     setStreaming("");
+    setCourse(null);
   }, [activeConversationId, archiveCurrentConversation, uncertain]);
 
   useEffect(() => {
@@ -254,6 +279,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([]);
     setDraft("");
     setContext(undefined);
+    setCourse(null);
     setStatus(null);
     setStatusLoading(memberStatus === "authenticated" || memberStatus === "loading");
     setStatusError(memberStatus === "unavailable" ? "로그인 상태를 확인하지 못했어요." : "");
@@ -326,6 +352,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       const next: ChatMessage[] = [...previous, userMessage, ...(reply.reply ? [{ role: "assistant" as const, content: reply.reply }] : [])];
       historyRef.current = next;
       setMessages(next);
+      if (reply.places?.length) {
+        const stadiumCode = /course:([A-Z]+):/.exec(reply.route ?? "")?.[1] ?? null;
+        setCourse({ places: reply.places, stadiumCode });
+      }
       setStatus({ provider: reply.provider, model: reply.model, ready: reply.ready });
       setNotice(reply.completionStatus === "stopped" ? "받은 답변까지만 보관했어요." : "");
       setUncertain(false);
@@ -400,6 +430,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     <ChatControlsContext.Provider value={{
       openChat, onExpand: expandChat, onMinimize: minimizeChat, onClosePopup: closePopup,
       messages: identityChanged ? [] : messages,
+      course: identityChanged ? null : course,
       draft: identityChanged ? "" : draft,
       context: identityChanged ? undefined : context,
       status: visibleStatus,
