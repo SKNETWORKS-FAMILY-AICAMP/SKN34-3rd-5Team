@@ -91,6 +91,7 @@ class AdminPostList(generics.ListAPIView):
 class AdminPostDetail(generics.DestroyAPIView):
     """게시글 삭제 (댓글·추천·신고도 함께 삭제된다)."""
     permission_classes = (StaffOnly,)
+    serializer_class = AdminPostSerializer   # API 문서 생성용 (삭제 응답은 본문 없음)
     queryset = CommunityPost.objects.all()
     lookup_field = "source_id"
     lookup_url_kwarg = "source_id"
