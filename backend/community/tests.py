@@ -37,10 +37,13 @@ class CommunityPostApiTests(APITestCase):
     def test_public_list_and_filters_return_seeded_dto(self):
         response = self.client.get("/community/posts/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 351)
-        self.assertEqual(response.data[0]["id"], "153c4936cba745d3a3e89f07891885c4")
-        self.assertEqual(response.data[0]["author"], "진성칰갈")
+        # 예시 350개 + 이전된 글(0006) + 로컬 샘플 글(0010)
+        self.assertEqual(len(response.data), 352)
+        self.assertEqual(response.data[0]["id"], "e25bc43f62554ec2adc6fbd683fc397b")
+        self.assertEqual(response.data[0]["author"], "신그는날두인가")
         self.assertFalse(response.data[0]["isSample"])
+        self.assertEqual(response.data[1]["id"], "153c4936cba745d3a3e89f07891885c4")
+        self.assertEqual(response.data[1]["author"], "진성칰갈")
         self.assertEqual(response.data[-1], {
             "id": "lg-sample-1", "sourceId": "lg-sample-1", "postNumber": "001001", "board": "teams",
             "teamCode": "LG", "authorId": None, "author": "예시 작성자", "title": "잠실 외야에서 보면 타구 판단 좀 되나요?",

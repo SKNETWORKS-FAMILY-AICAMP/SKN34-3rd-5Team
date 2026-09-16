@@ -41,7 +41,8 @@ class CommunityAdminApiTests(APITestCase):
         self.client.force_authenticate(self.staff)
         response = self.client.get("/community/admin/reports/")
         self.assertEqual(response.status_code, 200)
-        row = response.data["results"][0]
+        # 마이그레이션이 넣은 샘플 신고도 함께 있으므로 이 테스트의 신고를 id 로 찾는다
+        row = next(item for item in response.data["results"] if item["id"] == self.report.id)
         self.assertEqual((row["reporter"], row["status"], row["reason"], row["detail"]), ("reporter", "pending", "spam", "광고"))
         self.assertEqual(row["post"]["source_id"], self.post.source_id)
         self.assertEqual((row["post"]["owner"]["username"], row["post"]["owner"]["nickname"]), ("member", "회원"))
