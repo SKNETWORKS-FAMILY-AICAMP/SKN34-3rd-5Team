@@ -11,10 +11,11 @@ ChatService 는 `self.chain` 에 두 가지만 요구한다.
 ChatService 쪽 변경은 import 1줄 + chain 고르는 1줄이 전부다.
 
     from .rag.pipeline import chat_chain          # 추가
-    self.chain = chat_chain() or self.get_chain() # CHAT_USE_RAG=0 이면 기존 체인 그대로
+    if rag := chat_chain(): return rag.invoke(...) # 항상 RAG 파이프라인 (테스트 중에만 성호 체인)
 
-`chat_chain()` 은 CHAT_USE_RAG 가 꺼져 있으면 None 을 돌려주므로,
-환경변수만 0 으로 두면 성호가 만든 예전 동작이 100% 그대로다 (테스트도 안 건드린다).
+스위치(CHAT_USE_RAG)는 2026-09-15 에 없앴다. 챗봇은 항상 이 파이프라인으로 답하고,
+야구 DB 는 파이프라인 안의 에이전트가 읽기 전용 계정 도구로 조회한다.
+`chat_chain()` 은 테스트 러너 안에서만 None 을 돌려줘 성호 회귀 테스트는 그대로 돈다.
 
 ## 풍부한 결과가 필요할 때 (코스 추천 places 등)
 
@@ -37,12 +38,12 @@ ChatService 쪽 변경은 import 1줄 + chain 고르는 1줄이 전부다.
 
 ## 흐름
 
-    ① history 정리 · 구장 접두어 분리                          LLM 0회
-    ② dispatcher.route()   course / club / venue / both / scope  LLM 0회
-    ③ 도메인 answer()      course: 경기+장소 조회 → ChatOpenAI 1회
-                           club:   라우터 → 직접조회 or 검색 → ChatOpenAI 1회
-                           venue:  create_agent 도구 호출 (2~3회)
-    ④ persona.finalize()   말투 통일                            LLM 0회
+    ① history 정리 · 구장 접두어 분리                                   LLM 0회
+    ② dispatcher          야구와 무관한 질문만 바로 안내                  LLM 0회
+    ③ assistant 파이프라인  프롬프트 · RAG(문서 검색) · 에이전트 · 파서       LLM 1~5회
+                          에이전트 도구: 야구 DB 읽기 전용 조회, 주변 장소(카카오), 코스 짜기
+                          실패하면 예전 도메인(course/club/venue/nearby)으로 한 번 더
+    ④ persona.finalize()  말투 통일                                     LLM 0회
 
 LangSmith: backend/.env 에 LANGSMITH_TRACING=true · LANGSMITH_API_KEY · LANGSMITH_PROJECT 를 넣으면
            answer() 한 번이 트리 하나로 기록된다. env 가 없으면 오버헤드 0.
@@ -76,8 +77,6 @@ _ORIGIN_PREFIX = re.compile(r"^\s*\[출발지:\s*(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?
 # dispatcher 에 course 가 들어오기 전/후 둘 다에서 돌게 한다
 _HAS_INTENT = "intent" in inspect.signature(dispatcher.answer).parameters
 _HAS_ORIGIN = "origin" in inspect.signature(dispatcher.answer).parameters
-
-STREAM_CHUNK = 24          # RAG 답은 한 번에 완성되므로 이만큼씩 끊어 흘린다 (화면 타이핑 효과)
 
 # 이번 요청의 RAG 결과를 뷰가 꺼내 쓰라고 잠깐 놔두는 자리.
 # 체인은 문자열만 돌려주는데(성호 규격), 뷰는 places·coursePayload 도 내려줘야 해서 필요하다.
@@ -122,9 +121,11 @@ def _running_tests() -> bool:
 
 
 def use_rag() -> bool:
-    """CHAT_USE_RAG=1 일 때만 RAG 를 쓴다. 기본값 0 — 켜야만 동작이 바뀐다. 테스트 중엔 항상 끈다."""
-    on = os.getenv("CHAT_USE_RAG", "0").strip().lower() in ("1", "true", "yes", "on")
-    return on and not _running_tests()
+    """챗봇은 항상 RAG 파이프라인으로 답한다 (CHAT_USE_RAG 스위치 제거, 2026-09-15).
+
+    성호 회귀 테스트(도구 루프를 가짜 모델로 검사)가 깨지지 않도록 테스트 러너 안에서만 끈다.
+    """
+    return not _running_tests()
 
 
 def split_context_prefix(question: str) -> tuple[str, Optional[str], Optional[dict]]:
@@ -208,8 +209,7 @@ class RagChatChain(Runnable[dict, str]):
     ChatService.invoke_with_messages 는 .invoke() 를,
     ChatService.stream_with_history 는 .stream() 을 부른다 — 둘 다 여기로 온다.
 
-    RAG 는 답을 한 번에 만들기 때문에 .stream() 은 완성된 답을 잘라서 흘린다.
-    (화면에는 똑같이 한 글자씩 찍히고, 프론트 SSE 계약도 그대로다)
+    .stream() 은 마지막 provider 모델의 실제 text delta 만 흘린다.
     """
 
     name = "kbo_rag_chain"
@@ -217,16 +217,21 @@ class RagChatChain(Runnable[dict, str]):
     @staticmethod
     def _args(inputs: Any) -> dict:
         if isinstance(inputs, str):
-            return {"question": inputs, "history": None, "stadium_name": None, "intent": None, "origin": None}
+            question, stadium_name, origin = split_context_prefix(inputs)
+            return {"question": question, "history": [], "stadium_name": stadium_name, "intent": None, "origin": origin}
         inputs = inputs or {}
+        # 스트리밍 경로도 출발지 접두어를 잃지 않게 구장·출발지를 함께 뗀다
+        question, prefixed_stadium, prefixed_origin = split_context_prefix(inputs.get("question") or "")
         return {
-            "question": inputs.get("question") or "",
+            "question": question,
             # chat_history 는 성호 체인 키, history 는 우리 키 — 둘 다 받는다
-            "history": inputs.get("chat_history") if inputs.get("chat_history") is not None
-            else inputs.get("history"),
-            "stadium_name": inputs.get("stadium_name"),
+            "history": normalize_history(
+                inputs.get("chat_history") if inputs.get("chat_history") is not None
+                else inputs.get("history")
+            ),
+            "stadium_name": inputs.get("stadium_name") or prefixed_stadium,
             "intent": inputs.get("intent"),
-            "origin": inputs.get("origin"),
+            "origin": inputs.get("origin") or prefixed_origin,
         }
 
     def detail(self, inputs: Any) -> dict:
@@ -240,16 +245,15 @@ class RagChatChain(Runnable[dict, str]):
 
     def stream(self, input: Any, config: Optional[RunnableConfig] = None,
                **kwargs) -> Iterator[str]:
-        text = self.invoke(input, config, **kwargs)
-        for i in range(0, len(text), STREAM_CHUNK):
-            yield text[i:i + STREAM_CHUNK]
+        result = yield from dispatcher.stream(**self._args(input))
+        _LAST.set(result)
 
 
 rag_chain = RagChatChain()
 
 
 def chat_chain() -> Optional[RagChatChain]:
-    """CHAT_USE_RAG 가 켜져 있으면 RAG 체인을, 꺼져 있으면 None 을 돌려준다.
+    """RAG 체인을 돌려준다 (테스트 러너 안에서만 None → 성호 체인).
 
     ChatService 는 `self.chain = chat_chain() or self.get_chain()` 한 줄로 쓴다.
     """

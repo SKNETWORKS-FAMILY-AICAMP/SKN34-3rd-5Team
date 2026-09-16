@@ -25,8 +25,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 
+from ...progress import config_kwargs
+
 from ..club.retrieval import embed                # 질문 임베딩만 재사용 (같은 임베딩 모델)
-from ..domain_tools import tools_for
+from ..domain_tools import tools_for, visible_text
 from ..persona import FIXED
 from .prompts import NO_DOCUMENTS_MESSAGE, QUERY_TRANSFORM, SYSTEM
 
@@ -244,11 +246,12 @@ _ctx: contextvars.ContextVar[dict] = contextvars.ContextVar("venue_ctx")   # 도
 def llm():
     global _llm
     if _llm is None:
-        _llm = ChatOpenAI(model=LLM_MODEL, temperature=0, timeout=25, max_retries=0, reasoning_effort="none")
+        _llm = ChatOpenAI(model=LLM_MODEL, temperature=0, timeout=25, max_retries=0, reasoning_effort="medium", use_responses_api=True)
     return _llm
 
 
 def transform_query(query: str) -> str:
+    """검색어만 다듬는 보조 LLM 호출이며 답변 에이전트/도구 루프가 아니다."""
     global _transformer
     if _transformer is None:
         prompt = ChatPromptTemplate.from_messages([("system", QUERY_TRANSFORM), ("human", "{query}")])
@@ -268,7 +271,7 @@ def search_documents_tool(query: str) -> str:
 def agent():
     global _agent
     if _agent is None:
-        _agent = create_agent(model=llm(), tools=[search_documents_tool, *tools_for("venue")], system_prompt=SYSTEM)
+        _agent = create_agent(model=llm(), tools=tools_for("venue"), system_prompt=SYSTEM)
     return _agent
 
 
@@ -282,7 +285,7 @@ def _stadium_from_history(history):
     return {}
 
 
-def answer(question, history=None, hint_stadium=None):
+def _answer(question, history=None, hint_stadium=None):
     if not READY:
         raise RuntimeError("venue 도메인 비활성화 (langchain 패키지 없음)")
     history = history or []
@@ -306,14 +309,16 @@ def answer(question, history=None, hint_stadium=None):
         messages = [*[{"role": m["role"], "content": m["content"]} for m in history[-6:]],
                     {"role": "user", "content": question}]
         t0 = time.perf_counter()
-        result = agent().invoke({"messages": messages}, config={"recursion_limit": 6})
+        result = agent().invoke(
+            {"messages": messages},
+            **config_kwargs(recursion_limit=6),
+        )
         timing["agent_ms"] = round((time.perf_counter() - t0) * 1000)
     finally:
         _ctx.reset(token)
 
     final = result["messages"][-1]
-    text = final.content if isinstance(final.content, str) else "".join(
-        p.get("text", "") for p in final.content if isinstance(p, dict))
+    text = visible_text(final.content)
     tool_called = any(type(m).__name__ == "ToolMessage" for m in result["messages"])
 
     last = ctx.get("last") or {}
@@ -324,3 +329,9 @@ def answer(question, history=None, hint_stadium=None):
     route.append(f"agent:{'tool' if tool_called else 'no_tool'}:{last.get('search_method', '-')}"
                  f":{slots.get('stadium_code')}:{','.join(slots.get('categories') or []) or '-'}")
     return {"answer": text, "sources": sources, "route": " ".join(route), "timing": timing}
+
+
+def answer(question, history=None, hint_stadium=None):
+    from ..assistant.tools import request_state
+    with request_state(hint_stadium, question, history):
+        return _answer(question, history, hint_stadium)

@@ -22,6 +22,9 @@ import { GUIDE_COURSE, type GuideCourseStop } from "@/lib/route-guide-events";
 import { teamBoards } from "@/lib/team-community";
 import { browserDraftStorage, createDraftAutosave, readRouteDraft, recoverRouteDraft, removeRouteDraft, saveRouteDraft, type MemoryRouteDraft, type RouteDraftData } from "@/lib/route-draft";
 import type { TravelMode } from "@/lib/course-directions";
+import { courseToStops } from "@/lib/chat/course";
+import type { ChatCourse } from "@/lib/chat/types";
+import { MAX_ROUTE_STOPS, sameStop } from "@/lib/nearby-places";
 
 function WriterIcon({ kind }: { kind: "spark" | "pin" | "arrow" | "save" }) {
   return (
@@ -96,9 +99,7 @@ export default function RouteWriter({ editId, copyId, initialStadium }: { editId
 function WriterForm({ stadiums, initial, existing, copying = false, sample = false }: { stadiums: Stadium[]; initial: Stadium; existing?: TripRoute; copying?: boolean; sample?: boolean }) {
   const router = useRouter();
   const { status: authStatus } = useMemberAuth();
-  const { onContextChange, context: chatContext, course: chatCourse, onReset: resetChat, pending: chatPending } = useChat();
-  // A course that was already in the chat when the writer opened is not re-applied.
-  const [mountChatCourse] = useState(chatCourse);
+  const { onContextChange, context: chatContext, onReset: resetChat, pending: chatPending, registerCourseTarget, takePendingCourse } = useChat();
   const resetChatRef = useRef(resetChat);
   useLayoutEffect(() => { resetChatRef.current = resetChat; }, [resetChat]);
   const draftKey = sample ? `sample:${initial.code}` : existing ? `${copying ? "copy" : "edit"}:${existing.id}` : `new:${initial.code}`;
@@ -136,6 +137,10 @@ function WriterForm({ stadiums, initial, existing, copying = false, sample = fal
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  // 챗봇 코스를 담은 횟수·구장. 지도(planner)가 이 값이 바뀌면 "내 코스" 탭을 열고 코스 전체를 보여준다.
+  const [courseApplied, setCourseApplied] = useState<{ version: number; stadiumCode: string } | null>(null);
+  // 챗봇이 채워 준 제목·본문. 사용자가 손대지 않았으면 다음 추천 코스로 다시 바꿔 준다.
+  const autoFilled = useRef<{ title?: string; content?: string }>({});
   const dirty = useRef(recovery.dirty);
   // "작성 중" = something was changed (or restored) that has not been published yet.
   const touched = useRef(recovery.dirty || Boolean(restoredDraft));
@@ -248,37 +253,46 @@ function WriterForm({ stadiums, initial, existing, copying = false, sample = fal
     if (next === latest.current.travelMode) return;
     setTravelMode(next); markDirty();
   }, [markDirty]);
-  // Mirror the chatbot's last course onto the map as if the stops were placed by hand.
-  // Only applies when the course is for the stadium already selected in the planner
-  // (the chat is hinted with that stadium, so this matches unless the question named another).
-  useEffect(() => {
-    if (!chatCourse?.places.length || chatCourse === mountChatCourse || chatCourse.stadiumCode !== stadiumCode) return;
-    let cancelled = false;
-    const apply = () => {
-      if (cancelled) return;
-      const categoryLabel: Record<string, string> = { FOOD: "먹거리", CAFE: "카페·디저트", SPOT: "관광 명소", STADIUM: "야구장" };
-      const nextStops: RouteStop[] = chatCourse.places.map((place) => ({
-        visitId: createClientId(),
-        name: place.name,
-        lat: place.lat,
-        lng: place.lng,
-        category: categoryLabel[place.category] ?? place.category,
-        ...(place.category === "STADIUM" ? { placeId: `stadium:${chatCourse.stadiumCode}` } : place.placeId ? { placeId: place.placeId } : {}),
-        ...(place.address ? { address: place.address } : {}),
-        isDrawnPoint: true,
-      }));
-      // Clear whatever was on the map before (chat- or hand-placed) so only the new course shows.
-      setPlannerMode("places");
-      setPlannerCompleted(false);
-      // Keep the start point the course was built from; only the visits are replaced.
-      const keepOrigin = latest.current.start ? undefined : originStopOf(latest.current.stops);
-      changeStops(keepOrigin ? [keepOrigin, ...nextStops] : nextStops);
-      setAutoCompleteCourse(true);
+  const applyCourse = useCallback((course: ChatCourse, how: "replace" | "append") => {
+    const target = course.stadiumCode ? stadiums.find(stadium => matchesStadium(stadium, course.stadiumCode!)) : stadiums.find(stadium => stadium.code === latest.current.stadiumCode);
+    if (!target) return null;
+    const before = latest.current;
+    const sameStadium = target.code === before.stadiumCode;
+    // 다시 짜도 지도에 찍어 둔 출발지는 남기고, 방문지만 바꾼다
+    const origin = sameStadium && !before.start ? originStopOf(before.stops) : undefined;
+    const base = how === "append" && sameStadium ? before.stops : origin ? [origin] : [];
+    const incoming = courseToStops(course).filter(stop => !base.some(existing => sameStop(existing, stop)));
+    setStadiumCode(target.code);
+    setStops([...base, ...incoming].slice(0, MAX_ROUTE_STOPS));
+    if (!sameStadium) setStart(undefined);
+    if (course.travelMode) setTravelMode(course.travelMode);
+    const filled = autoFilled.current;
+    if (course.title && (!before.title.trim() || before.title === filled.title)) { setTitle(course.title); filled.title = course.title; }
+    if (course.content && (!routeContentToText(before.content, before.contentFormat).trim() || (before.contentFormat === undefined && before.content === filled.content))) {
+      setContent(course.content); setContentFormat(undefined); filled.content = course.content;
+    }
+    setTab("write");
+    setPlannerMode("places"); // 챗봇 코스는 장소 핀 방식으로 그린다 (동선 모드면 전환)
+    setCourseApplied(previous => ({ version: (previous?.version ?? 0) + 1, stadiumCode: target.code }));
+    markDirty();
+    return () => {
+      setStadiumCode(before.stadiumCode); setStops(before.stops); setStart(before.start); setTravelMode(before.travelMode);
+      setTitle(before.title); setContent(before.content); setContentFormat(before.contentFormat);
+      setCourseApplied(previous => ({ version: (previous?.version ?? 0) + 1, stadiumCode: before.stadiumCode }));
+      markDirty();
     };
-    void Promise.resolve().then(apply);
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per new chatCourse, not on every changeStops identity change
-  }, [chatCourse, mountChatCourse, stadiumCode]);
+  }, [stadiums, markDirty]);
+  const applyCourseRef = useRef(applyCourse);
+  useLayoutEffect(() => { applyCourseRef.current = applyCourse; }, [applyCourse]);
+  useEffect(() => {
+    registerCourseTarget({ stadiumCode, stopCount: stops.length, apply: (course, how) => applyCourseRef.current(course, how) });
+  }, [registerCourseTarget, stadiumCode, stops.length]);
+  useEffect(() => () => registerCourseTarget(null), [registerCourseTarget]);
+  useEffect(() => {
+    // 전체 채팅 화면에서 "루트 작성 지도에서 열기"로 넘어온 코스
+    const pending = takePendingCourse();
+    if (pending) applyCourseRef.current(pending, "replace");
+  }, [takePendingCourse]);
   // 스포트라이트 가이드가 보내는 예시 코스: 챗봇이 만든 코스처럼 지도에 그리고 코스 완성까지 누른다. (샘플 화면만)
   useEffect(() => {
     if (!sample) return;
@@ -390,7 +404,7 @@ function WriterForm({ stadiums, initial, existing, copying = false, sample = fal
                 </div>
                 <div className="writer-field planner-stadium-field"><label className="sr-only" htmlFor="route-stadium">구장 선택</label><select id="route-stadium" aria-label="구장 선택" value={stadiumCode} disabled={plannerCompleted} onChange={(event) => changeStadium(event.target.value)}>{stadiums.map((stadium) => <option key={stadium.code} value={stadium.code}>{stadium.name}</option>)}</select></div>
               </div>
-              <NearbyRoutePlanner key={`${stadiumCode}:${plannerMode}`} plannerMode={plannerMode} stadium={current} stops={stops} onChange={changeStops} initialStart={start} onStartChange={changeStart} initialTravelMode={travelMode} onTravelModeChange={changeTravelMode} courseName={title} onCourseNameChange={(name) => { setTitle(name); markDirty(); }} onSaveCourse={() => saveCourse()} saving={saving} saveError={error} startWithAllPlaces={copying} onCompletionChange={setPlannerCompleted} autoComplete={autoCompleteCourse} onAutoCompleted={() => setAutoCompleteCourse(false)} unlockRequest={chatPending} guide={sample} />
+              <NearbyRoutePlanner key={`${stadiumCode}:${plannerMode}`} plannerMode={plannerMode} stadium={current} stops={stops} onChange={changeStops} initialStart={start} onStartChange={changeStart} initialTravelMode={travelMode} travelMode={travelMode} courseApplied={courseApplied} onTravelModeChange={changeTravelMode} courseName={title} onCourseNameChange={(name) => { setTitle(name); markDirty(); }} onSaveCourse={() => saveCourse()} saving={saving} saveError={error} startWithAllPlaces={copying} onCompletionChange={setPlannerCompleted} autoComplete={autoCompleteCourse} onAutoCompleted={() => setAutoCompleteCourse(false)} unlockRequest={chatPending} guide={sample} />
             </section>
             <div className="writer-writing writer-panel" id="writer-panel-write" role="tabpanel" aria-labelledby="writer-tab-write" tabIndex={0}>
               <section className="writer-card">

@@ -17,7 +17,7 @@ from . import structured
 from .prompts import FEW_SHOT, FIXED, SYSTEM, WARN_SUFFIX
 from .retrieval import date_tokens, embed, keyword_rerank, search
 from .router import PLACE_ALIAS, TEAM_ALIAS, detect_categories, detect_stadium
-from ..domain_tools import invoke as invoke_domain_tool, run_model
+from ..domain_tools import invoke as invoke_domain_tool, run_model, visible_text
 
 READY = True
 LLM_MODEL = os.getenv("LLM_MODEL") or "gpt-5.6-luna"
@@ -35,7 +35,7 @@ def llm():
     """LangChain ChatOpenAI — 서버 기동 후 한 번만 만든다 (chat_service.py 와 같은 방식)"""
     global _llm
     if _llm is None:
-        _llm = ChatOpenAI(model=LLM_MODEL, temperature=0, timeout=25, max_retries=0, reasoning_effort="none")
+        _llm = ChatOpenAI(model=LLM_MODEL, temperature=0, timeout=25, max_retries=0, reasoning_effort="medium", use_responses_api=True)
     return _llm
 
 
@@ -47,7 +47,7 @@ def _to_lc(messages):
 def call_llm(messages):
     t0 = time.perf_counter()
     out = run_model(llm(), _to_lc(messages), "club").content
-    text = out if isinstance(out, str) else "".join(p.get("text", "") for p in out if isinstance(p, dict))
+    text = visible_text(out)
     return text or "", (time.perf_counter() - t0) * 1000
 
 
@@ -57,13 +57,9 @@ def answer_community_tools(question, history, timing, route):
         "반드시 호출하고 그 결과만 근거로 답한다. 팬 투표 비율은 실제 승리 확률이 아니라고 밝힌다."
     )), *_to_lc(history[-4:]), HumanMessage(content=question)]
     t0 = time.perf_counter()
-    response = run_model(
-        llm(), messages, "club", tool_names={"search_community_posts", "get_prediction_games"},
-        require_first_tool=True,
-    )
+    response = run_model(llm(), messages, "club", require_first_tool=True)
     timing["tool_ms"] = round((time.perf_counter() - t0) * 1000)
-    text = response.content if isinstance(response.content, str) else "".join(
-        part.get("text", "") for part in response.content if isinstance(part, dict))
+    text = visible_text(response.content)
     route.append("domain_tools:community")
     return {"answer": text, "sources": [], "route": " ".join(route), "timing": timing}
 
@@ -244,7 +240,7 @@ def slots_from_history(history, today=None):
 
 
 # ── 진입점 ──────────────────────────────────────────────────────────────────
-def answer(question, history=None, hint_stadium=None):
+def _answer(question, history=None, hint_stadium=None):
     history = history or []
     today = date.today().isoformat()
     timing = {}
@@ -291,13 +287,16 @@ def answer(question, history=None, hint_stadium=None):
 
     # 2. 슬롯 · 가드
     stadium, cats = detect_stadium(question), detect_categories(question)
+    own_cats = bool(cats)
     multi = bool(ALL_STADIUM.search(question))
     if not cats:
         cats = cats_from_history(history)
     if multi:
         stadium, prev_stadium = None, None
         route.append("multi_stadium")
-    if stadium is None and prev_stadium and not multi and (not cats or set(cats) & CARRY_OVER):
+    # 이번 질문에 카테고리가 없으면(이전 질문에서 빌려 온 경우) 구장은 그대로 이어받는다.
+    # 예전에는 "광주경기보러…" 의 "경기"(SCHEDULE) 때문에 이어받기가 막혀 전 구장을 검색했다 (2026-09-15)
+    if stadium is None and prev_stadium and not multi and (not own_cats or not cats or set(cats) & CARRY_OVER):
         stadium = prev_stadium
         route.append(f"carry:{stadium}")
     guard = ("refund" if REFUND.search(question) else
@@ -361,3 +360,9 @@ def answer(question, history=None, hint_stadium=None):
                 "stadium": r["stadium"], "updated_at": r.get("updated_at") or ""} for r in rows]
     route.append(f"rag:{stadium or '-'}:{','.join(cats) or '-'}")
     return {"answer": raw, "sources": sources, "route": " ".join(route), "timing": timing}
+
+
+def answer(question, history=None, hint_stadium=None):
+    from ..assistant.tools import request_state
+    with request_state(hint_stadium, question, history):
+        return _answer(question, history, hint_stadium)

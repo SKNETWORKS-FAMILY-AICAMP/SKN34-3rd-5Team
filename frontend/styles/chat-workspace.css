@@ -93,6 +93,7 @@
 .chat-workspace .chat-answer pre { padding: 16px 18px; overflow-x: auto; border: 1px solid #e4eaf4; border-radius: 12px; background: #f6f8fc; line-height: 1.75; }
 .chat-workspace .chat-answer pre code { padding: 0; background: transparent; white-space: pre; }
 .workspace-thinking { display: flex; align-items: center; gap: 6px; height: 29px; margin-left: 35px; }
+.workspace-thinking > span { margin-right: 2px; color: #8191a8; font-size: 12px; }
 .workspace-thinking i { width: 6px; height: 6px; border-radius: 50%; background: #94b3e0; animation: workspace-thinking 1.3s ease-in-out infinite; }
 .workspace-thinking i:nth-of-type(2) { animation-delay: .15s; }
 .workspace-thinking i:nth-of-type(3) { animation-delay: .3s; }

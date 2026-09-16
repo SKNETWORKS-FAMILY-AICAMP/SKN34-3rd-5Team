@@ -2,19 +2,24 @@ import json
 from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
-from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langchain_core.runnables import RunnableLambda
 
+from .chat_service import ChatService
 from .rag import dispatcher
 from .rag import domain_tools
+from .rag.assistant import pipeline as assistant_pipeline
 from .rag.club import agent as club
 from .rag.course import agent as course
+from .rag.nearby import agent as nearby
+from .rag.assistant import tools as assistant_tools
 from .rag.venue import agent as venue
+from .tools import DOMAIN_TOOL_NAMES
 
 
-EXPECTED = {
-    "club": {"get_standings", "get_games", "search_players", "get_ticket_prices", "get_ticket_policies", "get_seat_zones", "get_seat_views", "get_seat_maps", "search_community_posts", "get_prediction_games"},
-    "venue": {"search_places", "get_facilities", "get_food_stores", "get_transport", "get_stadium", "get_stadium_contents"},
-    "course": {"search_places", "get_directions", "search_tourism", "get_weather", "get_games", "get_stadium", "get_stadium_contents", "search_courses", "get_course"},
+EXPECTED = set(DOMAIN_TOOL_NAMES) | {
+    "get_baseball_schema", "execute_baseball_select", "get_ticket_policy", "search_kbo_documents",
+    "search_nearby_places", "plan_course", "search_documents_tool",
 }
 
 
@@ -47,11 +52,98 @@ class ToolCallingModel:
 
 
 class DomainAllowlistTest(SimpleTestCase):
-    def test_exact_domain_names_and_cross_domain_denial(self):
-        for domain, names in EXPECTED.items():
-            self.assertEqual({tool.name for tool in domain_tools.tools_for(domain)}, names)
+    def test_every_answer_agent_gets_the_same_complete_inventory(self):
+        inventories = {
+            domain: tuple(tool.name for tool in domain_tools.tools_for(domain))
+            for domain in ("assistant", "club", "course", "venue", "nearby")
+        }
+        model = RunnableLambda(lambda _: AIMessage(content="ok"))
+        model.bind_tools = Mock(return_value=model)
+        inventories["chat"] = tuple(tool.name for tool in ChatService(llm=model).tools)
+        self.assertEqual(set(inventories.values()), {inventories["assistant"]})
+        self.assertEqual(set(inventories["assistant"]), EXPECTED)
+        self.assertEqual(len(inventories["assistant"]), len(EXPECTED))
+        self.assertIs(assistant_tools.build_tools()[0].func, assistant_tools.get_games)
         with self.assertRaisesRegex(ValueError, "not allowed"):
-            domain_tools.invoke("venue", "get_weather", {})
+            domain_tools.invoke("venue", "not_registered", {})
+
+    def test_answer_entrypoints_use_fresh_state_and_restore_parent(self):
+        parent = assistant_tools.new_state("STALE", "old", [{"role": "user", "content": "old"}])
+        parent["schema_seen"] = True
+        expected_history = [{"role": "user", "content": "fresh history"}]
+
+        def inspect(*_args, **_kwargs):
+            current = assistant_tools.state()
+            self.assertEqual((current["hint"], current["question"], current["history"]),
+                             ("JAMSIL", "fresh", expected_history))
+            self.assertFalse(current["schema_seen"])
+            return {"answer": "ok"}
+
+        with patch.object(assistant_pipeline, "_answer", side_effect=inspect):
+            self.assertEqual(assistant_pipeline.answer("fresh", expected_history, "JAMSIL")["answer"], "ok")
+        for module in (club, course, venue, nearby):
+            with self.subTest(module=module.__name__), patch.object(module, "_answer", side_effect=inspect):
+                self.assertEqual(module.answer("fresh", expected_history, "JAMSIL")["answer"], "ok")
+
+        def inspect_chat():
+            current = assistant_tools.state()
+            self.assertEqual((current["hint"], current["question"], current["history"]),
+                             (None, "fresh", expected_history))
+            self.assertFalse(current["schema_seen"])
+            return {"answer": "ok"}
+
+        service = ChatService.__new__(ChatService)
+        with patch.object(service, "_run_scoped", side_effect=lambda _values: inspect_chat()):
+            self.assertEqual(service._run({"question": "fresh", "chat_history": [HumanMessage(content="fresh history")]}),
+                             {"answer": "ok"})
+        self.assertIs(assistant_tools.state(), parent)
+
+    def test_streaming_uses_full_inventory_visible_text_and_restores_state(self):
+        parent = assistant_tools.new_state("STALE", "old", [])
+        history = [{"role": "user", "content": "fresh history"}]
+
+        class StreamingModel:
+            bound_names = ()
+
+            def bind_tools(self, tools):
+                self.bound_names = tuple(tool.name for tool in tools)
+                return self
+
+            def invoke(self, _messages, config=None):
+                current = assistant_tools.state()
+                self.assert_state(current)
+                return AIMessage(content="READY")
+
+            def stream(self, _messages, config=None):
+                current = assistant_tools.state()
+                self.assert_state(current)
+                yield AIMessage(content=[
+                    {"type": "reasoning", "text": "비공개 추론"},
+                    {"type": "output_text", "text": "보이는 답변"},
+                ])
+
+            @staticmethod
+            def assert_state(current):
+                assert (current["hint"], current["question"], current["history"]) == (
+                    "JAMSIL", "fresh", history,
+                )
+
+        model = StreamingModel()
+        stream = assistant_pipeline.stream_answer(
+            "fresh", history, "JAMSIL", model=model,
+            retriever=lambda values: {**values, "context": "", "doc_count": 0, "stadium": "JAMSIL"},
+        )
+        self.assertEqual("".join(stream), "보이는 답변")
+        self.assertEqual(set(model.bound_names), EXPECTED)
+        self.assertIs(assistant_tools.state(), parent)
+
+        interrupted = assistant_pipeline.stream_answer(
+            "fresh", history, "JAMSIL", model=StreamingModel(),
+            retriever=lambda values: {**values, "context": "", "doc_count": 0, "stadium": "JAMSIL"},
+        )
+        self.assertEqual(next(interrupted), "보이는 답변")
+        interrupted.close()
+        self.assertIs(assistant_tools.state(), parent)
 
     def test_weather_routes_only_with_explicit_course_context(self):
         self.assertEqual(dispatcher.route("날씨 알려줘"), "scope")
@@ -60,6 +152,8 @@ class DomainAllowlistTest(SimpleTestCase):
     def test_dispatcher_club_executes_bounded_tool_loop_and_consumes_result(self):
         model = ToolCallingModel()
         with (
+            # 에이전트 파이프라인 도입(#30) 후 도메인 라우팅은 fallback 경로다 — 실패시켜서 그 경로를 검증한다
+            patch.object(dispatcher.assistant, "answer", side_effect=RuntimeError("agent down")),
             patch.object(domain_tools, "tools_for", return_value=(FakeTool(),)),
             patch.object(club, "llm", return_value=model),
             patch.object(club, "embed", return_value=[0.0]),
@@ -69,7 +163,7 @@ class DomainAllowlistTest(SimpleTestCase):
             result = dispatcher.answer("LG 선수 알려줘")
         self.assertEqual(model.bound_names, ("search_players",))
         self.assertIn("도구 최신 선수", result["answer"])
-        self.assertTrue(result["route"].startswith("club>"))
+        self.assertTrue(result["route"].startswith("agent:error>club>"))
 
     def test_club_structured_answer_prefers_canonical_tool_result_over_old_rag(self):
         current = {"actual_date": "2026-09-16", "items": [{
@@ -82,7 +176,7 @@ class DomainAllowlistTest(SimpleTestCase):
         self.assertIn("1위", result["answer"])
         self.assertNotIn("10위", result["answer"])
 
-    def test_venue_agent_is_built_with_only_its_allowlist(self):
+    def test_venue_agent_keeps_rag_tool_with_all_registered_tools(self):
         seen = {}
         fake_agent = object()
 
@@ -97,7 +191,7 @@ class DomainAllowlistTest(SimpleTestCase):
                 self.assertIs(venue.agent(), fake_agent)
         finally:
             venue._agent = previous
-        self.assertEqual(seen["names"], EXPECTED["venue"] | {"search_documents_tool"})
+        self.assertEqual(seen["names"], EXPECTED)
 
     def test_venue_answer_consumes_new_tool_result(self):
         class FakeAgent:
@@ -179,6 +273,67 @@ class DomainAllowlistTest(SimpleTestCase):
         self.assertEqual(model.bound_names, ("get_weather",))
         self.assertIn("맑음", response.content)
 
+    def test_cross_domain_tool_executes_and_unknown_call_is_rejected(self):
+        cross_domain = ToolCallingModel("get_weather", {"stadium_code": "JAMSIL"})
+        weather = FakeTool("get_weather", {"label": "맑음"})
+        with patch.object(domain_tools, "tools_for", return_value=(weather,)):
+            response = domain_tools.run_model(cross_domain, [], "club", max_tool_rounds=1)
+        self.assertIn("맑음", response.content)
+
+        unknown = ToolCallingModel("not_registered", {})
+        with patch.object(domain_tools, "tools_for", return_value=(weather,)):
+            response = domain_tools.run_model(unknown, [], "course", max_tool_rounds=1)
+        self.assertIn("허용되지 않은 도구", response.content)
+
+    def test_nearby_executes_cross_domain_tool_and_consumes_result(self):
+        model = ToolCallingModel("get_weather", {"stadium_code": "JAMSIL"})
+        weather = FakeTool("get_weather", {"label": "주변 분기에서 확인한 맑음"})
+        places = [{
+            "kind": "stay", "kindLabel": "숙박", "name": "테스트 호텔", "detail": "여행 > 숙박 > 호텔",
+            "distance": 500, "lat": 37.5, "lng": 127.0, "address": "서울", "placeId": "1",
+            "placeUrl": "", "phone": "",
+        }]
+        with (
+            patch.object(domain_tools, "tools_for", return_value=(weather,)),
+            patch.object(nearby, "llm", return_value=model),
+            patch.object(nearby.kakao, "enabled", return_value=True),
+            patch.object(nearby.kakao, "nearby", return_value=places),
+        ):
+            result = nearby.answer("잠실 숙박 추천해줘")
+        self.assertEqual(model.bound_names, ("get_weather",))
+        self.assertIn("주변 분기에서 확인한 맑음", result["answer"])
+        self.assertEqual(result["sources"][0]["doc_id"], "kakao:1")
+
+    def test_recursive_course_tool_is_bounded_and_context_is_reset(self):
+        model = ToolCallingModel("plan_course", {"request": "잠실 코스"})
+        response = domain_tools.run_model(model, [], "course", max_tool_rounds=1)
+        self.assertIn("plan_course를 다시 호출할 수 없습니다", response.content)
+        self.assertIsNone(domain_tools.active_domain())
+
+    def test_document_search_rewriter_stays_a_helper_call(self):
+        class Transformer:
+            calls = 0
+
+            def invoke(self, values):
+                self.calls += 1
+                return values["query"]
+
+        transformer = Transformer()
+        previous = venue._transformer
+        venue._transformer = transformer
+        try:
+            model = ToolCallingModel("search_documents_tool", {"query": "잠실 포토존"})
+            with (
+                patch.object(venue, "vector_search", return_value=[]),
+                patch.object(venue, "keyword_fallback_search", return_value=[]),
+            ):
+                response = domain_tools.run_model(model, [], "club", max_tool_rounds=1)
+        finally:
+            venue._transformer = previous
+        self.assertEqual(transformer.calls, 1)
+        self.assertIn("관련 문서를 찾을 수 없습니다", response.content)
+        self.assertIsNone(domain_tools.active_domain())
+
     def test_followup_club_and_course_tool_results_are_consumed(self):
         cases = (
             ("club", "search_community_posts"), ("club", "get_prediction_games"),
@@ -201,20 +356,29 @@ class DomainAllowlistTest(SimpleTestCase):
     def test_saved_public_course_lookup_bypasses_itinerary_slot_guard(self):
         model = ToolCallingModel("search_courses", {"query": "잠실"})
         tool = FakeTool("search_courses", {"items": [{"title": "공개 저장 코스"}]})
-        with patch.object(domain_tools, "tools_for", return_value=(tool,)), patch.object(course, "llm", return_value=model):
+        with (
+            # 도메인 fallback 경로 검증 — 에이전트 파이프라인(#30)을 실패시킨다
+            patch.object(dispatcher.assistant, "answer", side_effect=RuntimeError("agent down")),
+            patch.object(domain_tools, "tools_for", return_value=(tool,)),
+            patch.object(course, "llm", return_value=model),
+        ):
             result = dispatcher.answer("저장된 공개 코스 찾아줘")
         self.assertIn("공개 저장 코스", result["answer"])
-        self.assertEqual(result["route"], "course>course:public_lookup")
+        self.assertEqual(result["route"], "agent:error>course>course:public_lookup")
         self.assertEqual(result["places"], [])
         self.assertIsNone(result["coursePayload"])
 
         course_id = "12345678-1234-4123-8123-123456789abc"
         detail_model = ToolCallingModel("get_course", {"course_id": course_id})
         detail_tool = FakeTool("get_course", {"item": {"id": course_id, "title": "공개 상세 코스"}})
-        with patch.object(domain_tools, "tools_for", return_value=(detail_tool,)), patch.object(course, "llm", return_value=detail_model):
+        with (
+            patch.object(dispatcher.assistant, "answer", side_effect=RuntimeError("agent down")),
+            patch.object(domain_tools, "tools_for", return_value=(detail_tool,)),
+            patch.object(course, "llm", return_value=detail_model),
+        ):
             detail = dispatcher.answer(f"{course_id} 코스 상세 알려줘")
         self.assertIn("공개 상세 코스", detail["answer"])
-        self.assertEqual(detail["route"], "course>course:public_lookup")
+        self.assertEqual(detail["route"], "agent:error>course>course:public_lookup")
 
     def test_prediction_question_bypasses_schedule_shortcut_and_consumes_fan_vote_tool(self):
         model = ToolCallingModel("get_prediction_games", {"game_date": "2026-09-16", "team_code": "LG"})
@@ -223,6 +387,8 @@ class DomainAllowlistTest(SimpleTestCase):
                        "fan_vote_notice": "실제 승리 확률이 아닌 팬 투표"}],
         })
         with (
+            # 도메인 fallback 경로 검증 — 에이전트 파이프라인(#30)을 실패시킨다
+            patch.object(dispatcher.assistant, "answer", side_effect=RuntimeError("agent down")),
             patch.object(domain_tools, "tools_for", return_value=(tool,)),
             patch.object(club, "llm", return_value=model),
             patch.object(club.structured, "answer", side_effect=AssertionError("schedule shortcut used")),
@@ -232,4 +398,4 @@ class DomainAllowlistTest(SimpleTestCase):
         ):
             result = dispatcher.answer("오늘 LG 경기 팬 투표 현황 알려줘")
         self.assertIn("실제 승리 확률이 아닌 팬 투표", result["answer"])
-        self.assertTrue(result["route"].startswith("club>"))
+        self.assertTrue(result["route"].startswith("agent:error>club>"))

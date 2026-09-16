@@ -33,12 +33,12 @@ services:
       CHAT_TRUST_PROXY_HEADERS: "true"
       EMBEDDING_MODEL: ${EMBEDDING_MODEL}
       LLM_MODEL: ${LLM_MODEL:-gpt-5.6-luna}
-      # 챗봇을 KBO 직관 RAG 로 돌릴지. 0 이면 기존 helpful-assistant 체인 그대로 (비교 시연용)
-      CHAT_USE_RAG: ${CHAT_USE_RAG:-0}
       # LangSmith 추적·평가. 키가 없으면 traceable 이 no-op 이라 오버헤드 0
       LANGSMITH_TRACING: ${LANGSMITH_TRACING:-false}
       LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
       LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-kbo-rag}
+      # 챗봇이 지도와 같은 카카오 장소(숙박·산책·실내놀거리)를 조회할 때 쓰는 REST 키 (프론트와 같은 키)
+      KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:-}
       AUTH_FRONTEND_ORIGIN: ${AUTH_FRONTEND_ORIGIN:-http://127.0.0.1:80}
       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
       EMAIL_HOST: ${EMAIL_HOST:-mailpit}
@@ -48,6 +48,7 @@ services:
       EMAIL_USE_TLS: ${EMAIL_USE_TLS:-false}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
       DEMO_USERS_ENABLED: ${DEMO_USERS_ENABLED:-false}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,[::1]}
 
       # Docker 내부에서는 db 서비스명으로 접근
       DB_HOST: db
@@ -65,7 +66,6 @@ services:
       EXTERNAL_DATA_SYNC_INTERVAL_SECONDS: ${EXTERNAL_DATA_SYNC_INTERVAL_SECONDS:-600}
       KMA_SERVICE_KEY: ${KMA_SERVICE_KEY:-}
       KMA_API_KEY: ${KMA_API_KEY:-}
-      KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:-}
       TOUR_API_KEY: ${TOUR_API_KEY:-}
       COMMUNITY_IMAGE_S3_ENDPOINT: http://minio:9000
       COMMUNITY_IMAGE_S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}

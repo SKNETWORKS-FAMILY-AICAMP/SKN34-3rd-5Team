@@ -2,16 +2,20 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import type { ChatContext, ChatMessage, ChatStatus } from "@/lib/chat/types";
+import type { ChatContext, ChatCourse, ChatMessage, ChatProgressOperation, ChatStatus } from "@/lib/chat/types";
 import { MAX_HISTORY_MESSAGES, MAX_MESSAGE_LENGTH } from "@/lib/chat/types";
 import {
   ChatClientError,
+  fetchChatHistory,
+  fetchChatTurns,
   getChatStatus,
+  listChatSessions,
   sendChatMessage,
   sendGuestChatMessage,
   type ChatCheckpoint,
 } from "@/lib/chat/client";
-import type { ChatCoursePlaceDto } from "@/lib/chat/wire";
+import { reduceProgress, settleProgress } from "@/lib/chat/progress";
+import { commitChatLoad, restoreChatMessages } from "@/lib/chat/history";
 import { useMemberAuth } from "@/lib/member-auth";
 import { createClientId } from "@/lib/client-id";
 import { ChatPopup } from "./chat-popup";
@@ -25,10 +29,16 @@ type ConversationSnapshot = {
   error: string;
   notice: string;
   uncertain: boolean;
+  progress: ChatProgressOperation[];
 };
-export type ChatCourseState = { places: ChatCoursePlaceDto[]; stadiumCode: string | null };
+/** 챗봇 코스를 받아 줄 화면 (루트 작성). apply 는 되돌리기 함수를 돌려준다. */
+export type CourseTarget = {
+  stadiumCode: string;
+  stopCount: number;
+  apply: (course: ChatCourse, how: "replace" | "append") => (() => void) | null;
+};
+export type AppliedCourse = { undo: (() => void) | null; message: string };
 type ChatControls = ConversationSnapshot & {
-  course: ChatCourseState | null;
   openChat: (initialMessage?: string, context?: ChatContext) => void;
   onExpand: () => void;
   onMinimize: () => void;
@@ -38,6 +48,7 @@ type ChatControls = ConversationSnapshot & {
   statusError: string;
   pending: string;
   streaming: string;
+  progress: ChatProgressOperation[];
   uncertain: boolean;
   conversations: { id: string; title: string }[];
   activeConversationId: string;
@@ -50,6 +61,13 @@ type ChatControls = ConversationSnapshot & {
   onSuggestion: (text: string, intent: ChatContext["intent"]) => void;
   onSelectConversation: (id: string) => void;
   onContextChange: (context?: ChatContext) => void;
+  courseTarget: CourseTarget | null;
+  registerCourseTarget: (target: CourseTarget | null) => void;
+  openCourseInWriter: (course: ChatCourse) => void;
+  takePendingCourse: () => ChatCourse | null;
+  appliedCourses: ReadonlyMap<ChatCourse, AppliedCourse>;
+  applyChatCourse: (course: ChatCourse, how: "replace" | "append") => void;
+  undoChatCourse: (course: ChatCourse) => void;
 };
 const ChatControlsContext = createContext<ChatControls | null>(null);
 
@@ -67,13 +85,16 @@ export function ChatSampleProvider({ children }: { children: React.ReactNode }) 
   const noop = () => {};
   const value: ChatControls = {
     ...real,
-    messages: [], course: null, draft: "", context: undefined,
-    failed: "", failedContext: undefined, error: "", notice: "", uncertain: false,
-    pending: "", streaming: "",
+    messages: [], draft: "", context: undefined,
+    failed: "", error: "", notice: "", uncertain: false,
+    pending: "", streaming: "", progress: [],
     conversations: [{ id: "guide-sample", title: "새 대화" }], activeConversationId: "guide-sample",
     openChat: noop, onExpand: noop, onMinimize: noop, onClosePopup: noop,
     onDraftChange: noop, onRefreshStatus: noop, onSend: noop, onRetry: noop, onCancel: noop, onReset: noop,
     onSuggestion: noop, onSelectConversation: noop, onContextChange: noop,
+    // 샘플 화면은 실제 챗봇 코스를 받지 않는다
+    courseTarget: null, registerCourseTarget: noop, openCourseInWriter: noop, takePendingCourse: () => null,
+    appliedCourses: new Map(), applyChatCourse: noop, undoChatCourse: noop,
   };
   return <ChatControlsContext.Provider value={value}>{children}</ChatControlsContext.Provider>;
 }
@@ -91,7 +112,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [activeConversationId, setActiveConversationId] = useState("initial-chat");
   const [conversations, setConversations] = useState([{ id: "initial-chat", title: "새 대화" }]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [course, setCourse] = useState<ChatCourseState | null>(null);
   const [draft, setDraft] = useState("");
   const [context, setContext] = useState<ChatContext | undefined>();
   const [status, setStatus] = useState<ChatStatus | null>(null);
@@ -103,8 +123,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [notice, setNotice] = useState("");
   const [uncertain, setUncertain] = useState(false);
   const [streaming, setStreaming] = useState("");
+  const [progress, setProgress] = useState<ChatProgressOperation[]>([]);
   const [chatIdentity, setChatIdentity] = useState(identity);
+  const [courseTarget, setCourseTarget] = useState<CourseTarget | null>(null);
+  const courseTargetRef = useRef<CourseTarget | null>(null);
+  const [appliedCourses, setAppliedCourses] = useState<ReadonlyMap<ChatCourse, AppliedCourse>>(() => new Map());
+  const appliedCoursesRef = useRef(appliedCourses);
+  useEffect(() => { appliedCoursesRef.current = appliedCourses; }, [appliedCourses]);
+  // 다른 화면(전체 채팅·팝업)에서 "루트 작성에서 열기"를 누르면 여기 두었다가 작성 화면이 가져간다.
+  const pendingCourseRef = useRef<ChatCourse | null>(null);
   const streamingRef = useRef("");
+  const progressRef = useRef<ChatProgressOperation[]>([]);
   const historyRef = useRef<ChatMessage[]>([]);
   const requestRef = useRef<{
     controller: AbortController;
@@ -116,6 +145,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     wantsStop: boolean;
   } | null>(null);
   const statusRequestRef = useRef<AbortController | null>(null);
+  const historyRequestRef = useRef<AbortController | null>(null);
+  const loadingConversationRef = useRef<string | null>(null);
   const requestVersion = useRef(0);
   const pendingRef = useRef("");
   const failedContextRef = useRef<ChatContext | undefined>(undefined);
@@ -124,10 +155,22 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const popupOpenerRef = useRef<HTMLElement | null>(null);
   const topButtonRef = useRef<HTMLButtonElement>(null);
   const identityRef = useRef(identity);
+  const activeConversationRef = useRef(activeConversationId);
   const identityChanged = chatIdentity !== identity;
   // Root layout keeps conversations alive across client-side page navigation.
   const backendSessions = useRef(new Map<string, number>());
   const archivedConversations = useRef(new Map<string, ConversationSnapshot>());
+
+  const invalidateHistory = useCallback(() => {
+    historyRequestRef.current?.abort();
+    historyRequestRef.current = null;
+    loadingConversationRef.current = null;
+  }, []);
+
+  const changeDraft = useCallback((value: string) => {
+    if (!loadingConversationRef.current) invalidateHistory();
+    setDraft(value);
+  }, [invalidateHistory]);
 
   const loadStatus = useCallback((controller: AbortController) => {
     return getChatStatus(controller.signal).then(
@@ -148,6 +191,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const refreshStatus = useCallback(() => {
     statusRequestRef.current?.abort();
     if (memberStatus === "anonymous") {
+      // 비로그인 상태에서는 챗봇을 둘러보기만 할 수 있다 (질문은 로그인 후)
       setStatus(null);
       setStatusLoading(false);
       setStatusError("");
@@ -208,22 +252,26 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const archiveCurrentConversation = useCallback(() => {
+    if (loadingConversationRef.current === activeConversationId) return;
     archivedConversations.current.set(activeConversationId, {
       messages: historyRef.current, draft, context, failed, failedContext: failedContextRef.current, error, notice,
-      uncertain,
+      uncertain, progress: progressRef.current,
     });
   }, [activeConversationId, context, draft, error, failed, notice, uncertain]);
 
   const resetChat = useCallback(() => {
     if (requestRef.current) return;
     if (!historyRef.current.length && !draft.trim() && !failed && !uncertain) {
+      invalidateHistory();
       setContext(undefined);
       setNotice("");
       return;
     }
     archiveCurrentConversation();
+    invalidateHistory();
     const carryDraft = uncertain ? draft : "";
     const id = createClientId();
+    activeConversationRef.current = id;
     setActiveConversationId(id);
     setConversations(current => [{ id, title: "새 대화" }, ...current]);
     historyRef.current = [];
@@ -232,32 +280,66 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setDraft(carryDraft);
     setPending("");
     setStreaming("");
+    progressRef.current = [];
+    setProgress([]);
     setFailed("");
     setError("");
     setNotice(carryDraft ? "새 대화에서 질문을 확인한 뒤 보내 주세요." : "");
     setUncertain(false);
     setContext(undefined);
-    setCourse(null);
-  }, [archiveCurrentConversation, draft, failed, uncertain]);
+  }, [archiveCurrentConversation, draft, failed, invalidateHistory, uncertain]);
 
-  const selectConversation = useCallback((id: string) => {
-    if (requestRef.current || uncertain || id === activeConversationId) return;
-    const saved = archivedConversations.current.get(id);
-    if (!saved) return;
-    archiveCurrentConversation();
-    setActiveConversationId(id);
+  const showConversation = useCallback((saved: ConversationSnapshot, preserveDraft = false) => {
     historyRef.current = saved.messages;
     failedContextRef.current = saved.failedContext;
+    progressRef.current = saved.progress;
     setMessages(saved.messages);
-    setDraft(saved.draft);
+    setDraft(current => preserveDraft && current.trim() ? current : saved.draft);
     setContext(saved.context);
     setFailed(saved.failed);
     setError(saved.error);
     setNotice(saved.notice);
     setUncertain(saved.uncertain);
+    setProgress(saved.progress);
     setStreaming("");
-    setCourse(null);
-  }, [activeConversationId, archiveCurrentConversation, uncertain]);
+  }, []);
+
+  const restoreConversation = useCallback(async (id: string, sessionId: number, controller: AbortController, expectedIdentity: string) => {
+    try {
+      const [history, turns] = await Promise.all([fetchChatHistory(sessionId, controller.signal), fetchChatTurns(sessionId, controller.signal)]);
+      const saved: ConversationSnapshot = { messages: restoreChatMessages(history, turns), draft: "", failed: "", error: "", notice: "", uncertain: false, progress: [] };
+      commitChatLoad(controller.signal, () => identityRef.current === expectedIdentity && activeConversationRef.current === id, () => {
+        loadingConversationRef.current = null;
+        archivedConversations.current.set(id, saved);
+        showConversation(saved, true);
+      });
+    } catch (cause) {
+      if (!controller.signal.aborted && identityRef.current === expectedIdentity && activeConversationRef.current === id) {
+        loadingConversationRef.current = null;
+        setNotice("");
+        setError(cause instanceof Error ? cause.message : "대화 기록을 불러오지 못했어요.");
+      }
+    }
+  }, [showConversation]);
+
+  const selectConversation = useCallback((id: string) => {
+    if (requestRef.current || uncertain || id === activeConversationId) return;
+    const saved = archivedConversations.current.get(id);
+    archiveCurrentConversation();
+    invalidateHistory();
+    setActiveConversationId(id);
+    activeConversationRef.current = id;
+    if (saved) { showConversation(saved); return; }
+    const sessionId = backendSessions.current.get(id);
+    if (!sessionId) return;
+    const controller = new AbortController();
+    historyRequestRef.current = controller;
+    loadingConversationRef.current = id;
+    historyRef.current = [];
+    progressRef.current = [];
+    setMessages([]); setProgress([]); setDraft(""); setFailed(""); setError(""); setNotice("대화 기록을 불러오고 있어요."); setUncertain(false); setStreaming("");
+    void restoreConversation(id, sessionId, controller, identityRef.current);
+  }, [activeConversationId, archiveCurrentConversation, invalidateHistory, restoreConversation, showConversation, uncertain]);
 
   useEffect(() => {
     if (identityRef.current === identity) return;
@@ -267,6 +349,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     requestRef.current?.controller.abort();
     requestRef.current?.identityController.abort();
     statusRequestRef.current?.abort();
+    historyRequestRef.current?.abort();
+    loadingConversationRef.current = null;
     requestRef.current = null;
     statusRequestRef.current = null;
     pendingRef.current = "";
@@ -275,16 +359,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     historyRef.current = [];
     failedContextRef.current = undefined;
     setActiveConversationId("initial-chat");
+    activeConversationRef.current = "initial-chat";
     setConversations([{ id: "initial-chat", title: "새 대화" }]);
     setMessages([]);
     setDraft("");
     setContext(undefined);
-    setCourse(null);
     setStatus(null);
     setStatusLoading(memberStatus === "authenticated" || memberStatus === "loading");
     setStatusError(memberStatus === "unavailable" ? "로그인 상태를 확인하지 못했어요." : "");
     setPending("");
     setStreaming("");
+    progressRef.current = [];
+    setProgress([]);
     setFailed("");
     setError("");
     setNotice("");
@@ -292,11 +378,60 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     streamingRef.current = "";
   }, [identity, memberStatus]);
 
+  useEffect(() => {
+    if (memberStatus !== "authenticated" || identityRef.current !== identity) return;
+    invalidateHistory();
+    const controller = new AbortController(), expectedIdentity = identity;
+    historyRequestRef.current = controller;
+    void listChatSessions(controller.signal).then(sessions => {
+      commitChatLoad(controller.signal, () => identityRef.current === expectedIdentity, () => {
+        backendSessions.current.clear();
+        if (!sessions.length) return;
+        const rooms = sessions.map(room => ({ id: `member:${room.id}`, title: room.title || "새 대화" }));
+        rooms.forEach((room, index) => backendSessions.current.set(room.id, sessions[index].id));
+        const first = rooms[0];
+        setConversations(rooms);
+        setActiveConversationId(first.id);
+        activeConversationRef.current = first.id;
+        loadingConversationRef.current = first.id;
+        setNotice("대화 기록을 불러오고 있어요.");
+        void restoreConversation(first.id, sessions[0].id, controller, expectedIdentity);
+      });
+    }).catch(cause => {
+      if (!controller.signal.aborted && identityRef.current === expectedIdentity) setError(cause instanceof Error ? cause.message : "대화방을 불러오지 못했어요.");
+    });
+    return () => controller.abort();
+  }, [accountId, identity, invalidateHistory, memberStatus, restoreConversation]);
+
+  const registerCourseTarget = useCallback((target: CourseTarget | null) => {
+    courseTargetRef.current = target;
+    setCourseTarget(target);
+  }, []);
+  const applyChatCourse = useCallback((course: ChatCourse, how: "replace" | "append") => {
+    const target = courseTargetRef.current;
+    if (!target) return;
+    const had = target.stopCount, otherStadium = Boolean(course.stadiumCode && course.stadiumCode !== target.stadiumCode);
+    const undo = target.apply(course, how);
+    const message = !undo ? "이 코스를 지도에 담지 못했어요. 구장을 확인해 주세요."
+      : otherStadium ? "구장을 바꾸고 추천 코스를 옆 지도에 그렸어요."
+      : how === "append" ? "내 코스 뒤에 이어 담았어요."
+      : had ? `옆 지도에 추천 코스를 그렸어요. 원래 담아둔 ${had}곳은 되돌리기로 복구할 수 있어요.`
+      : "옆 지도에 추천 코스를 그렸어요. 순서는 내 코스에서 바꿀 수 있어요.";
+    setAppliedCourses(current => new Map(current).set(course, { undo, message }));
+  }, []);
+  const undoChatCourse = useCallback((course: ChatCourse) => {
+    appliedCoursesRef.current.get(course)?.undo?.();
+    setAppliedCourses(current => new Map(current).set(course, { undo: null, message: "담기 전 코스로 되돌렸어요." }));
+  }, []);
+
   const send = useCallback(async (text = draft, options?: { context?: ChatContext }) => {
     const selectedContext = options ? options.context : context;
     const content = text.trim();
     if (identityRef.current !== identity || !content || requestRef.current || content.length > MAX_MESSAGE_LENGTH) return;
-    if (memberStatus !== "authenticated") { setError("챗봇 질문은 로그인 후 이용할 수 있어요."); return; }
+    if (loadingConversationRef.current === activeConversationId) {
+      setNotice("대화 기록을 불러온 뒤 보내 주세요.");
+      return;
+    }
     if (uncertain) {
       setError("서버 기록이 겹치지 않도록 새 대화에서 다시 보내 주세요.");
       return;
@@ -304,8 +439,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const controller = new AbortController();
     const identityController = new AbortController();
     const version = ++requestVersion.current;
-    const mode: "member" | "guest" | null = memberStatus === "authenticated" ? "member" : memberStatus === "anonymous" ? "guest" : null;
-    if (!mode) { setError("로그인 상태를 확인한 뒤 다시 시도해 주세요."); return; }
+    if (memberStatus !== "authenticated") { setError(memberStatus === "anonymous" ? "챗봇 질문은 로그인 후 이용할 수 있어요." : "로그인 상태를 확인한 뒤 다시 시도해 주세요."); return; }
+    const mode = "member" as "member" | "guest";
+    invalidateHistory();
     const active = { controller, identityController, version, mode, checkpoint: null as ChatCheckpoint | null, stop: null as ChatCheckpoint | null, wantsStop: false };
     requestRef.current = active;
     pendingRef.current = content;
@@ -315,6 +451,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setNotice("");
     setFailed("");
     setStreaming("");
+    progressRef.current = [];
+    setProgress([]);
     streamingRef.current = "";
     failedContextRef.current = undefined;
     const userMessage: ChatMessage = { role: "user", content };
@@ -346,16 +484,23 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           setStreaming(answer);
           if (mode === "guest") active.checkpoint = { turnId: "guest", receipt: "", prefix: answer };
         },
+        onProgress: event => {
+          if (version !== requestVersion.current) return;
+          progressRef.current = reduceProgress(progressRef.current, event);
+          setProgress(progressRef.current);
+        },
       });
       if (version !== requestVersion.current) return;
       if (mode === "member" && reply.sessionId) backendSessions.current.set(activeConversationId, reply.sessionId);
-      const next: ChatMessage[] = [...previous, userMessage, ...(reply.reply ? [{ role: "assistant" as const, content: reply.reply }] : [])];
+      // 루트 작성 화면이면 챗봇이 짠 코스를 옆 지도에 바로 그린다 (카드에서 되돌리기 가능)
+      if (reply.course && reply.completionStatus !== "stopped" && courseTargetRef.current) applyChatCourse(reply.course, "replace");
+      const finalProgress = reply.completionStatus === "stopped" ? settleProgress(progressRef.current) : progressRef.current;
+      const assistant = { role: "assistant" as const, content: reply.reply, ...(reply.course ? { course: reply.course } : {}), progress: finalProgress, turnStatus: reply.completionStatus };
+      const next: ChatMessage[] = [...previous, userMessage, ...(reply.reply || progressRef.current.length ? [assistant] : [])];
       historyRef.current = next;
       setMessages(next);
-      if (reply.places?.length) {
-        const stadiumCode = /course:([A-Z]+):/.exec(reply.route ?? "")?.[1] ?? null;
-        setCourse({ places: reply.places, stadiumCode });
-      }
+      progressRef.current = [];
+      setProgress([]);
       setStatus({ provider: reply.provider, model: reply.model, ready: reply.ready });
       setNotice(reply.completionStatus === "stopped" ? "받은 답변까지만 보관했어요." : "");
       setUncertain(false);
@@ -364,8 +509,15 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       if (mode === "member" && cause instanceof ChatClientError && cause.sessionId) backendSessions.current.set(activeConversationId, cause.sessionId);
       const deliveryUncertain = mode === "member" && cause instanceof ChatClientError && cause.uncertain;
       const received = streamingRef.current;
-      if (deliveryUncertain && received) {
-        setMessages([...previous, userMessage, { role: "assistant", content: received }]);
+      const finalProgress = settleProgress(progressRef.current);
+      if (deliveryUncertain && (received || progressRef.current.length)) {
+        if (progressRef.current.length) setMessages([...previous, userMessage, { role: "assistant", content: received, progress: finalProgress }]);
+        else setMessages([...previous, userMessage, { role: "assistant", content: received }]);
+        progressRef.current = [];
+        setProgress([]);
+      } else if (progressRef.current.length) {
+        progressRef.current = finalProgress;
+        setProgress(finalProgress);
       }
       setUncertain(deliveryUncertain);
       setFailed(deliveryUncertain ? "" : content);
@@ -383,20 +535,31 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         streamingRef.current = "";
       }
     }
-  }, [activeConversationId, context, draft, identity, memberStatus, uncertain]);
+  }, [activeConversationId, applyChatCourse, context, draft, identity, invalidateHistory, memberStatus, uncertain]);
+
+  const openCourseInWriter = useCallback((course: ChatCourse) => {
+    pendingCourseRef.current = course;
+    setPopupRequested(false);
+    router.push(`/routes/new${course.stadiumCode ? `?stadium=${encodeURIComponent(course.stadiumCode)}` : ""}`);
+  }, [router]);
+  const takePendingCourse = useCallback(() => {
+    const course = pendingCourseRef.current;
+    pendingCourseRef.current = null;
+    return course;
+  }, []);
 
   const openChat = useCallback((initialMessage?: string, nextContext?: ChatContext) => {
     expandChat();
     if (nextContext) setContext(nextContext);
     if (requestRef.current) {
       if (initialMessage?.trim()) {
-        setDraft(initialMessage.slice(0, MAX_MESSAGE_LENGTH));
+        changeDraft(initialMessage.slice(0, MAX_MESSAGE_LENGTH));
         setNotice("지금 답변이 끝나면 아래에 준비한 질문을 보낼 수 있어요.");
       }
       return;
     }
     if (initialMessage?.trim()) void send(initialMessage.slice(0, MAX_MESSAGE_LENGTH), { context: nextContext ?? context });
-  }, [context, expandChat, send]);
+  }, [changeDraft, context, expandChat, send]);
 
   useEffect(() => {
     if (isChatPage || !restorePageRef.current) return;
@@ -420,6 +583,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     requestRef.current?.controller.abort();
     requestRef.current?.identityController.abort();
     statusRequestRef.current?.abort();
+    historyRequestRef.current?.abort();
   }, []);
 
   const visibleStatus = memberStatus === "authenticated" ? status : null;
@@ -430,7 +594,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     <ChatControlsContext.Provider value={{
       openChat, onExpand: expandChat, onMinimize: minimizeChat, onClosePopup: closePopup,
       messages: identityChanged ? [] : messages,
-      course: identityChanged ? null : course,
       draft: identityChanged ? "" : draft,
       context: identityChanged ? undefined : context,
       status: visibleStatus,
@@ -439,17 +602,20 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       pending: identityChanged ? "" : pending,
       uncertain: identityChanged ? false : uncertain,
       streaming: identityChanged ? "" : streaming,
+      progress: identityChanged ? [] : progress,
       failed: identityChanged ? "" : failed,
       error: identityChanged ? "" : error,
       notice: identityChanged ? "" : notice,
       conversations: identityChanged ? [{ id: "initial-chat", title: "새 대화" }] : conversations,
       activeConversationId: identityChanged ? "initial-chat" : activeConversationId,
-      onDraftChange: setDraft, onRefreshStatus: () => void refreshStatus(),
+      onDraftChange: changeDraft, onRefreshStatus: () => void refreshStatus(),
       onSend: () => void send(), onRetry: () => void send(failed, { context: failedContextRef.current }),
       onCancel: cancelRequest, onReset: resetChat,
-      onSuggestion: (text, intent) => { setDraft(text); setContext(current => ({ ...current, intent })); },
+      onSuggestion: (text, intent) => { changeDraft(text); setContext(current => ({ ...current, intent })); },
       onSelectConversation: selectConversation,
       onContextChange: setContext,
+      courseTarget, registerCourseTarget, openCourseInWriter, takePendingCourse,
+      appliedCourses, applyChatCourse, undoChatCourse,
     }}>
       {children}
       {!popupOpen && <button ref={topButtonRef} type="button" className="scroll-to-top" aria-label="맨 위로 이동" title="맨 위로 이동" onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" })}>

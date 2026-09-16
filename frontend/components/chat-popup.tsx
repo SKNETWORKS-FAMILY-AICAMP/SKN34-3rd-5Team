@@ -5,6 +5,9 @@ import { type ReactNode, useEffect, useRef } from "react";
 import { MAX_MESSAGE_LENGTH } from "@/lib/chat/types";
 import { useMemberAuth } from "@/lib/member-auth";
 import { ChatAnswer } from "./chat-answer";
+import { ChatCourseCard } from "./chat-course-card";
+import { ChatPending } from "./chat-pending";
+import { ChatProgress } from "./chat-progress";
 import { useChat } from "./chat-provider";
 import { Icon } from "./icons";
 import "@/styles/chat-popup.css";
@@ -109,10 +112,10 @@ export function ChatPopup({
         {chat.context?.stadium && <p className="chat-popup-context"><Icon name="pin" size={13} />{chat.context.stadium}에서의 하루</p>}
         <div className="chat-popup-messages" role="log" aria-label="직관 도우미 대화 내용" aria-live="polite" aria-relevant="additions">
           {chat.messages.map((message, index) => <article key={`${chat.activeConversationId}-${index}`} className={`chat-popup-message chat-popup-message-${message.role}`}>
-            {message.role === "assistant" ? <><div className="chat-popup-assistant-label"><Icon name="sparkles" size={14} />직관 도우미</div><ChatAnswer text={message.content} /></> : <><span className="sr-only">나</span><div className="chat-popup-user-bubble">{message.content}</div></>}
+            {message.role === "assistant" ? <><div className="chat-popup-assistant-label"><Icon name="sparkles" size={14} />직관 도우미</div><ChatProgress operations={message.progress ?? []} />{message.content && <ChatAnswer text={message.content} />}{message.course && <ChatCourseCard course={message.course} />}</> : <><span className="sr-only">나</span><div className="chat-popup-user-bubble">{message.content}</div></>}
           </article>)}
           {(chat.pending || chat.failed) && <article className="chat-popup-message chat-popup-message-user"><span className="sr-only">나</span><div className="chat-popup-user-bubble">{chat.pending || chat.failed}</div></article>}
-          {busy && <article className="chat-popup-message chat-popup-message-assistant"><div className="chat-popup-assistant-label"><Icon name="sparkles" size={14} />직관 도우미</div>{chat.streaming ? <ChatAnswer text={chat.streaming} /> : <div className="chat-popup-thinking" role="status"><span className="sr-only">답변을 준비하고 있어요</span><i /><i /><i /></div>}</article>}
+          {(busy || chat.progress.length > 0) && <article className="chat-popup-message chat-popup-message-assistant"><div className="chat-popup-assistant-label"><Icon name="sparkles" size={14} />직관 도우미</div><ChatProgress key={chat.progress[0]?.operationId ?? "pending"} operations={chat.progress} />{chat.streaming ? <ChatAnswer text={chat.streaming} /> : <ChatPending busy={busy} streaming={chat.streaming} className="chat-popup-thinking" />}</article>}
         </div>
         {chat.error && <div className="chat-popup-feedback is-error" role="alert"><p>{chat.error}</p><button type="button" onClick={chat.uncertain ? chat.onReset : chat.onRetry} disabled={busy || (!chat.uncertain && !available)}>{chat.uncertain ? "새 대화에서 다시 보내기" : "다시 시도"}</button></div>}
         {chat.statusError && <div className="chat-popup-feedback is-error" role="alert"><p>{chat.statusError}</p><button type="button" onClick={chat.onRefreshStatus} disabled={chat.statusLoading}>연결 다시 확인</button></div>}

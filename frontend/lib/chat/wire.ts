@@ -14,16 +14,20 @@ export type ChatDoneEventDto = Schemas["ChatDoneEvent"];
 export type GuestChatDeltaEventDto = Schemas["GuestChatDeltaEvent"];
 export type GuestChatDoneEventDto = Schemas["GuestChatDoneEvent"];
 export type ChatErrorEventDto = Schemas["ChatErrorEvent"];
-export type ChatCoursePlaceDto = Schemas["ChatCoursePlace"];
+export type ChatProgressEventDto = Schemas["ChatProgressEvent"];
+export type ChatTurnHistoryDto = Schemas["ChatTurn"];
+export type ChatTurnPageDto = Schemas["PaginatedChatTurnList"];
 
 export type MemberChatSseEvent =
   | { event: "checkpoint"; data: ChatCheckpointEventDto }
   | { event: "delta"; data: ChatDeltaEventDto }
+  | { event: "progress"; data: ChatProgressEventDto }
   | { event: "done"; data: ChatDoneEventDto }
   | { event: "error"; data: ChatErrorEventDto };
 
 export type GuestChatSseEvent =
   | { event: "delta"; data: GuestChatDeltaEventDto }
+  | { event: "progress"; data: ChatProgressEventDto }
   | { event: "done"; data: GuestChatDoneEventDto }
   | { event: "error"; data: ChatErrorEventDto };
 
