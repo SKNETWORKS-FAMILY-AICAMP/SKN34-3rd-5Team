@@ -151,6 +151,49 @@ class OriginStepSearchTests(SimpleTestCase):
             self.assertIsNone(agent.build_origin_course({"lat": 37.51, "lng": 127.0}, ANCHOR, [], sl, evening=False))
 
 
+class OriginExtraStepTests(SimpleTestCase):
+    def sl(self, **extra):
+        return {"spare": "normal", "prefs": [], "ban": [], "boost": [], "exclude": set(), **extra}
+
+    def test_walk_request_adds_a_walk_step_before_the_game(self):
+        from .rag.course import agent
+
+        self.assertEqual(agent.plan_steps(self.sl(extras=["walk"]), evening=False), (["FOOD", "CAFE", "WALK"], ["CAFE"]))
+        self.assertEqual(agent.plan_steps(self.sl(extras=["walk"], scope="after"), evening=True), ([], ["BAR", "WALK"]))
+        self.assertEqual(agent.plan_steps(self.sl(extras=["indoor", "stay"]), evening=True), (["FOOD", "CAFE", "INDOOR"], ["BAR", "STAY"]))
+        self.assertEqual(agent.plan_steps(self.sl(scope="before"), evening=True), (["FOOD", "CAFE"], []))
+
+    def test_origin_course_searches_parks_for_the_walk_step(self):
+        from unittest.mock import patch
+
+        from .rag.course import agent
+
+        calls = []
+
+        def invoke(domain, name, args):
+            calls.append(args)
+            lat, lng = args["latitude"], args["longitude"]
+            if args.get("query") == "공원":
+                return {"places": [
+                    {"id": "p1", "place_name": "주차타워", "x": str(lng), "y": str(lat - 0.001), "category_name": "교통 > 주차장"},
+                    {"id": "p2", "place_name": "강변공원", "x": str(lng), "y": str(lat - 0.002), "category_name": "여행 > 공원"},
+                ]}
+            label = {"FD6": "식당", "CE7": "카페"}[args["category"]]
+            return {"places": [{"id": f"{label}-{lat}", "place_name": f"{label} {lat:.4f}", "x": str(lng), "y": str(lat - 0.0027),
+                                "category_name": f"음식점 > {label}"}]}
+
+        origin = {"lat": 37.5270, "lng": 127.000}
+        with patch.object(agent, "invoke_domain_tool", side_effect=invoke):
+            steps = agent.build_origin_course(origin, ANCHOR, [], self.sl(extras=["walk"]), evening=False)
+
+        before = [s for s in steps if s["phase"] == "BEFORE"]
+        self.assertEqual([s["place"]["category"] for s in before], ["FOOD_OUT", "CAFE", "WALK"])
+        self.assertEqual(before[-1]["place"]["name"], "강변공원")          # 주차장은 산책 후보가 아니다
+        walk_call = next(c for c in calls if c.get("query") == "공원")
+        self.assertEqual(walk_call["method"], "keyword")
+        self.assertNotIn("category", walk_call)
+
+
 class ContextPrefixTests(SimpleTestCase):
     def test_stadium_and_origin_prefixes_are_split_in_any_order(self):
         from .rag.pipeline import split_context_prefix, split_stadium_prefix

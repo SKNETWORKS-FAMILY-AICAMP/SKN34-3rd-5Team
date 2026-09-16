@@ -424,17 +424,35 @@ def _live_candidates(code, anchor, question, game):
 # 각 단계는 앞 지점을 중심으로 카카오 장소 검색을 새로 하고, 구장 쪽으로 다가가는 곳을 우선한다.
 STEP_RADII_M = (800, 1500, 3000)     # 앞 지점 주변에서 이 반경부터 넓혀 가며 찾는다
 AFTER_MAX_FROM_STADIUM_M = 1500      # 경기 후 장소는 구장에서 이 거리 안에서 고른다
-STEP_KAKAO = {"FOOD": "FD6", "BAR": "FD6", "CAFE": "CE7", "SPOT": "AT4"}
-STEP_CATEGORY = {"FOOD": "FOOD_OUT", "BAR": "FOOD_OUT", "CAFE": "CAFE", "SPOT": "SPOT"}
+# 산책은 카카오 분류가 없어 검색어(공원 등)로 찾고, 실내·숙박은 카카오 분류로 찾는다
+STEP_KAKAO = {"FOOD": "FD6", "BAR": "FD6", "CAFE": "CE7", "SPOT": "AT4", "WALK": None, "INDOOR": "CT1", "STAY": "AD5"}
+STEP_CATEGORY = {"FOOD": "FOOD_OUT", "BAR": "FOOD_OUT", "CAFE": "CAFE", "SPOT": "SPOT",
+                 "WALK": "WALK", "INDOOR": "INDOOR", "STAY": "STAY"}
+# 요청한 추가 종류(slots extras) → 출발지 코스 단계
+EXTRA_STEP = {"walk": "WALK", "indoor": "INDOOR", "stay": "STAY"}
 CAFE_PREFS = {"카페", "커피", "디저트", "베이커리", "케이크"}
 BAR_PREFS = {"술집", "호프", "포장마차", "이자카야"}
 
 
 def plan_steps(sl, evening):
-    """단계 구성. 촉박하면 식사만, 여유 있으면 명소 → 식사 → 카페."""
+    """단계 구성. 촉박하면 식사만, 여유 있으면 명소 → 식사 → 카페.
+
+    산책·실내를 요청하면 경기 전 마지막(경기 후만 요청했으면 경기 후)에, 숙박은 경기 후 맨 끝에 한 곳 넣는다.
+    """
     before = {"tight": ["FOOD"], "long": ["SPOT", "FOOD", "CAFE"]}.get(sl["spare"], ["FOOD", "CAFE"])
     bar_banned = any(w in (sl["ban"] or []) for w in BAR_PREFS)
     after = ["BAR"] if evening and not bar_banned else ["CAFE"]
+    scope = sl.get("scope") or "both"
+    extras = sl.get("extras") or []
+    for extra in ("walk", "indoor"):
+        if extra in extras:
+            (after if scope == "after" else before).append(EXTRA_STEP[extra])
+    if "stay" in extras:
+        after.append("STAY")
+    if scope == "before":
+        after = []
+    elif scope == "after":
+        before = [k for k in before if k in ("WALK", "INDOOR")]
     return before, after
 
 
@@ -444,6 +462,8 @@ def _step_keyword(kind, sl):
         return next((w for w in prefs if w not in CAFE_PREFS and w not in BAR_PREFS and "," not in w), None)
     if kind == "BAR":
         return next((w for w in prefs if w in BAR_PREFS), "술집")
+    if kind == "WALK":
+        return "공원"
     return None
 
 
@@ -455,9 +475,11 @@ def _step_matches(kind, p):
 
 def _kakao_step(kind, center, radius, anchor, sl):
     keyword = _step_keyword(kind, sl)
-    args = {"method": "keyword" if keyword else "category", "category": STEP_KAKAO[kind],
+    args = {"method": "keyword" if keyword else "category",
             "latitude": float(center["lat"]), "longitude": float(center["lng"]),
             "radius": int(radius), "limit": 15, "sort": "distance"}
+    if STEP_KAKAO[kind]:
+        args["category"] = STEP_KAKAO[kind]
     if keyword:
         args["query"] = keyword
     try:
@@ -471,6 +493,12 @@ def _kakao_step(kind, center, radius, anchor, sl):
         if lat is None or lng is None:
             continue
         detail = str(item.get("category_name") or item.get("category_group_name") or "")[:255]
+        name = str(item.get("place_name") or "")
+        # 지도와 같은 기준: 산책은 공원·산책로류, 실내는 실내 놀거리류만
+        if kind == "WALK" and not kakao._WALK.search(detail):
+            continue
+        if kind == "INDOOR" and not kakao._INDOOR.search(f"{detail} {name}"):
+            continue
         if kind == "BAR" and keyword and not any(w in detail for w in timeline.BAR_WORDS):
             detail = f"{detail} > 술집"[:255]               # 술집 검색 결과는 체류시간을 술집 기준으로
         found.append({
