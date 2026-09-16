@@ -72,3 +72,6 @@
 
 .adminLogout { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 48px; padding-top: 28px; border-top: 1px solid #dce5f1; }
 .adminLogout p { color: #c53041; font-size: 13px; }
+.deleteAction { padding: 0; border: 0; background: none; color: #e03e4f; font: inherit; cursor: pointer; }
+.deleteAction:hover:not(:disabled) { text-decoration: underline; }
+.deleteAction:disabled { opacity: .5; cursor: default; }
