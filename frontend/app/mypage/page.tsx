@@ -55,9 +55,9 @@ function MyPageContent() {
   const { status, user, setUser } = useMemberAuth();
   const router = useRouter(), search = useSearchParams();
   const selected = search.get("tab");
-  // 관리자 계정(운영·마스터)은 "회원 정보" 자리에 회원·게시글·신고 관리 탭을 쓴다
+  // 관리자 계정(운영·마스터)은 회원·게시글·신고 관리 탭이 더해지고, 회원 정보 탭은 맨 끝에 둔다
   const isAdmin = Boolean(user?.is_staff || user?.is_superuser);
-  const tabValues: string[] = ["likes", "posts", ...(isAdmin ? adminTabs.map(([value]) => value) : ["profile"])];
+  const tabValues: string[] = ["likes", "posts", ...(isAdmin ? adminTabs.map(([value]) => value) : []), "profile"];
   const tab = selected && tabValues.includes(selected) ? selected : "courses";
   const ready = useRoutesReady();
   const routes = useRoutes();
@@ -85,7 +85,7 @@ function MyPageContent() {
     <p className={styles.note}>계정·프로필 설정은 서버에 저장돼요. 새 코스는 공개되며 편집 권한만 이 브라우저에 저장돼요. 이전 버전 코스는 다시 저장하기 전까지 이 브라우저에만 남아요.</p>
     {loadError && <p className={styles.note} role="alert">{loadError} 이전 버전 코스만 표시될 수 있어요. <button type="button" onClick={() => void retryRoutes()}>다시 불러오기</button></p>}
     <nav className={styles.tabs} aria-label="마이페이지 메뉴">
-      {[["courses",`내 코스 (${own.length})`],["likes",`찜한 코스 (${liked.length})`],["posts","내가 쓴 글"], ...(isAdmin ? adminTabs : [["profile","회원 정보"]])].map(([value, label]) => <button key={value} type="button" aria-pressed={tab === value} onClick={() => router.push(`/mypage?tab=${value}`, { scroll: false })}>{label}</button>)}
+      {[["courses",`내 코스 (${own.length})`],["likes",`찜한 코스 (${liked.length})`],["posts","내가 쓴 글"], ...(isAdmin ? adminTabs : []), ["profile","회원 정보"]].map(([value, label]) => <button key={value} type="button" aria-pressed={tab === value} onClick={() => router.push(`/mypage?tab=${value}`, { scroll: false })}>{label}</button>)}
     </nav>
     {tab === "posts" ? <MemberPosts /> : tab === "members" ? <AdminMembersPanel /> : tab === "manage-posts" ? <AdminPostsPanel /> : tab === "reports" ? <AdminReportsPanel /> : tab === "profile" ? <section className={styles.settings}><h2>회원정보 수정</h2>
       <ProfilePhotoEditor avatar={user.avatar} onSaved={async avatar => { const updated = await patchUser({ avatar }); setUser(updated, user.id); }} />
