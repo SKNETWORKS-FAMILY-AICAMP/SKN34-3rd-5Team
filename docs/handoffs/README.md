@@ -6,6 +6,7 @@
 | --- | --- |
 | [프론트엔드 ↔ 백엔드](FRONTEND_BACKEND_HANDOFF.md) | 전체 API·환경변수·연결 순서 |
 | [관리자 기능](ADMIN_HANDOFF.md) | 관리자 화면·API 인계 |
+| [루트 가이드·신고 관리](ROUTE_GUIDE_ADMIN_MODERATION_HANDOFF.md) | 루트 만들기 가이드, 관리자 신고 관리, 챗봇 출발지 코스, 샘플 데이터 |
 | [회원·마이페이지](MEMBER_MYPAGE_HANDOFF.md) | 회원 화면과 데이터 이전 |
 | [커뮤니티 글 번호](COMMUNITY_POST_NUMBER_HANDOFF.md) | 게시글 번호 계약 |
 | [코스 번호](ROUTE_NUMBER_HANDOFF.md) | 코스 식별자 계약 |
