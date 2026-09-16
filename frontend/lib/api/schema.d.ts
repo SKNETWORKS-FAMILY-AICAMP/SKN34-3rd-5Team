@@ -1508,10 +1508,271 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/places/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["places_list"];
+        put?: never;
+        post: operations["places_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/places/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["places_retrieve"];
+        put?: never;
+        post?: never;
+        delete: operations["places_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["places_partial_update"];
+        trace?: never;
+    };
+    "/api/places/search/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["places_search"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tourism/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tourism_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/travel/directions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["travel_directions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tving/daily/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tving_daily_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tving/details/athletes/{value}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tving_details_athletes_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tving/details/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tving_details_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tving/details/teams/{value}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tving_details_teams_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tving/entities/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tving_entities_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tving/entities/players/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tving_entities_players_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tving/entities/players/{code}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tving_entities_players_retrieve"];
+        put?: never;
+        post?: never;
+        delete: operations["tving_entities_players_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["tving_entities_players_partial_update"];
+        trace?: never;
+    };
+    "/api/tving/schedule/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tving_schedule_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tving/snapshots/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tving_snapshots_list"];
+        put?: never;
+        post: operations["tving_snapshots_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tving/snapshots/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tving_snapshots_retrieve"];
+        put?: never;
+        post?: never;
+        delete: operations["tving_snapshots_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["tving_snapshots_partial_update"];
+        trace?: never;
+    };
+    "/api/weather/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["weather_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description * `directions` - directions
+         * @enum {string}
+         */
+        ActionEnum: "directions";
         AdminMember: {
             readonly id: number;
             /** @description Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
@@ -1534,6 +1795,40 @@ export interface components {
             /** Format: date-time */
             readonly date_joined: string;
         };
+        AthleteData: {
+            /** Format: date-time */
+            fetchedAt: string;
+            /** Format: date-time */
+            providerFetchedAt: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+            /** Format: date-time */
+            lastSyncedAt: string | null;
+            source: components["schemas"]["Source"];
+            stale: boolean;
+            warning: string | null;
+            profile: {
+                [key: string]: unknown;
+            };
+            seasonTitle: string;
+            seasonRecords: {
+                [key: string]: unknown;
+            }[];
+            careerTitle: string;
+            careerColumns: {
+                [key: string]: unknown;
+            }[];
+            careerRows: {
+                [key: string]: unknown;
+            }[];
+            collecting: boolean;
+            progress: components["schemas"]["DetailProgress"];
+        };
+        AthleteResponse: {
+            data: components["schemas"]["AthleteData"] | null;
+            error: string | null;
+            code?: string;
+        };
         BaseballError: {
             code: string;
             message: string;
@@ -1552,22 +1847,6 @@ export interface components {
          * @enum {string}
          */
         BoardEnum: "free" | "teams";
-        /**
-         * @description * `질문` - 질문
-         *     * `잡담` - 잡담
-         *     * `응원` - 응원
-         *     * `경기토론` - 경기토론
-         *     * `전력토론` - 전력토론
-         *     * `소식·정보` - 소식·정보
-         *     * `이적·신인` - 이적·신인
-         *     * `직관후기` - 직관후기
-         *     * `좌석·예매` - 좌석·예매
-         *     * `직관준비` - 직관준비
-         *     * `굿즈` - 굿즈
-         *     * `사진·영상` - 사진·영상
-         * @enum {string}
-         */
-        CategoryEnum: "질문" | "잡담" | "응원" | "경기토론" | "전력토론" | "소식·정보" | "이적·신인" | "직관후기" | "좌석·예매" | "직관준비" | "굿즈" | "사진·영상";
         ChatCheckpointEvent: {
             /** Format: uuid */
             turn_id: string;
@@ -1696,19 +1975,21 @@ export interface components {
             readonly updated_at: string;
         };
         /**
-         * @description * `LG` - LG
-         *     * `HH` - HH
-         *     * `SK` - SK
-         *     * `SS` - SS
-         *     * `NC` - NC
-         *     * `KT` - KT
-         *     * `LT` - LT
-         *     * `HT` - HT
-         *     * `OB` - OB
-         *     * `WO` - WO
+         * @description * `질문` - 질문
+         *     * `잡담` - 잡담
+         *     * `응원` - 응원
+         *     * `경기토론` - 경기토론
+         *     * `전력토론` - 전력토론
+         *     * `소식·정보` - 소식·정보
+         *     * `이적·신인` - 이적·신인
+         *     * `직관후기` - 직관후기
+         *     * `좌석·예매` - 좌석·예매
+         *     * `직관준비` - 직관준비
+         *     * `굿즈` - 굿즈
+         *     * `사진·영상` - 사진·영상
          * @enum {string}
          */
-        CodeEnum: "LG" | "HH" | "SK" | "SS" | "NC" | "KT" | "LT" | "HT" | "OB" | "WO";
+        CommunityCategoryEnum: "질문" | "잡담" | "응원" | "경기토론" | "전력토론" | "소식·정보" | "이적·신인" | "직관후기" | "좌석·예매" | "직관준비" | "굿즈" | "사진·영상";
         CommunityComment: {
             readonly id: number;
             readonly postId: string;
@@ -1742,7 +2023,7 @@ export interface components {
             title: string;
             content: string;
             contentDoc?: unknown;
-            category: components["schemas"]["CategoryEnum"];
+            category: components["schemas"]["CommunityCategoryEnum"];
             /** Format: date-time */
             readonly createdAt: string | null;
             readonly views: number;
@@ -1762,7 +2043,7 @@ export interface components {
         CommunityPostWrite: {
             board: components["schemas"]["BoardEnum"];
             teamCode: string;
-            category: components["schemas"]["CategoryEnum"];
+            category: components["schemas"]["CommunityCategoryEnum"];
             title: string;
             content: string;
             contentDoc?: unknown;
@@ -1801,6 +2082,13 @@ export interface components {
          * @enum {string}
          */
         ContentTypeEnum: "image/jpeg" | "image/png" | "image/webp";
+        /**
+         * @description * `12` - 12
+         *     * `14` - 14
+         *     * `28` - 28
+         * @enum {string}
+         */
+        ContentTypeIdEnum: "12" | "14" | "28";
         Course: {
             /** Format: uuid */
             id: string;
@@ -1912,6 +2200,99 @@ export interface components {
         CourseViewResult: {
             views: number;
         };
+        /**
+         * @description * `기타` - 기타
+         * @enum {string}
+         */
+        CuisineEnum: "기타";
+        DailyData: {
+            /** Format: date-time */
+            fetchedAt: string;
+            /** Format: date-time */
+            providerFetchedAt: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+            /** Format: date-time */
+            lastSyncedAt: string | null;
+            source: components["schemas"]["Source"];
+            stale: boolean;
+            warning: string | null;
+            /** Format: date */
+            date: string;
+            games: {
+                [key: string]: unknown;
+            }[];
+            standings: {
+                [key: string]: unknown;
+            }[];
+            individualRankings: components["schemas"]["IndividualRankings"];
+            /** Format: date-time */
+            sourceUpdatedAt: string | null;
+            /** Format: date-time */
+            nextCheckAt: string;
+            mode: components["schemas"]["DailyDataModeEnum"];
+        };
+        /**
+         * @description * `fixed-interval` - fixed-interval
+         * @enum {string}
+         */
+        DailyDataModeEnum: "fixed-interval";
+        DailyResponse: {
+            data: components["schemas"]["DailyData"] | null;
+            error: string | null;
+            code?: string;
+        };
+        DetailProgress: {
+            state: components["schemas"]["StateEnum"];
+            generation: string | null;
+            /** Format: date-time */
+            startedAt: string | null;
+            /** Format: date-time */
+            completedAt: string | null;
+            teamTotal: number;
+            teamDone: number;
+            athleteTotal: number;
+            athleteDone: number;
+            failures: string[];
+            strategy: components["schemas"]["StrategyEnum"];
+        };
+        DirectionsError: {
+            error: string;
+        };
+        DirectionsLeg: {
+            status: components["schemas"]["DirectionsLegStatusEnum"];
+            distance: number | null;
+            seconds: number | null;
+            paths: components["schemas"]["TravelPoint"][][];
+            instructions: string[];
+            stale?: boolean;
+            warning?: string | null;
+            error?: string;
+        };
+        /**
+         * @description * `ok` - ok
+         *     * `error` - error
+         * @enum {string}
+         */
+        DirectionsLegStatusEnum: "ok" | "error";
+        /**
+         * @description * `walk` - walk
+         *     * `car` - car
+         *     * `transit` - transit
+         * @enum {string}
+         */
+        DirectionsModeEnum: "walk" | "car" | "transit";
+        DirectionsRequest: {
+            action?: components["schemas"]["ActionEnum"];
+            mode: components["schemas"]["DirectionsModeEnum"];
+            points: components["schemas"]["TravelPoint"][];
+        };
+        DirectionsResponse: {
+            mode: components["schemas"]["DirectionsModeEnum"];
+            legs: components["schemas"]["DirectionsLeg"][];
+            distance: number | null;
+            seconds: number | null;
+        };
         /** DraftInput */
         DraftInput: {
             /** Board */
@@ -1974,6 +2355,24 @@ export interface components {
             readonly verified: boolean;
             /** Format: email */
             readonly email: string;
+        };
+        EntityPage: {
+            count: number;
+            page: number;
+            pageSize: number;
+            results: {
+                [key: string]: unknown;
+            }[];
+        };
+        EntityPageResponse: {
+            data: components["schemas"]["EntityPage"] | null;
+            error: string | null;
+            code?: string;
+        };
+        ErrorResponse: {
+            data: unknown;
+            error: string | null;
+            code?: string;
         };
         Facility: {
             id: number;
@@ -2151,6 +2550,40 @@ export interface components {
             createdAt: string;
             url: string;
         };
+        IndividualRankings: {
+            pitchers: {
+                [key: string]: unknown;
+            }[];
+            hitters: {
+                [key: string]: unknown;
+            }[];
+        };
+        KakaoPlace: {
+            id: string;
+            place_name: string;
+            road_address_name: string;
+            address_name: string;
+            category_group_name: string;
+            category_group_code: string;
+            category_name: string;
+            phone: string;
+            x: string;
+            y: string;
+        };
+        /**
+         * @description * `SS` - SS
+         *     * `KT` - KT
+         *     * `LG` - LG
+         *     * `HT` - HT
+         *     * `OB` - OB
+         *     * `NC` - NC
+         *     * `HH` - HH
+         *     * `LT` - LT
+         *     * `SK` - SK
+         *     * `WO` - WO
+         * @enum {string}
+         */
+        KboTeamCodeEnum: "SS" | "KT" | "LG" | "HT" | "OB" | "NC" | "HH" | "LT" | "SK" | "WO";
         LogoutRequest: {
             refresh: string;
         };
@@ -2190,6 +2623,35 @@ export interface components {
             readonly nickname_changed_at: string | null;
             readonly notifications: components["schemas"]["NotificationSettings"];
             readonly visibility: components["schemas"]["VisibilitySettings"];
+        };
+        MonthData: {
+            /** Format: date-time */
+            fetchedAt: string;
+            /** Format: date-time */
+            providerFetchedAt: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+            /** Format: date-time */
+            lastSyncedAt: string | null;
+            source: components["schemas"]["Source"];
+            stale: boolean;
+            warning: string | null;
+            year: number;
+            month: string;
+            /** Format: date */
+            today: string;
+            games: {
+                [key: string]: unknown;
+            }[];
+            days: {
+                [key: string]: unknown;
+            }[];
+            loading: boolean;
+        };
+        MonthResponse: {
+            data: components["schemas"]["MonthData"] | null;
+            error: string | null;
+            code?: string;
         };
         NotificationSettings: {
             comments: boolean;
@@ -2597,7 +3059,7 @@ export interface components {
         PatchedCommunityPostPatch: {
             board?: components["schemas"]["BoardEnum"];
             teamCode?: string;
-            category?: components["schemas"]["CategoryEnum"];
+            category?: components["schemas"]["CommunityCategoryEnum"];
             title?: string;
             content?: string;
             contentDoc?: unknown;
@@ -2721,6 +3183,25 @@ export interface components {
             notifications?: components["schemas"]["NotificationSettings"];
             visibility?: components["schemas"]["VisibilitySettings"];
         };
+        PatchedPlacePatch: {
+            name?: string;
+            address?: string;
+            road_address?: string;
+            category_group_code?: string;
+            category_group_name?: string;
+            category_name?: string;
+            phone?: string;
+            /** Format: double */
+            lat?: number;
+            /** Format: double */
+            lng?: number;
+            url?: string;
+        };
+        PatchedPlayerMutation: {
+            externalCode?: string;
+            teamCode?: components["schemas"]["KboTeamCodeEnum"];
+            name?: string;
+        };
         PatchedPostseasonStage: {
             id?: number;
             stage_code?: string;
@@ -2770,6 +3251,13 @@ export interface components {
             seat_type?: string;
             group_size?: number | null;
             accessible?: boolean | null;
+        };
+        PatchedSnapshotMutation: {
+            resourceKind?: components["schemas"]["ResourceKindEnum"];
+            resourceKey?: string;
+            payload?: unknown;
+            /** Format: date-time */
+            sourceFetchedAt?: string;
         };
         PatchedStadium: {
             id?: number;
@@ -2872,6 +3360,95 @@ export interface components {
          * @enum {string}
          */
         PhaseEnum: "BEFORE" | "GAME" | "AFTER";
+        Place: {
+            readonly id: number;
+            kakao_place_id?: string | null;
+            name: string;
+            address?: string;
+            road_address?: string;
+            category_group_code?: string;
+            category_group_name?: string;
+            category_name?: string;
+            phone?: string;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
+            url?: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            /** Format: date-time */
+            last_synced_at?: string | null;
+        };
+        PlaceError: {
+            error: string;
+        };
+        PlaceListResponse: {
+            count: number;
+            page: number;
+            page_size: number;
+            results: components["schemas"]["Place"][];
+        };
+        PlaceSearch: {
+            method: string;
+            keyword?: string;
+            category?: string;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
+            radius?: number;
+            page: number;
+            size: number;
+            sort: string;
+        };
+        PlaceSearchResponse: {
+            places: components["schemas"]["KakaoPlace"][];
+            hasNextPage: boolean;
+            /**
+             * Format: date-time
+             * @description 카카오 공급자 응답을 성공적으로 조회한 시각이며 모든 저장 행의 동기화 시각을 뜻하지 않습니다.
+             */
+            syncedAt: string;
+        };
+        PlaceWrite: {
+            kakao_place_id?: string | null;
+            name: string;
+            address?: string;
+            road_address?: string;
+            category_group_code?: string;
+            category_group_name?: string;
+            category_name?: string;
+            phone?: string;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
+            url?: string;
+        };
+        PlayerEntity: {
+            externalCode: string;
+            teamCode: string;
+            name: string;
+            /** Format: uri */
+            imageUrl: string | null;
+            positions: string[];
+            backNumber: string;
+            /** Format: date-time */
+            profileLastSyncedAt: string | null;
+        };
+        PlayerEntityResponse: {
+            data: components["schemas"]["PlayerEntity"] | null;
+            error: string | null;
+            code?: string;
+        };
+        PlayerMutation: {
+            externalCode?: string;
+            teamCode: components["schemas"]["KboTeamCodeEnum"];
+            name: string;
+        };
         PostseasonStage: {
             id: number;
             stage_code: string;
@@ -2934,7 +3511,7 @@ export interface components {
          */
         PredictionGameStatusEnum: "scheduled" | "live" | "final" | "cancelled" | "postponed" | "suspended" | "unknown";
         PredictionTeam: {
-            code: components["schemas"]["CodeEnum"];
+            code: components["schemas"]["KboTeamCodeEnum"];
             name: string;
             score: number | null;
         };
@@ -2945,6 +3522,34 @@ export interface components {
             homePercent: number;
             awayPercent: number;
         };
+        ProviderPlace: {
+            placeId: string;
+            tourContentId: string;
+            contentTypeId: components["schemas"]["ContentTypeIdEnum"];
+            name: string;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
+            category: components["schemas"]["ProviderPlaceCategoryEnum"];
+            kind: components["schemas"]["TourismCategoryEnum"];
+            cuisine: components["schemas"]["CuisineEnum"];
+            address: string;
+            phone: string;
+            detail: string;
+            /** Format: double */
+            distance: number;
+            subcategory?: string;
+            imageUrl?: string;
+            sourceUrl?: string;
+        };
+        /**
+         * @description * `산책` - 산책
+         *     * `관광 명소` - 관광 명소
+         *     * `실내 놀거리` - 실내 놀거리
+         * @enum {string}
+         */
+        ProviderPlaceCategoryEnum: "산책" | "관광 명소" | "실내 놀거리";
         PublicFoodStore: {
             id: number;
             record_code: string;
@@ -3028,6 +3633,14 @@ export interface components {
          * @enum {string}
          */
         ReasonEnum: "spam" | "abuse" | "inappropriate" | "privacy" | "other";
+        /**
+         * @description * `daily` - Daily
+         *     * `month` - Month
+         *     * `team` - Team
+         *     * `athlete` - Athlete
+         * @enum {string}
+         */
+        ResourceKindEnum: "daily" | "month" | "team" | "athlete";
         /**
          * @description * `home` - home
          *     * `away` - away
@@ -3140,6 +3753,48 @@ export interface components {
             birth_date: string;
             gender: components["schemas"]["GenderEnum"];
         };
+        Snapshot: {
+            id: number;
+            resourceKind: components["schemas"]["ResourceKindEnum"];
+            resourceKey: string;
+            payload: unknown;
+            /** Format: date-time */
+            sourceFetchedAt: string;
+            /** Format: date-time */
+            lastSyncedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        SnapshotMutation: {
+            resourceKind?: components["schemas"]["ResourceKindEnum"];
+            resourceKey?: string;
+            payload: unknown;
+            /** Format: date-time */
+            sourceFetchedAt: string;
+        };
+        SnapshotPage: {
+            count: number;
+            page: number;
+            pageSize: number;
+            results: components["schemas"]["Snapshot"][];
+        };
+        SnapshotPageResponse: {
+            data: components["schemas"]["SnapshotPage"] | null;
+            error: string | null;
+            code?: string;
+        };
+        SnapshotResponse: {
+            data: components["schemas"]["Snapshot"] | null;
+            error: string | null;
+            code?: string;
+        };
+        Source: {
+            name: string;
+            /** Format: uri */
+            url: string;
+        };
         Stadium: {
             id: number;
             stadium_code: string;
@@ -3236,10 +3891,67 @@ export interface components {
             /** etag */
             readonly _etag: string;
         };
+        /**
+         * @description * `idle` - idle
+         *     * `partial` - partial
+         * @enum {string}
+         */
+        StateEnum: "idle" | "partial";
+        StatusResponse: {
+            data: components["schemas"]["DetailProgress"] | null;
+            error: string | null;
+            code?: string;
+        };
+        /**
+         * @description * `on-demand` - on-demand
+         * @enum {string}
+         */
+        StrategyEnum: "on-demand";
         Team: {
             id: number;
             team_code: string;
             team_name_ko: string;
+        };
+        TeamData: {
+            /** Format: date-time */
+            fetchedAt: string;
+            /** Format: date-time */
+            providerFetchedAt: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+            /** Format: date-time */
+            lastSyncedAt: string | null;
+            source: components["schemas"]["Source"];
+            stale: boolean;
+            warning: string | null;
+            code: string;
+            teamName: string;
+            shortName: string;
+            /** Format: uri */
+            teamImageUrl: string | null;
+            /** Format: uri */
+            backgroundImage: string | null;
+            seasonTitle: string;
+            mainRecords: {
+                [key: string]: unknown;
+            }[];
+            boxRecords: {
+                [key: string]: unknown;
+            }[];
+            schedule: {
+                [key: string]: unknown;
+            }[];
+            rankings: {
+                [key: string]: unknown;
+            };
+            rosters: {
+                [key: string]: unknown;
+            };
+            shortcuts: {
+                [key: string]: unknown;
+            }[];
+            collecting: boolean;
+            progress: components["schemas"]["DetailProgress"];
         };
         TeamDetail: {
             id: number;
@@ -3247,6 +3959,11 @@ export interface components {
             team_name_ko: string;
             /** etag */
             readonly _etag: string;
+        };
+        TeamResponse: {
+            data: components["schemas"]["TeamData"] | null;
+            error: string | null;
+            code?: string;
         };
         TicketPolicy: {
             id: number;
@@ -3326,6 +4043,31 @@ export interface components {
         TokenRefreshResponse: {
             readonly access: string;
         };
+        /**
+         * @description * `walk` - walk
+         *     * `sight` - sight
+         *     * `indoor` - indoor
+         * @enum {string}
+         */
+        TourismCategoryEnum: "walk" | "sight" | "indoor";
+        TourismResponse: {
+            status: components["schemas"]["TourismResponseStatusEnum"];
+            places: components["schemas"]["ProviderPlace"][];
+            truncated: boolean;
+            stale?: boolean;
+            /** Format: date-time */
+            fetchedAt?: string | null;
+            /** Format: date-time */
+            lastSyncedAt?: string | null;
+        };
+        /**
+         * @description * `ok` - ok
+         *     * `partial` - partial
+         *     * `unconfigured` - unconfigured
+         *     * `error` - error
+         * @enum {string}
+         */
+        TourismResponseStatusEnum: "ok" | "partial" | "unconfigured" | "error";
         Transport: {
             id: number;
             stadium_id: number;
@@ -3352,6 +4094,12 @@ export interface components {
             /** etag */
             readonly _etag: string;
         };
+        TravelPoint: {
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
+        };
         UsernameRequestResponse: {
             readonly ok: boolean;
         };
@@ -3366,6 +4114,28 @@ export interface components {
          * @enum {string}
          */
         VoteEnum: "up" | "down";
+        Weather: {
+            label: string;
+            /** Format: double */
+            temperature: number;
+            /** Format: date-time */
+            forecastAt: string;
+            /** Format: date-time */
+            issuedAt: string;
+            /** Format: date-time */
+            fetchedAt: string;
+            source: string;
+        };
+        WeatherError: {
+            code: string;
+        };
+        WeatherErrorResponse: {
+            weather: components["schemas"]["Weather"] | null;
+            error: components["schemas"]["WeatherError"];
+        };
+        WeatherResponse: {
+            weather: components["schemas"]["Weather"] | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -10001,6 +10771,1239 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    places_list: {
+        parameters: {
+            query?: {
+                category?: string;
+                kakao_place_id?: string;
+                name?: string;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceListResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+        };
+    };
+    places_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaceWrite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Place"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+        };
+    };
+    places_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Place"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+        };
+    };
+    places_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 본문 없음 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+        };
+    };
+    places_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPlacePatch"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Place"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+        };
+    };
+    places_search: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaceSearch"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceSearchResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceError"];
+                };
+            };
+        };
+    };
+    tourism_retrieve: {
+        parameters: {
+            query: {
+                lat: number;
+                lng: number;
+                stadium: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourismResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourismResponse"];
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourismResponse"];
+                };
+            };
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourismResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TourismResponse"];
+                };
+            };
+        };
+    };
+    travel_directions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectionsRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectionsResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectionsError"];
+                };
+            };
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectionsError"];
+                };
+            };
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectionsError"];
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectionsError"];
+                };
+            };
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectionsError"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectionsError"];
+                };
+            };
+        };
+    };
+    tving_daily_retrieve: {
+        parameters: {
+            query?: {
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_details_athletes_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                value: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AthleteResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_details_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_details_teams_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                value: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_entities_retrieve: {
+        parameters: {
+            query: {
+                date?: string;
+                kind: string;
+                month?: string;
+                page?: number;
+                page_size?: number;
+                player?: string;
+                team?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityPageResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_entities_players_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayerMutation"];
+                "application/x-www-form-urlencoded": components["schemas"]["PlayerMutation"];
+                "multipart/form-data": components["schemas"]["PlayerMutation"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerEntityResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_entities_players_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerEntityResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_entities_players_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_entities_players_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPlayerMutation"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPlayerMutation"];
+                "multipart/form-data": components["schemas"]["PatchedPlayerMutation"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerEntityResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_schedule_retrieve: {
+        parameters: {
+            query?: {
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_snapshots_list: {
+        parameters: {
+            query?: {
+                date?: string;
+                key?: string;
+                kind?: string;
+                month?: string;
+                page?: number;
+                page_size?: number;
+                player?: string;
+                team?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SnapshotPageResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_snapshots_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SnapshotMutation"];
+                "application/x-www-form-urlencoded": components["schemas"]["SnapshotMutation"];
+                "multipart/form-data": components["schemas"]["SnapshotMutation"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SnapshotResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_snapshots_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SnapshotResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_snapshots_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tving_snapshots_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedSnapshotMutation"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedSnapshotMutation"];
+                "multipart/form-data": components["schemas"]["PatchedSnapshotMutation"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SnapshotResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    weather_retrieve: {
+        parameters: {
+            query: {
+                /** @description KST date (YYYY-MM-DD) */
+                date: string;
+                /** @description Canonical stadium code */
+                stadium: string;
+                /** @description KST time (HH:MM) */
+                time: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeatherResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeatherErrorResponse"];
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeatherErrorResponse"];
+                };
+            };
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeatherErrorResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeatherErrorResponse"];
                 };
             };
         };

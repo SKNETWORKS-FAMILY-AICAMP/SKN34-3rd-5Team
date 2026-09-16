@@ -10,6 +10,7 @@ import { coursePointLabel, renumberMapPoints, undoDrawnPoint } from "@/lib/drawn
 import { CourseTravelPanel, useCourseDirections, useTravelOverlay } from "./course-travel";
 import { StadiumParkingMapDialog } from "./stadium-parking-map-dialog";
 import type { TourResult } from "@/lib/tour-places";
+import { fetchTourPlaces } from "@/lib/tour-api";
 import { createClientId } from "@/lib/client-id";
 import type { TravelMode } from "@/lib/course-directions";
 
@@ -332,10 +333,7 @@ function LoadedPlanner({ maps, plannerMode = "places", stadium, stops, onChange:
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
     let active = true;
-    fetch("/directions-api", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "tourism", stadium: stadium.code, lat: stadium.lat, lng: stadium.lng }), signal: controller.signal }).then(async (response) => {
-      if (!response.ok) throw new Error("Tourism places unavailable");
-      const result: TourResult = await response.json();
-      if (!Array.isArray(result.places) || !["ok", "partial", "unconfigured", "error"].includes(result.status)) throw new Error("Invalid tourism response");
+    fetchTourPlaces(stadium, fetch, controller.signal).then((result: TourResult) => {
       if (!active || controller.signal.aborted) return;
       setPlaces((previous) => mergePlaces(previous, result.places));
       setTour({ status: result.status, truncated: result.truncated });
