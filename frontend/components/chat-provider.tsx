@@ -6,6 +6,7 @@ import type { ChatContext, ChatCourse, ChatMessage, ChatProgressOperation, ChatS
 import { MAX_HISTORY_MESSAGES, MAX_MESSAGE_LENGTH } from "@/lib/chat/types";
 import {
   ChatClientError,
+  deleteChatSession,
   fetchChatHistory,
   fetchChatTurns,
   getChatStatus,
@@ -60,6 +61,8 @@ type ChatControls = ConversationSnapshot & {
   onReset: () => void;
   onSuggestion: (text: string, intent: ChatContext["intent"]) => void;
   onSelectConversation: (id: string) => void;
+  /** 왼쪽 대화 목록에서 대화를 지운다 (화면에서 바로 빼고, 서버 기록 삭제는 가능한 경우에만 시도) */
+  onDeleteConversation: (id: string) => void;
   onContextChange: (context?: ChatContext) => void;
   courseTarget: CourseTarget | null;
   registerCourseTarget: (target: CourseTarget | null) => void;
@@ -91,7 +94,7 @@ export function ChatSampleProvider({ children }: { children: React.ReactNode }) 
     conversations: [{ id: "guide-sample", title: "새 대화" }], activeConversationId: "guide-sample",
     openChat: noop, onExpand: noop, onMinimize: noop, onClosePopup: noop,
     onDraftChange: noop, onRefreshStatus: noop, onSend: noop, onRetry: noop, onCancel: noop, onReset: noop,
-    onSuggestion: noop, onSelectConversation: noop, onContextChange: noop,
+    onSuggestion: noop, onSelectConversation: noop, onDeleteConversation: noop, onContextChange: noop,
     // 샘플 화면은 실제 챗봇 코스를 받지 않는다
     courseTarget: null, registerCourseTarget: noop, openCourseInWriter: noop, takePendingCourse: () => null,
     appliedCourses: new Map(), applyChatCourse: noop, undoChatCourse: noop,
@@ -340,6 +343,36 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([]); setProgress([]); setDraft(""); setFailed(""); setError(""); setNotice("대화 기록을 불러오고 있어요."); setUncertain(false); setStreaming("");
     void restoreConversation(id, sessionId, controller, identityRef.current);
   }, [activeConversationId, archiveCurrentConversation, invalidateHistory, restoreConversation, showConversation, uncertain]);
+
+  const deleteConversation = useCallback((id: string) => {
+    // 답변을 받는 중인 대화는 지우지 않는다
+    if (requestRef.current && id === activeConversationId) return;
+    const sessionId = backendSessions.current.get(id);
+    const remaining = conversations.filter(conversation => conversation.id !== id);
+    if (remaining.length === conversations.length) return;
+    if (id === activeConversationId) {
+      const next = remaining[0];
+      if (next) {
+        selectConversation(next.id);
+      } else {
+        invalidateHistory();
+        const fresh = createClientId();
+        activeConversationRef.current = fresh;
+        setActiveConversationId(fresh);
+        remaining.push({ id: fresh, title: "새 대화" });
+        historyRef.current = [];
+        failedContextRef.current = undefined;
+        progressRef.current = [];
+        setMessages([]); setProgress([]); setDraft(""); setFailed(""); setError(""); setUncertain(false); setStreaming(""); setContext(undefined);
+      }
+      setNotice("대화 내역을 지웠어요.");
+    }
+    archivedConversations.current.delete(id);
+    backendSessions.current.delete(id);
+    setConversations(remaining);
+    // 서버 기록 삭제가 실패해도 화면에서는 지운 상태를 유지한다
+    if (sessionId) void deleteChatSession(sessionId).catch(() => undefined);
+  }, [activeConversationId, conversations, invalidateHistory, selectConversation]);
 
   useEffect(() => {
     if (identityRef.current === identity) return;
@@ -613,6 +646,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       onCancel: cancelRequest, onReset: resetChat,
       onSuggestion: (text, intent) => { changeDraft(text); setContext(current => ({ ...current, intent })); },
       onSelectConversation: selectConversation,
+      onDeleteConversation: deleteConversation,
       onContextChange: setContext,
       courseTarget, registerCourseTarget, openCourseInWriter, takePendingCourse,
       appliedCourses, applyChatCourse, undoChatCourse,

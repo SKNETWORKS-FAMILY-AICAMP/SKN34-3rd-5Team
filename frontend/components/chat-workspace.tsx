@@ -90,9 +90,15 @@ export function ChatWorkspace() {
         <div className="workspace-history">
           <h2>최근 대화</h2>
           {chat.conversations.length ? <nav aria-label="최근 대화">{chat.conversations.map(conversation => (
-            <button type="button" key={conversation.id} className={`workspace-history-item${conversation.id === chat.activeConversationId ? " is-current" : ""}`} aria-current={conversation.id === chat.activeConversationId ? "true" : undefined} disabled={busy || chat.uncertain} title={conversation.title} onClick={() => { chat.onSelectConversation(conversation.id); closeDrawer(); }}>
-              <span>{conversation.title}</span>
-            </button>
+            <div key={conversation.id} className={`workspace-history-row${conversation.id === chat.activeConversationId ? " is-current" : ""}`}>
+              <button type="button" className={`workspace-history-item${conversation.id === chat.activeConversationId ? " is-current" : ""}`} aria-current={conversation.id === chat.activeConversationId ? "true" : undefined} disabled={busy || chat.uncertain} title={conversation.title} onClick={() => { chat.onSelectConversation(conversation.id); closeDrawer(); }}>
+                <span>{conversation.title}</span>
+              </button>
+              {/* 마우스를 올리면 오른쪽에 나타나는 삭제 버튼 */}
+              <button type="button" className="workspace-history-delete" aria-label={`${conversation.title} 대화 내역 지우기`} title="대화 내역 지우기" disabled={busy && conversation.id === chat.activeConversationId} onClick={() => { if (window.confirm("해당 대화 내역을 지우시겠습니까?")) chat.onDeleteConversation(conversation.id); }}>
+                <Icon name="close" size={14} />
+              </button>
+            </div>
           ))}</nav> : <p className="workspace-history-empty">함께 나눈 이야기가<br />여기에 모여요.</p>}
         </div>
         <nav className="workspace-quick-links" aria-label="직관 준비">

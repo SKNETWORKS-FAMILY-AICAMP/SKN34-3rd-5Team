@@ -32,6 +32,14 @@
 .workspace-history-item:hover { background: #eaf0f9; }
 .workspace-history-item.is-current { background: #e7effc; color: #245daE; font-weight: 550; }
 .workspace-history-item:disabled { cursor: not-allowed; opacity: .6; }
+/* 대화 내역 한 줄: 마우스를 올리면 오른쪽에 삭제(X) 버튼 */
+.workspace-history-row { position: relative; min-width: 0; border-radius: 9px; }
+.workspace-history-row .workspace-history-item { padding-right: 38px; }
+.workspace-history-delete { position: absolute; top: 50%; right: 7px; display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: #8a97ab; opacity: 0; transform: translateY(-50%); transition: opacity .15s, background .15s, color .15s; }
+.workspace-history-row:hover .workspace-history-delete, .workspace-history-delete:focus-visible { opacity: 1; }
+.workspace-history-delete:hover { background: #fde8eb; color: #d23b4b; }
+.workspace-history-delete:disabled { opacity: 0 !important; pointer-events: none; }
+@media (hover: none) { .workspace-history-delete { opacity: 1; } }
 .workspace-history-empty { padding: 8px 13px; font-size: 12px; line-height: 1.9; color: #a0acbd; }
 .workspace-quick-links { display: grid; gap: 2px; margin-top: 18px; padding-top: 18px; border-top: 1px solid #e3eaf5; }
 .workspace-quick-links > span { padding: 0 13px 10px; color: #98a4b5; font-size: 10px; }
