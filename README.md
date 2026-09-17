@@ -64,7 +64,7 @@ SKN34 3차 프로젝트 · 5팀 [TODO: 팀명]
     <td align="center"><img src="./docs/images/team/member-hyeongjun.png" width="120" height="120"/><br/><b>임형준</b><br/>데이터 · RAG · LLM</td>
     <td align="center"><img src="https://img-cdn.theqoo.net/cujCms.jpg" width="120"/><br/><b>이현준</b><br/>인프라 · RAG · LLM</td>
     <td align="center"><img src="./docs/images/team/member-inyoung.png" width="120" height="120"/><br/><b>최인영</b><br/>프론트엔드</td>
-    <td align="center"><img src="https://github.com/masquerade0425-hash.png?size=240" width="120"/> --><br/><b>김진화</b><br/>DB</td>
+    <td align="center"><img src="https://github.com/masquerade0425-hash.png?size=240" width="120"/><br/><b>김진화</b><br/>DB</td>
   </tr>
   <tr>
     <td align="center"><a href="https://github.com/Seongho-haru"><img src="https://img.shields.io/badge/GitHub-Seongho--haru-181717?logo=github"/></a></td>
