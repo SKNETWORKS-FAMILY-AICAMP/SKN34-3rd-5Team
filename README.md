@@ -62,16 +62,16 @@ SKN34 3차 프로젝트 · 5팀 [TODO: 팀명]
   <tr>
     <td align="center"><img src="https://github.com/Seongho-haru.png?size=240" width="120"/><br/><b>윤성호</b><br/>백엔드</td>
     <td align="center"><img src="https://github.com/HyeongJjun.png?size=240" width="120"/><br/><b>임형준</b><br/>데이터 · RAG · LLM</td>
-    <td align="center"><img src="https://github.com/gksrkd2.png?size=240" width="120"/><br/><b>이현준</b><br/>인프라 · RAG · LLM</td>
+    <td align="center"><img src="https://img-cdn.theqoo.net/cujCms.jpg" width="120"/><br/><b>이현준</b><br/>인프라 · RAG · LLM</td>
     <td align="center"><img src="https://github.com/inyoung9629.png?size=240" width="120"/><br/><b>최인영</b><br/>프론트엔드</td>
-    <td align="center"><!-- 사진: <img src="./docs/images/team/member5.png" width="120"/> --><br/><b>[TODO] 이름</b><br/>[TODO] 역할</td>
+    <td align="center"><img src="https://github.com/masquerade0425-hash.png?size=240" width="120"/> --><br/><b>김진화</b><br/>DB</td>
   </tr>
   <tr>
     <td align="center"><a href="https://github.com/Seongho-haru"><img src="https://img.shields.io/badge/GitHub-Seongho--haru-181717?logo=github"/></a></td>
     <td align="center"><a href="https://github.com/HyeongJjun"><img src="https://img.shields.io/badge/GitHub-HyeongJjun-181717?logo=github"/></a></td>
     <td align="center"><a href="https://github.com/gksrkd2"><img src="https://img.shields.io/badge/GitHub-gksrkd2-181717?logo=github"/></a></td>
     <td align="center"><a href="https://github.com/inyoung9629"><img src="https://img.shields.io/badge/GitHub-inyoung9629-181717?logo=github"/></a></td>
-    <td align="center"><a href="https://github.com/[TODO]"><img src="https://img.shields.io/badge/GitHub-[TODO]-181717?logo=github"/></a></td>
+    <td align="center"><a href="https://github.com/masquerade0425-hash"><img src="https://img.shields.io/badge/GitHub-masquerade0425_hash-black"/></a></td>
   </tr>
 </table>
 
@@ -83,7 +83,8 @@ SKN34 3차 프로젝트 · 5팀 [TODO: 팀명]
 | 임형준 | 팀장 · 데이터 · RAG · LLM | 데이터 수집·전처리, 청킹·임베딩(pgvector), RAG·에이전트 파이프라인, RAG 성능 평가 , 검색(pgvector), 프롬프트, README · 산출물 문서, PR 리뷰·머지 |
 | 이현준 | 인프라 · RAG · LLM  | Docker Compose, GitHub Actions CI/CD, EC2 배포, 구장정보 에이전트, 검색(pgvector), 프롬프트 |
 | 최인영 | 프론트엔드 | 데이터 수집 , Next.js 화면, 직관 코스 기능 구현· 커뮤니티 · 회원 UI |
-| [TODO: masquerade0425] | [TODO] DB | baseball 도메인 ERD · DB 스키마 |
+| 김진화 | DB | baseball 도메인 ERD · DB 스키마, 사용자 테스트(임시) |
+
 
 ---
 
@@ -899,11 +900,11 @@ python manage.py test baseball.tests.test_query_service
 
 | 이름 | 회고 |
 | --- | --- |
-| [TODO] | |
+| 윤성호 | 이번 협업을 통해 처음으로 Django를 활용하며 Python 기반 웹 백엔드 구조를 익혔고, JWT 인증과 챗봇 API·SSE 스트리밍 연동을 구현하면서 실제 서비스의 요청 흐름을 경험할 수 있었습니다. <br/> GitHub Actions를 통한 자동 빌드·배포 과정을 접하며 협업부터 테스트·배포까지 전체 개발 흐름을 이해하는 데 많은 도움이 되었습니다. |
 | 임형준 | 이번 프로젝트에서 LLM 파이프라인, Docker, Git Flow를 처음 제대로 써 봤습니다. RAG와 에이전트 도구를 붙이고, 컨테이너로 묶고, Fork·PR로 협업하는 것까지 배울 게 많아서 힘든 점이 있었습니다.<br/>그래도 막힐 때마다 팀원들이 바로 도와주고, 각자 맡은 기능을 잘 구현해 준 덕분에 정해진 기한 안에 마무리할 수 있었습니다.<br/>4차에서는 응답 속도와 데이터 갱신 같은 고도화, 그리고 마무리까지 더 잘 해내겠습니다. |
-| 이현준 | |
+| 이현준 | 처음 도커와 Ci/CD 환경을 구축 했습니다. 구축 자체는 쉬운데 각 설정하는 부분이 좀 어려웠습니다. 그래서 실무 기준으로 설정을 찾고 다시 우리 환경에 맞게 변경하여 설정을 했습니다. RAG 부분도 실습 때 와는 다르게 신경 쓸게 많다보니 좀 효율적으로 개발을 하지 못했습니다. 4차 때는 효율부분을 신경써서 다시 최대한 안 복잡하게 리펙토링을 할 생각입니다. |
 | 최인영 | 프론트 기능 구현이나 커뮤니티 사이트는 솔직히 만들기 수월할 줄 알았는데, 생각보다 꼬이는 것도 많고 항상 문제가 생기는 영역이라는 것을 깨달았습니다.<br/>4차 고도화 때는 최대한 많은 오류와 변수를 제거하고, 보다 나은 직관성과 유입을 위한 콘텐츠를 제공할 예정입니다. |
-| [TODO] | |
+| 김진화 | 데이터베이스/ERD 작성 파트를 처음 맡아 봐서 우여곡절이 많았는데, 팀원들이 원하는 요구사항을 정확히 이야기해 줘서 훨씬 수월하게 진행했던 것 같습니다. 협업 시스템도, 여기 들어가기 전에는 거의 혼자 하거나, 아예 연동이 거의 안 되는 시스템을 별도로 하나씩 만든 다음 호환성을 담당하는 사람이 진행하는 구조여서 잘 못했던 걸, 친절한 사람들과 배워가면서 한 게 참 좋았던 것 같습니다. |
 
 ---
 
