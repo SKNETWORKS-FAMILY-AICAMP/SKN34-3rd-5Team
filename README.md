@@ -736,13 +736,12 @@ python manage.py test baseball.tests.test_query_service
 
 ## 17. 시연 화면
 
-<!-- GIF 추천: docs/images/demo/*.gif -->
-
 | 기능 | 시연 |
 | --- | --- |
-| [TODO] 챗봇 Q&A (주차 · 반입) | (시연 GIF 준비 중)<!-- <img src="./docs/images/demo/demo1.gif" width="400"/> --> |
-| [TODO] 코스 추천 → 지도 자동 표시 | (시연 GIF 준비 중)<!-- <img src="./docs/images/demo/demo2.gif" width="400"/> --> |
-| [TODO] 커뮤니티 · 코스 공유 | (시연 GIF 준비 중)<!-- <img src="./docs/images/demo/demo3.gif" width="400"/> --> |
+| 챗봇 Q&A (주차 · 반입) | <img src="./docs/images/demo/demo1.gif" width="600" alt="챗봇 Q&A 시연"/> |
+| 코스 추천 → 지도 자동 표시 | <img src="./docs/images/demo/demo2.gif" width="600" alt="코스 추천 시연"/> |
+| 커뮤니티 · 코스 공유 | <img src="./docs/images/demo/demo3.gif" width="600" alt="커뮤니티 코스 공유 시연"/> |
+| 루트 만들기 가이드 | <img src="./docs/images/demo/demo4.gif" width="600" alt="루트 만들기 가이드 시연"/> |
 
 ---
 

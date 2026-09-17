@@ -633,7 +633,16 @@ async function runGuide(host: HTMLElement, scroller: HTMLElement, onClose: () =>
   window.addEventListener("mousedown", blockMiddle, lock);
   window.addEventListener("auxclick", blockMiddle, lock);
   window.addEventListener("keydown", blockKeys, true);
+  // 가이드가 샘플 화면을 스크롤하면(창 높이가 낮을 때) 밝힌 영역 위치를 다시 맞춘다
+  let refreshFrame = 0;
+  const followScroll = () => {
+    cancelAnimationFrame(refreshFrame);
+    refreshFrame = requestAnimationFrame(() => { if (tour.isActive()) tour.refresh(); });
+  };
+  scroller.addEventListener("scroll", followScroll, { passive: true });
   const unlockScroll = () => {
+    cancelAnimationFrame(refreshFrame);
+    scroller.removeEventListener("scroll", followScroll);
     scroller.classList.remove("is-guiding");
     window.removeEventListener("wheel", blockScroll, lock);
     window.removeEventListener("touchmove", blockScroll, lock);
