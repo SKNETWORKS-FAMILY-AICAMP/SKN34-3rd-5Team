@@ -1,0 +1,113 @@
+{
+  "code": "0000",
+  "data": {
+    "bands": [
+      {
+        "bandType": "SPORTS_SCHEDULE",
+        "items": [
+          {
+            "code": "20260909NCHT02026",
+            "dateTime": 202609091830,
+            "stadium": "광주",
+            "status": "PREV",
+            "away": {
+              "code": "NC",
+              "name": "NC",
+              "score": 0,
+              "pitcherName": "송명기"
+            },
+            "home": {
+              "code": "HT",
+              "name": "KIA",
+              "score": 0,
+              "pitcherName": "황동하"
+            }
+          },
+          {
+            "code": "20260909KTSS02026",
+            "dateTime": 202609091830,
+            "stadium": "대구",
+            "status": "PREV",
+            "away": {
+              "code": "KT",
+              "name": "KT",
+              "score": 0,
+              "pitcherName": "고영표"
+            },
+            "home": {
+              "code": "SS",
+              "name": "삼성",
+              "score": 0,
+              "pitcherName": "원태인"
+            }
+          },
+          {
+            "code": "20260909LGHH02026",
+            "dateTime": 202609091830,
+            "stadium": "대전",
+            "status": "PREV",
+            "away": {
+              "code": "LG",
+              "name": "LG",
+              "score": 0,
+              "pitcherName": "카라스코"
+            },
+            "home": {
+              "code": "HH",
+              "name": "한화",
+              "score": 0,
+              "pitcherName": "왕옌청"
+            }
+          },
+          {
+            "code": "20260909SKOB02026",
+            "dateTime": 202609091830,
+            "stadium": "잠실",
+            "status": "PREV",
+            "away": {
+              "code": "SK",
+              "name": "SSG",
+              "score": 0,
+              "pitcherName": "이로운"
+            },
+            "home": {
+              "code": "OB",
+              "name": "두산",
+              "score": 0,
+              "pitcherName": "곽빈"
+            }
+          }
+        ],
+        "focusDate": 20260909,
+        "calendar": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          29,
+          30
+        ]
+      }
+    ]
+  }
+}

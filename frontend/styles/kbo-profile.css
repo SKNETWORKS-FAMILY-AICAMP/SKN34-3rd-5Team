@@ -1,0 +1,360 @@
+.kbo-profile-page {
+  padding-top: 32px;
+  padding-bottom: 90px;
+  color: #354e70;
+}
+
+.kbo-profile-back {
+  margin-bottom: 24px;
+}
+
+.kbo-profile-back a {
+  color: #8092aa;
+  font-size: 12px;
+}
+
+.kbo-profile-back a:hover { color: var(--blue); }
+
+.kbo-team-hero {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 1fr) minmax(410px, auto);
+  align-items: center;
+  gap: 28px;
+  min-height: 270px;
+  padding: 44px 52px;
+  overflow: hidden;
+  border-radius: 24px;
+  background: linear-gradient(125deg, #153968, #2e74cc);
+  background-position: center;
+  background-size: cover;
+  box-shadow: 0 22px 60px rgb(31 81 148 / 16%);
+  color: #fff;
+}
+
+.kbo-team-hero > .kbo-detail-team-mark {
+  width: 120px;
+  height: 120px;
+  padding: 10px;
+  border-radius: 27px;
+  background: rgb(255 255 255 / 94%) !important;
+}
+
+.kbo-team-hero > div > p {
+  color: #bed8ff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .15em;
+}
+
+.kbo-team-hero h1 {
+  margin-top: 8px;
+  font-size: clamp(30px, 4vw, 50px);
+  font-weight: 800;
+  letter-spacing: -.04em;
+}
+
+.kbo-team-hero > div > strong {
+  display: block;
+  margin-top: 12px;
+  color: #dceaff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.kbo-team-hero dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(105px, 1fr));
+  border: 1px solid rgb(255 255 255 / 17%);
+  border-radius: 15px;
+  background: rgb(9 33 68 / 42%);
+  backdrop-filter: blur(8px);
+}
+
+.kbo-team-hero dl > div {
+  padding: 20px 22px;
+  border-right: 1px solid rgb(255 255 255 / 13%);
+  text-align: center;
+}
+
+.kbo-team-hero dl > div:last-child { border-right: 0; }
+.kbo-team-hero dt { color: #bad0ef; font-size: 10px; }
+.kbo-team-hero dd { margin-top: 7px; color: #fff; font-size: 21px; font-weight: 750; white-space: nowrap; }
+
+.kbo-profile-section {
+  padding: 62px 0 0;
+}
+
+.kbo-profile-section + .kbo-profile-section {
+  margin-top: 62px;
+  border-top: 1px solid #e7edf6;
+}
+
+.kbo-profile-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.kbo-profile-section-heading .eyebrow { color: #80a6db; font-size: 9px; font-weight: 700; letter-spacing: .13em; }
+.kbo-profile-section-heading h2 { margin-top: 7px; color: #2e4769; font-size: 25px; font-weight: 760; }
+.kbo-profile-section-heading > a,
+.kbo-profile-section-heading > span,
+.kbo-profile-section-heading > p { color: #8fa0b6; font-size: 11px; }
+.kbo-profile-section-heading > a:hover { color: var(--blue); }
+
+.kbo-team-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid #e2eaf5;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.kbo-team-stat-grid > div {
+  padding: 24px 10px;
+  border-right: 1px solid #edf2f8;
+  text-align: center;
+}
+
+.kbo-team-stat-grid > div:last-child { border-right: 0; }
+.kbo-team-stat-grid dt { color: #96a6bb; font-size: 10px; }
+.kbo-team-stat-grid dd { margin-top: 8px; color: #3e5d84; font-size: 20px; font-weight: 730; }
+
+.kbo-team-games {
+  overflow: hidden;
+  border: 1px solid #e2eaf5;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.kbo-team-games > li {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 85px;
+  align-items: center;
+  gap: 25px;
+  min-height: 110px;
+  padding: 20px 30px;
+  border-bottom: 1px solid #edf2f8;
+}
+
+.kbo-team-games > li:last-child { border-bottom: 0; }
+.kbo-team-games > li > div:first-child { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; }
+.kbo-team-games time { color: #657e9f; font-size: 12px; }
+.kbo-team-games > li > div:first-child strong { color: #334f75; font-size: 18px; }
+.kbo-team-games > li > div:first-child span { grid-column: 1 / -1; color: #9aa9bd; font-size: 10px; }
+.kbo-team-games > li > em { justify-self: end; padding: 5px 8px; border-radius: 6px; background: #f0f5fc; color: #6687b4; font-size: 10px; font-style: normal; }
+
+.kbo-team-game-match {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 70px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  max-width: 570px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.kbo-team-game-match > span { display: flex; align-items: center; gap: 11px; color: #456181; font-size: 14px; font-weight: 650; }
+.kbo-team-game-match > span:first-child { justify-content: flex-end; }
+.kbo-team-game-match .kbo-detail-team-mark { width: 42px; height: 42px; }
+.kbo-team-game-match b { color: #8a9bb2; text-align: center; font-size: 17px; }
+
+.kbo-profile-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 23px;
+  padding: 4px;
+  border: 1px solid #e1e9f5;
+  border-radius: 12px;
+  background: #f5f8fd;
+}
+
+.kbo-profile-tabs button {
+  min-width: 86px;
+  min-height: 38px;
+  padding: 7px 15px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #8799b2;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.kbo-profile-tabs button[aria-selected="true"] { background: #fff; box-shadow: 0 3px 10px rgb(34 73 130 / 10%); color: var(--blue); }
+
+.kbo-team-ranking-groups {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.kbo-team-ranking-groups article { padding: 20px; border: 1px solid #e4ebf6; border-radius: 13px; background: #fff; }
+.kbo-team-ranking-groups h3 { margin-bottom: 13px; color: #456181; font-size: 13px; }
+.kbo-team-ranking-groups li { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 9px; min-height: 51px; border-top: 1px solid #f0f3f8; }
+.kbo-team-ranking-groups li > span { color: #91a3ba; font-size: 11px; font-weight: 700; text-align: center; }
+.kbo-team-ranking-groups li > a { display: flex; align-items: center; gap: 7px; min-width: 0; color: #455f81; font-size: 12px; }
+.kbo-team-ranking-groups li > a:hover { color: var(--blue); }
+.kbo-team-ranking-groups li img { width: 34px; height: 34px; flex: 0 0 auto; object-fit: contain; object-position: bottom; }
+.kbo-team-ranking-groups li strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kbo-team-ranking-groups li em { color: #627fa7; font-size: 11px; font-style: normal; font-weight: 650; white-space: nowrap; }
+
+.kbo-roster-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.kbo-roster-grid > a { overflow: hidden; padding-bottom: 17px; border: 1px solid #e3ebf6; border-radius: 14px; background: #fff; color: #405b7e; text-align: center; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.kbo-roster-grid > a:hover { border-color: #cbdcf5; box-shadow: 0 11px 27px rgb(44 94 166 / 11%); transform: translateY(-3px); }
+.kbo-roster-photo { display: grid; place-items: end center; height: 150px; margin-bottom: 13px; overflow: hidden; background: linear-gradient(145deg, #f2f6fc, #e7eff9); }
+.kbo-roster-photo img { width: 100%; height: 100%; object-fit: contain; object-position: bottom; }
+.kbo-roster-photo > span { place-self: center; color: #9bb0ca; font-size: 35px; font-weight: 800; }
+.kbo-roster-grid small { display: block; color: #98a8bb; font-size: 9px; }
+.kbo-roster-grid strong { display: block; margin-top: 4px; font-size: 13px; }
+
+.kbo-other-teams > div:last-child { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 10px; }
+.kbo-other-teams > div:last-child a { display: grid; justify-items: center; gap: 8px; padding: 14px 8px; border: 1px solid #e6edf7; border-radius: 12px; color: #6b7f9c; font-size: 10px; }
+.kbo-other-teams > div:last-child a:hover { border-color: #c8d9f2; color: var(--blue); }
+.kbo-other-teams .kbo-detail-team-mark { width: 50px; height: 50px; }
+
+.kbo-athlete-hero {
+  display: grid;
+  grid-template-columns: minmax(250px, 35%) 1fr;
+  min-height: 390px;
+  overflow: hidden;
+  border: 1px solid #dfe8f4;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #eef4fc, #f8fbff 55%);
+}
+
+.kbo-athlete-photo { display: grid; place-items: end center; min-height: 390px; background: radial-gradient(circle at 50% 80%, #dbe8f8, transparent 65%); }
+.kbo-athlete-photo img { width: 100%; height: 100%; max-height: 380px; object-fit: contain; object-position: bottom; }
+.kbo-athlete-photo > span { place-self: center; color: #a0b4cd; font-size: 70px; font-weight: 800; }
+.kbo-athlete-summary { align-self: center; padding: 48px 55px; }
+.kbo-athlete-summary > a { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; color: #6680a3; font-size: 12px; font-weight: 650; }
+.kbo-athlete-summary > a:hover { color: var(--blue); }
+.kbo-athlete-summary > a .kbo-detail-team-mark { width: 30px; height: 30px; }
+.kbo-athlete-summary > p { color: #7790b2; font-size: 12px; }
+.kbo-athlete-summary h1 { margin: 6px 0 29px; color: #294566; font-size: clamp(38px, 5vw, 58px); font-weight: 800; letter-spacing: -.05em; }
+.kbo-athlete-summary dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 30px; max-width: 600px; }
+.kbo-athlete-summary dl > div { display: grid; grid-template-columns: 65px 1fr; gap: 10px; }
+.kbo-athlete-summary dl > div.is-wide { grid-column: 1 / -1; }
+.kbo-athlete-summary dt { color: #9aa9bb; font-size: 10px; }
+.kbo-athlete-summary dd { color: #546e91; font-size: 11px; }
+
+.kbo-athlete-record-cards {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.kbo-athlete-record-cards button { display: grid; align-content: start; min-height: 125px; padding: 18px 14px; border: 1px solid #e1e9f4; border-radius: 13px; background: #fff; color: #6d82a1; text-align: left; }
+.kbo-athlete-record-cards button:hover { border-color: #bcd1ef; }
+.kbo-athlete-record-cards button[aria-selected="true"] { border-color: var(--blue); background: #f3f7ff; box-shadow: 0 10px 24px rgb(46 107 205 / 10%); }
+.kbo-athlete-record-cards button > span { font-size: 10px; }
+.kbo-athlete-record-cards button > strong { margin-top: 10px; color: #355779; font-size: 20px; }
+.kbo-athlete-record-cards button > small { align-self: end; margin-top: 13px; color: #9eacbd; font-size: 9px; }
+.kbo-athlete-record-cards button > small.is-first { color: var(--blue); font-weight: 700; }
+
+.kbo-athlete-graphs { margin-top: 16px; padding: 25px; border: 1px solid #e1e9f5; border-radius: 15px; background: #fbfdff; }
+.kbo-athlete-graphs > div:first-child { display: flex; align-items: baseline; gap: 10px; margin-bottom: 22px; }
+.kbo-athlete-graphs h3 { color: #3c587a; font-size: 14px; }
+.kbo-athlete-graphs > div:first-child strong { color: var(--blue); font-size: 22px; }
+.kbo-athlete-graphs > div:first-child span { color: #86a0c1; font-size: 10px; }
+.kbo-athlete-graphs article + article { margin-top: 26px; }
+.kbo-athlete-graphs h4 { margin-bottom: 12px; color: #788eac; font-size: 10px; font-weight: 650; }
+.kbo-stat-graph { display: flex; align-items: flex-end; gap: 5px; height: 170px; padding: 25px 4px 0; border-bottom: 1px solid #dce6f3; }
+.kbo-stat-graph > div { position: relative; display: flex; justify-content: flex-end; align-items: center; flex-direction: column; gap: 6px; height: 100%; flex: 1 1 0; min-width: 23px; }
+.kbo-stat-graph > div > span { position: absolute; top: -21px; opacity: 0; max-width: 120px; padding: 4px 6px; border-radius: 5px; background: #375b88; color: #fff; font-size: 8px; white-space: nowrap; pointer-events: none; transition: opacity .15s; }
+.kbo-stat-graph > div:hover > span { opacity: 1; }
+.kbo-stat-graph i { width: min(24px, 58%); min-height: 4px; border-radius: 4px 4px 0 0; background: linear-gradient(#4f88dc, #a8c5ec); }
+.kbo-stat-graph.is-line i,
+.kbo-stat-graph.is-line_filled i { width: 8px; border-radius: 8px 8px 0 0; background: #4c83d0; }
+.kbo-stat-graph.is-dot i { width: 13px; height: 13px !important; margin-bottom: 28px; border-radius: 50%; background: #4c83d0; }
+.kbo-stat-graph small { color: #9aa9bd; font-size: 8px; white-space: nowrap; }
+.kbo-graph-empty { padding: 40px; color: #9aa9bd; font-size: 11px; text-align: center; }
+
+.kbo-profile-inline-empty {
+  display: grid;
+  place-items: center;
+  min-height: 130px;
+  border: 1px dashed #dce6f3;
+  border-radius: 13px;
+  background: #f9fbfe;
+  color: #94a5bb;
+  font-size: 11px;
+}
+
+.kbo-career-scroll { width: 100%; overflow-x: auto; border: 1px solid #e1e9f5; border-radius: 14px; scrollbar-width: thin; scrollbar-color: #d1dff2 #f7faff; }
+.kbo-career-scroll table { width: 100%; min-width: max-content; border-collapse: separate; border-spacing: 0; color: #687e9d; font-size: 11px; text-align: center; white-space: nowrap; }
+.kbo-career-scroll th,
+.kbo-career-scroll td { min-width: 74px; height: 49px; padding: 10px 14px; border-right: 1px solid #edf2f8; border-bottom: 1px solid #edf2f8; background: #fff; }
+.kbo-career-scroll th { position: sticky; top: 0; background: #f4f8fd; color: #738bab; font-size: 10px; font-weight: 650; }
+.kbo-career-scroll tr > :first-child { position: sticky; left: 0; z-index: 1; min-width: 80px; background: #f9fbfe; color: #496789; font-weight: 700; }
+.kbo-career-scroll tbody tr:first-child td { background: #f3f7fd; color: #3e638d; font-weight: 650; }
+.kbo-career-scroll tr:last-child td { border-bottom: 0; }
+
+@media (max-width: 1100px) {
+  .kbo-team-hero { grid-template-columns: auto 1fr; }
+  .kbo-team-hero dl { grid-column: 1 / -1; }
+  .kbo-team-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .kbo-team-stat-grid > div:nth-child(4) { border-right: 0; }
+  .kbo-team-stat-grid > div:nth-child(-n+4) { border-bottom: 1px solid #edf2f8; }
+  .kbo-team-ranking-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kbo-roster-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .kbo-athlete-record-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .kbo-profile-page { padding-top: 21px; padding-bottom: 58px; }
+  .kbo-profile-back { margin-bottom: 18px; }
+  .kbo-team-hero { grid-template-columns: 70px minmax(0, 1fr); gap: 17px; min-height: 0; padding: 28px 22px; border-radius: 18px; }
+  .kbo-team-hero > .kbo-detail-team-mark { width: 70px; height: 70px; padding: 7px; border-radius: 19px; }
+  .kbo-team-hero h1 { font-size: 30px; }
+  .kbo-team-hero > div > strong { margin-top: 7px; font-size: 11px; }
+  .kbo-team-hero dl { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .kbo-team-hero dl > div { padding: 14px 6px; }
+  .kbo-team-hero dt { font-size: 8px; }
+  .kbo-team-hero dd { font-size: 14px; }
+  .kbo-profile-section { padding-top: 38px; }
+  .kbo-profile-section + .kbo-profile-section { margin-top: 38px; }
+  .kbo-profile-section-heading { margin-bottom: 18px; }
+  .kbo-profile-section-heading h2 { font-size: 20px; }
+  .kbo-profile-section-heading > p { max-width: 150px; text-align: right; }
+  .kbo-team-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kbo-team-stat-grid > div { padding: 17px 8px; border-bottom: 1px solid #edf2f8; }
+  .kbo-team-stat-grid > div:nth-child(even) { border-right: 0; }
+  .kbo-team-stat-grid > div:nth-last-child(-n+2) { border-bottom: 0; }
+  .kbo-team-stat-grid dd { font-size: 17px; }
+  .kbo-team-games > li { grid-template-columns: 1fr auto; gap: 16px 8px; padding: 18px; }
+  .kbo-team-games > li > div:first-child { grid-column: 1; grid-row: 1; }
+  .kbo-team-games > li > em { grid-column: 2; grid-row: 1; }
+  .kbo-team-game-match { grid-column: 1 / -1; grid-row: 2; grid-template-columns: minmax(0, 1fr) 42px minmax(0, 1fr); gap: 7px; }
+  .kbo-team-game-match > span { gap: 6px; font-size: 11px; }
+  .kbo-team-game-match .kbo-detail-team-mark { width: 34px; height: 34px; }
+  .kbo-team-game-match b { font-size: 12px; }
+  .kbo-profile-tabs { display: grid; grid-auto-flow: column; width: 100%; overflow-x: auto; }
+  .kbo-profile-tabs button { min-width: 0; padding-inline: 8px; font-size: 10px; }
+  .kbo-team-ranking-groups { grid-template-columns: minmax(0, 1fr); }
+  .kbo-roster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .kbo-roster-photo { height: 135px; }
+  .kbo-other-teams > div:last-child { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .kbo-athlete-hero { grid-template-columns: 120px 1fr; min-height: 270px; border-radius: 18px; }
+  .kbo-athlete-photo { min-height: 270px; }
+  .kbo-athlete-summary { padding: 25px 17px; }
+  .kbo-athlete-summary > a { margin-bottom: 10px; }
+  .kbo-athlete-summary h1 { margin: 4px 0 17px; font-size: 34px; }
+  .kbo-athlete-summary dl { grid-template-columns: minmax(0, 1fr); gap: 9px; }
+  .kbo-athlete-summary dl > div { grid-template-columns: 48px 1fr; }
+  .kbo-athlete-summary dl > div.is-wide { grid-column: auto; }
+  .kbo-athlete-record-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kbo-athlete-record-cards button { min-height: 105px; padding: 14px; }
+  .kbo-athlete-graphs { padding: 18px 12px; }
+  .kbo-stat-graph { height: 145px; overflow-x: auto; }
+  .kbo-stat-graph > div { min-width: 37px; }
+  .kbo-record-scroll-note { display: block; }
+}

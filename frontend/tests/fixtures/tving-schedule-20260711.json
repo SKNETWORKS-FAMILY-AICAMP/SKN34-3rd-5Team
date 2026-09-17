@@ -1,0 +1,56 @@
+{
+  "code": "0000",
+  "data": {
+    "bands": [
+      {
+        "bandType": "SPORTS_SCHEDULE",
+        "items": [
+          {
+            "code": "99990711WEEA02026",
+            "dateTime": 202607111800,
+            "stadium": "잠실",
+            "status": "END",
+            "away": {
+              "code": "WE",
+              "name": "나눔",
+              "score": 10,
+              "pitcherName": "안우진"
+            },
+            "home": {
+              "code": "EA",
+              "name": "드림",
+              "score": 2,
+              "pitcherName": "현도훈"
+            }
+          }
+        ],
+        "focusDate": 20260711,
+        "calendar": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          8,
+          9,
+          11,
+          16,
+          17,
+          18,
+          19,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          28,
+          29,
+          30,
+          31
+        ]
+      }
+    ]
+  }
+}

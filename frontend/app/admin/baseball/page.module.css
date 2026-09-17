@@ -1,0 +1,20 @@
+.page { padding-block: 40px 80px; min-height: 65vh; }
+.nav, .tabs, .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.page button, .page input, .page select, .page textarea { font: inherit; }
+.page button { padding: 9px 13px; border: 1px solid #cbdcf5; border-radius: 6px; color: #245aca; background: #f4f8ff; cursor: pointer; }
+.active { background: #245aca !important; color: white !important; }
+.search { display: flex; gap: 8px; margin: 20px 0; }
+.search input { width: min(360px, 70vw); padding: 10px; border: 1px solid #dce5f1; border-radius: 6px; }
+.table { overflow-x: auto; }
+.table table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 13px; }
+.table th, .table td { padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: left; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.form { margin-top: 24px; padding: 20px; border: 1px solid #dce5f1; border-radius: 10px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.fields label { display: grid; gap: 6px; font-size: 13px; color: #52647b; }
+.fields label > span { display: flex; gap: 6px; }
+.fields label > span input { flex: 1; }
+.fields :is(input, select, textarea) { min-width: 0; padding: 9px; border: 1px solid #cbd5e1; border-radius: 5px; }
+.feedback { padding: 14px; background: #f8fafc; border-radius: 8px; line-height: 1.6; }
+.relationPages { align-items: center; justify-content: space-between; }
+.relationPages button { padding: 5px 8px; }
+.fieldError { color: #b42318; }

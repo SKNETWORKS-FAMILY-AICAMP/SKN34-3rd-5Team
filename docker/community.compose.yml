@@ -1,0 +1,95 @@
+services:
+  db:
+    image: pgvector/pgvector:pg18
+    environment:
+      POSTGRES_DB: ${DB_NAME:-community}
+      POSTGRES_USER: ${DB_USER:-community}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-community-local-only}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-community} -d ${DB_NAME:-community}"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  backend:
+    image: skn34-community-backend-test:${COMMUNITY_IMAGE_TAG:-develop-b42603c}
+    build: ../backend
+    environment:
+      AUTH_FRONTEND_ORIGIN: http://127.0.0.1:${COMMUNITY_PORT:-18110}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-community}
+      DB_USER: ${DB_USER:-community}
+      DB_PASSWORD: ${DB_PASSWORD:-community-local-only}
+      DJANGO_ALLOWED_HOSTS: 127.0.0.1,localhost,backend,nginx
+      EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
+      OPENAI_API_KEY: ""
+      EMBEDDING_MODEL: text-embedding-3-small
+      PREDICTION_SOURCE_URL: http://frontend:3000/kbo-api
+      COMMUNITY_COMPOSE_PROJECT: ${COMPOSE_PROJECT_NAME}
+    volumes:
+      - ../backend:/app
+      - ../data:/data:ro
+      - ../docs:/docs:ro
+      - ../docker:/community-tools:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >-
+      sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8000), 2).close()"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  frontend:
+    image: skn34-community-frontend-test:${COMMUNITY_IMAGE_TAG:-develop-b42603c}
+    build: ../frontend
+    environment:
+      APP_ORIGIN: http://127.0.0.1:${COMMUNITY_PORT:-18110}
+      AUTH_FRONTEND_ORIGIN: http://127.0.0.1:${COMMUNITY_PORT:-18110}
+      CHAT_BACKEND_URL: http://backend:8000/chat/
+      KBO_COLLECTOR_ENABLED: "true"
+      NEXT_PUBLIC_API_URL: ""
+      NEXT_TELEMETRY_DISABLED: "1"
+    volumes:
+      - ../frontend:/app
+      - ../nginx:/nginx:ro
+      - node_modules:/app/node_modules
+      - next_build:/app/.next
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: npm run dev -- -H 0.0.0.0
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>{if(!r.ok)throw Error(r.status)})"]
+      interval: 3s
+      timeout: 10s
+      retries: 40
+      start_period: 20s
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - 127.0.0.1:${COMMUNITY_PORT:-18110}:80
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  postgres_data:
+  node_modules:
+  next_build:

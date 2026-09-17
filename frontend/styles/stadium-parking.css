@@ -1,0 +1,77 @@
+.stadium-parking-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2868d9;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+  text-decoration: underline;
+  text-decoration-color: #bbd0f3;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.stadium-parking-trigger:hover { color: #174b9f; }
+.stadium-parking-trigger:focus-visible { outline: 2px solid #2b6ddd; outline-offset: 4px; border-radius: 3px; }
+
+.stadium-parking-dialog {
+  width: min(980px, calc(100vw - 48px));
+  max-width: none;
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #fff;
+  color: #263951;
+  box-shadow: 0 28px 100px #08172d73;
+}
+.stadium-parking-dialog::backdrop { background: #071426bf; backdrop-filter: blur(3px); }
+.stadium-parking-dialog-panel { display: flex; max-height: calc(100dvh - 48px); flex-direction: column; }
+.stadium-parking-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 22px 17px; border-bottom: 1px solid #e4ebf5; }
+.stadium-parking-dialog-header span { display: block; margin-bottom: 4px; color: #3975d6; font-size: 10px; font-weight: 750; letter-spacing: 1.4px; }
+.stadium-parking-dialog-header h2 { margin: 0; font-size: 21px; letter-spacing: -.7px; }
+.stadium-parking-dialog-close { display: grid; place-items: center; flex: 0 0 42px; width: 42px; height: 42px; padding: 0; border: 0; border-radius: 50%; background: #f2f6fc; color: #60728b; font: inherit; font-size: 27px; line-height: 1; cursor: pointer; }
+.stadium-parking-dialog-close:hover { background: #e8f0fc; color: #245ebc; }
+.stadium-parking-dialog-image { min-height: 0; overflow: auto; background: #eef3f9; }
+.stadium-parking-dialog-image img { display: block; width: 100%; height: auto; }
+.stadium-parking-dialog-footer { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 17px 22px 19px; border-top: 1px solid #e4ebf5; }
+.stadium-parking-dialog-footer strong { display: block; margin-bottom: 5px; font-size: 14px; }
+.stadium-parking-dialog-footer p { margin: 0; color: #75849a; font-size: 11px; line-height: 1.7; }
+.stadium-parking-dialog-footer a { flex-shrink: 0; color: #6e7f96; font-size: 10px; text-decoration: underline; text-underline-offset: 3px; }
+
+.planner-card-actions .planner-parking-map-trigger {
+  min-height: 0;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #2868d9;
+  font-size: 11px;
+  text-decoration: underline;
+  text-decoration-color: #bbd0f3;
+  text-underline-offset: 4px;
+}
+.planner-card-actions .planner-parking-map-trigger:hover { background: transparent; color: #174b9f; }
+.planner-card-course-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.planner-card-course-actions > button:last-child { background: #2969df; color: white; border: 0; border-radius: 8px; min-height: 39px; padding: 8px 14px; font-size: 12px; font-weight: 650; cursor: pointer; }
+.planner-card-course-actions > button:last-child:disabled { background: #edf3fc; color: #617ea9; cursor: default; }
+.stadium-detail-parking-trigger { font-size: 13px; }
+
+@media (max-width: 760px) {
+  .stadium-parking-dialog { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); border-radius: 15px; }
+  .stadium-parking-dialog-panel { max-height: calc(100dvh - 24px); }
+  .stadium-parking-dialog-header { padding: 15px 16px 13px; }
+  .stadium-parking-dialog-header h2 { font-size: 18px; }
+  .stadium-parking-dialog-close { width: 40px; height: 40px; flex-basis: 40px; }
+  .stadium-parking-dialog-image img { width: auto; max-width: none; height: min(66dvh, 640px); }
+  .stadium-parking-dialog-footer { display: block; padding: 14px 16px 16px; }
+  .stadium-parking-dialog-footer a { display: inline-block; margin-top: 9px; }
+}

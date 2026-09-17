@@ -1,0 +1,238 @@
+.auth-page { position: relative; isolation: isolate; overflow: hidden; min-height: 780px; padding: 72px 24px 88px; background: linear-gradient(155deg, #f6faff, #fff 55%, #f5f9ff); }
+.auth-decoration { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.auth-decoration span { position: absolute; width: 510px; height: 510px; border-radius: 50%; border: 1px solid #e5effd; left: -270px; top: 40px; }
+.auth-decoration span:nth-child(2) { width: 650px; height: 650px; left: -340px; top: -30px; }
+.auth-decoration span:nth-child(3) { left: auto; right: -200px; top: 300px; width: 410px; height: 410px; background: #edf5ff75; border: 0; }
+.auth-panel { max-width: 480px; margin: auto; padding: 44px 42px 34px; background: #fff; border: 1px solid #e9eef5; border-radius: 24px; box-shadow: 0 18px 65px #183d7510; text-align: center; }
+.auth-wordmark { display: inline-flex; align-items: baseline; gap: 7px; margin-bottom: 36px; color: #102f92; font-size: 28px; font-style: italic; font-weight: 900; letter-spacing: -1.4px; }
+.auth-wordmark span { font-style: normal; font-size: 11px; letter-spacing: 2px; }
+.auth-panel .eyebrow { font-size: 10px; letter-spacing: 2px; margin: 0 0 12px; }
+.auth-panel h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -1.3px; line-height: 1.35; }
+.auth-description { font-size: 14px; line-height: 1.8; color: #7a8596; margin: 12px 0 30px; }
+.auth-form { text-align: left; display: flex; flex-direction: column; gap: 18px; }
+.auth-field { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.auth-field label { font-size: 13px; font-weight: 650; color: #29384e; }
+.auth-field label > span { font-size: 10px; color: #8493a7; font-weight: 400; margin-left: 4px; }
+.auth-field input:not([type=checkbox]) { width: 100%; height: 49px; border: 1px solid #e1e7ef; border-radius: 9px; background: #fcfdff; padding: 0 14px; font-size: 13px; outline: none; color: #18263b; transition: border-color .2s, box-shadow .2s; }
+.auth-field input::placeholder { color: #a0a9b6; }
+.auth-field input:focus { border-color: #2875f5; box-shadow: 0 0 0 3px #edf4ff; background: #fff; }
+.auth-field input[aria-invalid=true] { border-color: #d95252; }
+.auth-field select { width: 100%; height: 49px; border: 1px solid #e1e7ef; border-radius: 9px; background-color: #fcfdff; padding: 0 14px; font: inherit; font-size: 13px; outline: none; color: #18263b; transition: border-color .2s, box-shadow .2s; }
+.auth-field select:invalid { color: #a0a9b6; }
+.auth-field select option { color: #18263b; }
+.auth-field select:focus { border-color: #2875f5; box-shadow: 0 0 0 3px #edf4ff; background-color: #fff; }
+.auth-field select[aria-invalid=true] { border-color: #d95252; }
+.auth-field select:disabled { opacity: .7; }
+.auth-password { position: relative; }
+.auth-password input { padding-right: 62px !important; }
+.auth-password button { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #718097; background: transparent; border: 0; font-size: 11px; padding: 7px 0; cursor: pointer; }
+.auth-service-note { font-size: 11px; line-height: 1.7; color: #7c899b; margin: -1px 0 -6px; }
+.auth-submit { width: 100%; justify-content: center; min-height: 48px; border-radius: 9px !important; gap: 14px; }
+.auth-divider { display: flex; align-items: center; gap: 14px; color: #9aa3b0; font-size: 10px; margin: 25px 0 17px; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: #edf0f5; }
+.auth-kakao { display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; border: 0; border-radius: 9px; min-height: 46px; background: #fee500; color: #332e00; font-size: 13px; font-weight: 650; cursor: pointer; transition: background .2s; }
+.auth-kakao:hover { background: #f5dc00; }
+.auth-feedback { background: #eff6ff; border-radius: 9px; padding: 13px 15px; color: #275b9e; font-size: 12px; line-height: 1.8; text-align: left; margin: 18px 0 0; }
+.auth-switch { color: #7e8999; font-size: 12px; margin: 24px 0 0; }
+.auth-switch a { color: #2673ef; font-weight: 650; margin-left: 7px; }
+.auth-browse { display: inline-block; margin-top: 22px; font-size: 11px; color: #8894a4; }
+.auth-browse span { padding-left: 7px; }
+.auth-signup-page { padding-top: 54px; }
+.auth-signup-panel { max-width: 560px; }
+.auth-signup-panel h1 { font-size: 26px; }
+.auth-field-row { display: grid; grid-template-columns: 1fr 1.5fr; gap: 14px; }
+.auth-agreements { border: 1px solid #e7ebf1; border-radius: 10px; padding: 0 16px; margin: 4px 0 0; }
+.auth-check { display: flex; align-items: center; gap: 9px; font-size: 12px; color: #68788d; line-height: 1.6; cursor: pointer; }
+.auth-check input { width: 16px; height: 16px; accent-color: #276ef1; flex-shrink: 0; }
+.auth-check b { color: #4681da; font-weight: 500; }
+.auth-check-all { padding: 15px 0; border-bottom: 1px solid #edf0f4; font-size: 12px; color: #26364f; font-weight: 650; }
+.auth-agreement-item { padding: 12px 0; }
+.auth-agreement-item + .auth-agreement-item { padding-top: 0; }
+.auth-agreement-item details { margin: 4px 0 0 25px; }
+.auth-agreement-item summary { cursor: pointer; color: #8994a3; font-size: 10px; width: fit-content; }
+.auth-agreement-item details p { padding: 10px; font-size: 11px; color: #7b8797; background: #f7f9fc; line-height: 1.8; margin: 8px 0 0; }
+.auth-error { color: #c84646; font-size: 11px; margin: 0; }
+.info-page { padding-bottom: 76px; }
+.info-hero { background: linear-gradient(115deg, #f4f8ff, #f9fbff 65%, #f0f6ff); border-bottom: 1px solid #eff3f8; }
+.info-hero .page-intro { padding-top: 67px; padding-bottom: 65px; }
+.info-hero h1 { font-size: clamp(29px, 3.2vw, 43px); letter-spacing: -2px; font-weight: 800; line-height: 1.4; margin: 14px 0; }
+.info-hero .page-intro > p:last-child { font-size: 15px; color: #7c8798; line-height: 1.9; margin: 0; }
+.info-mobile-break { display: none; }
+.info-section { padding-top: 40px; }
+.info-filter-bar { display: flex; align-items: center; gap: 24px; justify-content: space-between; }
+.info-region-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.info-chip { padding: 10px 17px; border: 1px solid #e6ebf2; border-radius: 100px; background: white; color: #7a8697; font-size: 12px; cursor: pointer; transition: .18s; }
+.info-chip:hover { border-color: #7faaf7; color: #2169db; }
+.info-chip.is-active { background: #2370ef; color: white; border-color: #2370ef; }
+.info-search { display: flex; gap: 11px; align-items: center; border: 1px solid #e6ebf2; border-radius: 11px; padding: 12px 15px; width: 260px; color: #8290a5; flex-shrink: 0; }
+.info-search:focus-within { outline: 2px solid #c6dcff; }
+.info-search input { width: 100%; min-width: 0; font-size: 12px; border: 0; background: transparent; outline: none; color: #23334b; }
+.info-search input::placeholder { color: #9ca7b6; }
+.info-count { font-size: 12px; color: #8590a0; margin: 30px 0 18px; }
+.info-count strong { color: #2672f1; font-weight: 650; }
+.info-stadium-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 25px; }
+.info-stadium-card { border: 1px solid #e7ecf3; border-radius: 15px; overflow: hidden; background: white; transition: transform .2s, box-shadow .2s; }
+.info-stadium-card:hover { transform: translateY(-4px); box-shadow: 0 14px 28px #1f47720b; }
+.info-stadium-art { position: relative; height: 177px; overflow: hidden; background: #eaf0f7; }
+.info-stadium-photo-link { position: absolute; inset: 0; display: block; }
+.info-stadium-photo { object-fit: cover; transition: transform .45s ease, filter .45s ease; }
+.info-stadium-photo-shade { position: absolute; inset: 0; background: linear-gradient(180deg, #15243a14 0%, transparent 48%, #10243d29 100%); pointer-events: none; }
+.info-stadium-card:hover .info-stadium-photo,
+.info-stadium-card:focus-within .info-stadium-photo { transform: scale(1.035); filter: saturate(1.05) contrast(1.02); }
+.info-region-badge { position: absolute; left: 18px; top: 16px; z-index: 1; background: #ffffffe8; padding: 5px 10px; color: #304966; font-size: 10px; font-weight: 650; border: 1px solid #ffffffa8; border-radius: 6px; box-shadow: 0 4px 14px #1634501c; backdrop-filter: blur(5px); }
+.info-stadium-photo-credit { position: absolute; z-index: 2; right: 8px; bottom: 7px; max-width: calc(100% - 16px); overflow: hidden; padding: 3px 6px; border-radius: 4px; background: #0b1d31a8; color: #fff; font-size: 7px; line-height: 1.35; letter-spacing: .1px; text-overflow: ellipsis; text-shadow: 0 1px 2px #0008; white-space: nowrap; transition: background .18s; }
+.info-stadium-photo-credit:hover, .info-stadium-photo-credit:focus-visible { background: #0b1d31e6; color: #fff; }
+.info-stadium-body { padding: 24px 23px 20px; }
+.info-stadium-code { font-size: 9px; letter-spacing: 1.4px; color: #9da7b4; margin: 0 0 9px; }
+.info-stadium-body h2 { font-size: 18px; font-weight: 750; letter-spacing: -.7px; margin: 0 0 10px; }
+.info-address { font-size: 11px; line-height: 1.6; min-height: 35px; color: #8b95a3; margin: 0 0 20px; }
+.info-stadium-actions { display: flex; justify-content: space-between; align-items: center; gap: 7px; padding-top: 16px; border-top: 1px solid #f0f2f5; }
+.info-create-link { color: #2d73e5; font-size: 11px; font-weight: 650; }
+.info-create-link span { margin-left: 5px; }
+.info-map-link { font-size: 10px; color: #8995a5; white-space: nowrap; }
+.info-data-note { color: #9aa3b0; font-size: 11px; line-height: 1.8; margin: 22px 0 0; }
+.info-empty { text-align: center; padding: 80px 20px; border: 1px dashed #dce5f1; border-radius: 15px; }
+.info-empty h2 { font-size: 22px; font-weight: 700; }
+.info-empty p { color: #8390a2; margin: 12px 0 24px; }
+.info-help-banner { padding: 34px 38px; margin-top: 56px; display: flex; align-items: center; justify-content: space-between; gap: 28px; background: #f2f7ff; border: 1px solid #eaf1fc; border-radius: 17px; }
+.info-help-banner .eyebrow { font-size: 9px; letter-spacing: 1.5px; }
+.info-help-banner h2 { font-size: 22px; font-weight: 750; letter-spacing: -.7px; margin: 9px 0; }
+.info-help-banner p:last-child { color: #8590a2; font-size: 12px; margin: 0; }
+.info-help-banner .button { flex-shrink: 0; font-size: 12px; }
+.info-guide-layout { display: grid; grid-template-columns: 245px minmax(0, 1fr); gap: 72px; align-items: start; padding-top: 58px; }
+.info-guide-sidebar { position: sticky; top: 105px; }
+.info-guide-sidebar > p { font-size: 12px; color: #8995a6; margin: 0 0 19px; }
+.info-guide-sidebar nav { display: flex; flex-direction: column; gap: 6px; }
+.info-guide-sidebar nav a { display: flex; gap: 18px; border-radius: 8px; padding: 12px 15px; font-size: 11px; color: #8b9ab1; }
+.info-guide-sidebar nav a:hover { background: #f0f5fe; color: #2370ef; }
+.info-guide-sidebar nav a span { color: #42536d; font-size: 13px; }
+.info-guide-tip { background: #f3f7ff; border: 1px solid #e6effd; border-radius: 13px; margin-top: 36px; padding: 25px 22px; }
+.info-guide-tip > span { display: block; color: #4685f2; font-size: 23px; margin-bottom: 12px; }
+.info-guide-tip strong { display: block; font-size: 13px; font-weight: 700; }
+.info-guide-tip p { color: #8a97aa; font-size: 11px; line-height: 1.9; margin: 12px 0 21px; }
+.info-guide-tip a { color: #3076ed; font-size: 11px; font-weight: 650; }
+.info-guide-section { scroll-margin-top: 110px; margin-bottom: 55px; }
+.info-guide-section:last-child { margin-bottom: 0; }
+.info-guide-section .eyebrow { font-size: 9px; letter-spacing: 1.5px; }
+.info-guide-section h2 { font-size: 25px; font-weight: 750; letter-spacing: -.9px; margin: 10px 0 12px; }
+.info-guide-description { color: #8a95a5; font-size: 12px; margin: 0 0 27px; }
+.info-faq-list { border-top: 1px solid #e6ecf4; margin-top: 23px; }
+.info-faq { border-bottom: 1px solid #e6ecf4; }
+.info-faq summary { list-style: none; display: flex; align-items: center; gap: 14px; cursor: pointer; padding: 23px 5px; font-size: 13px; font-weight: 650; }
+.info-faq summary::-webkit-details-marker { display: none; }
+.info-question-mark { color: #2974f2; font-weight: 750; font-size: 16px; flex-shrink: 0; }
+.info-faq-toggle { margin-left: auto; font-size: 20px; color: #9da8b8; font-weight: 300; }
+.info-faq[open] .info-faq-toggle { transform: rotate(45deg); color: #347bf0; }
+.info-faq > p { font-size: 12px; color: #7c899b; line-height: 2; margin: -3px 29px 24px; }
+.info-checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.info-checklist-item { display: flex; align-items: start; gap: 12px; border: 1px solid #e9eef6; border-radius: 11px; padding: 23px 17px; }
+.info-checklist-item > span:first-child { color: #5a8be6; font-size: 10px; padding-top: 3px; }
+.info-checklist-item h3 { font-size: 13px; font-weight: 650; margin: 0 0 9px; }
+.info-checklist-item p { font-size: 11px; color: #909bab; line-height: 1.8; margin: 0; }
+.info-checklist-check { margin-left: auto; color: #6094eb; font-size: 12px; }
+.info-stadium-detail-link { display: inline-flex; align-items: baseline; gap: 8px; }
+.info-stadium-detail-link span { color: #8198bc; font-size: 14px; font-weight: 500; }
+.info-stadium-detail-link:hover { color: var(--blue); }
+.stadium-detail-back { display: flex; width: fit-content; margin-bottom: 30px; font-size: 12px; color: #7285a0; }
+.stadium-detail-back:hover { color: var(--blue); }
+.stadium-detail-intro > .eyebrow { display: block; margin: 0; color: var(--blue); }
+.stadium-detail-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 60px; align-items: center; padding-top: 52px; }
+.stadium-detail-art { position: relative; border-radius: 22px; overflow: hidden; aspect-ratio: 1.12; }
+.stadium-detail-art-label { position: absolute; z-index: 2; top: 18px; left: 20px; padding: 7px 10px; border: 1px solid #dce7f5; border-radius: 999px; background: #fffffff0; box-shadow: 0 5px 14px #233b5d12; color: #61738d; font-size: 9px; font-weight: 750; letter-spacing: 1.4px; }
+.stadium-seat-art { display: block; border: 1px solid #e2e9f2; background: #f6f8fb; cursor: zoom-in; box-shadow: 0 18px 42px #263f6810; }
+.stadium-seat-art-daejeon, .stadium-seat-art-suwon { aspect-ratio: .82; }
+.stadium-detail-seat-map { padding: 28px; object-fit: contain; transition: transform .25s ease; }
+.stadium-seat-art:hover .stadium-detail-seat-map { transform: scale(1.025); }
+.stadium-seat-zoom { position: absolute; z-index: 2; right: 18px; bottom: 17px; padding: 8px 11px; border-radius: 999px; background: #132f5fe8; color: white; font-size: 10px; font-weight: 700; box-shadow: 0 5px 16px #09234a35; }
+.stadium-detail-seat-map-daejeon { padding: 0; object-fit: cover; object-position: center 23%; }
+.stadium-detail-seat-map-suwon { padding: 0; object-fit: cover; object-position: center 21%; }
+.stadium-official-seat-link { color: var(--blue); font-weight: 650; text-decoration: underline; text-decoration-color: #bdd1f3; text-underline-offset: 4px; }
+.stadium-official-seat-link:hover { color: #143f91; }
+.stadium-detail-info h2 { margin: 10px 0 26px; font-size: 29px; letter-spacing: -1.2px; }
+.stadium-detail-facts { display: grid; gap: 23px; margin: 0 0 32px; }
+.stadium-detail-facts > div { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 20px; align-items: baseline; }
+.stadium-detail-facts dt { color: #8a98aa; font-size: 12px; }
+.stadium-detail-facts dd { color: #40516b; font-size: 14px; line-height: 1.85; margin: 0; overflow-wrap: anywhere; }
+.stadium-detail-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.stadium-detail-actions .button { min-height: 46px; font-size: 12px; justify-content: center; gap: 9px; }
+@media (max-width: 1000px) {
+  .stadium-detail-content { gap: 30px; }
+  .stadium-detail-facts > div { gap: 12px; }
+}
+@media (max-width: 760px) {
+  .stadium-detail-content { grid-template-columns: minmax(0, 1fr); gap: 30px; padding-top: 28px; }
+  .stadium-detail-art { aspect-ratio: 1.15; border-radius: 16px; }
+  .stadium-detail-art.stadium-seat-art-daejeon, .stadium-detail-art.stadium-seat-art-suwon { aspect-ratio: .82; }
+  .stadium-detail-art-label { top: 18px; left: 20px; font-size: 9px; }
+  .stadium-detail-seat-map { padding: 18px; }
+  .stadium-detail-seat-map-daejeon, .stadium-detail-seat-map-suwon { padding: 0; }
+  .stadium-seat-zoom { right: 13px; bottom: 13px; }
+  .stadium-detail-back { margin-bottom: 25px; }
+  .stadium-detail-info h2 { font-size: 24px; margin-bottom: 23px; }
+  .stadium-detail-facts dd { font-size: 13px; }
+  .stadium-detail-actions { align-items: stretch; }
+  .stadium-detail-actions .button { flex: 1 1 220px; }
+}
+@media (max-width: 1000px) {
+  .info-stadium-grid { gap: 17px; }
+  .info-filter-bar { align-items: flex-start; }
+  .info-region-tabs { gap: 5px; }
+  .info-chip { font-size: 11px; padding: 10px 12px; }
+  .info-search { width: 220px; }
+  .info-stadium-body { padding: 20px 16px 17px; }
+  .info-stadium-body h2 { font-size: 16px; }
+  .info-stadium-actions { flex-wrap: wrap; gap: 13px; }
+  .info-guide-layout { grid-template-columns: 190px minmax(0, 1fr); gap: 35px; }
+  .info-checklist { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .auth-page { padding: 40px 18px 60px; min-height: 700px; }
+  .auth-panel { padding: 34px 24px; border-radius: 18px; }
+  .auth-panel h1 { font-size: 25px; }
+  .auth-signup-panel h1 { font-size: 23px; }
+  .auth-description { font-size: 12px; }
+  .info-page { padding-bottom: 46px; }
+  .info-hero .page-intro { padding-top: 45px; padding-bottom: 45px; }
+  .info-hero h1 { letter-spacing: -1.4px; }
+  .info-hero .page-intro > p:last-child { font-size: 13px; }
+  .info-mobile-break { display: block; }
+  .info-section { padding-top: 27px; }
+  .info-filter-bar { flex-direction: column-reverse; gap: 20px; }
+  .info-search { width: 100%; }
+  .info-region-tabs { gap: 7px; }
+  .info-chip { font-size: 11px; padding: 9px 13px; }
+  .info-count { margin-top: 24px; }
+  .info-stadium-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
+  .info-stadium-art { height: 145px; }
+  .info-region-badge { left: 12px; top: 12px; }
+  .info-stadium-body h2 { font-size: 15px; min-height: 40px; line-height: 1.5; }
+  .info-address { font-size: 10px; min-height: 35px; }
+  .info-create-link { font-size: 10px; }
+  .info-help-banner { flex-direction: column; align-items: flex-start; padding: 28px; margin-top: 35px; }
+  .info-help-banner h2 { font-size: 20px; }
+  .info-help-banner p:last-child { line-height: 1.8; }
+  .info-guide-layout { grid-template-columns: 1fr; padding-top: 28px; gap: 33px; }
+  .info-guide-sidebar { position: static; }
+  .info-guide-sidebar > p, .info-guide-tip { display: none; }
+  .info-guide-sidebar nav { flex-direction: row; gap: 8px; flex-wrap: wrap; }
+  .info-guide-sidebar nav a { gap: 7px; border: 1px solid #e7edf5; padding: 10px 12px; }
+  .info-guide-sidebar nav a span { font-size: 11px; }
+  .info-guide-section h2 { font-size: 23px; }
+  .info-faq summary { font-size: 12px; gap: 11px; }
+  .info-faq > p { font-size: 12px; margin-left: 28px; margin-right: 4px; }
+  .info-checklist { grid-template-columns: 1fr 1fr; }
+  .info-checklist-item { padding: 19px 13px; gap: 8px; }
+  .info-checklist-item p { font-size: 10px; }
+}
+@media (max-width: 450px) {
+  .auth-field-row { grid-template-columns: 1fr; gap: 18px; }
+  .auth-signup-panel h1 { font-size: 21px; }
+  .info-stadium-grid { grid-template-columns: 1fr; }
+  .info-stadium-art { height: 185px; }
+  .info-stadium-body { padding: 23px; }
+  .info-stadium-body h2 { font-size: 20px; min-height: 0; }
+  .info-address { font-size: 12px; min-height: 0; }
+  .info-create-link { font-size: 12px; }
+  .info-stadium-actions { flex-wrap: nowrap; }
+  .info-checklist { grid-template-columns: 1fr; }
+}

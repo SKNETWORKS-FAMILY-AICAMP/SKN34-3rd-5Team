@@ -1,0 +1,28 @@
+.community-board-tabs{display:flex;gap:25px;border-bottom:1px solid #e3eaf4;margin:-12px 0 28px}
+.community-board-tabs a{display:inline-flex;align-items:center;min-height:48px;padding:10px 3px;border-bottom:2px solid transparent;font-size:14px;font-weight:600;color:#8491a4}
+.community-board-tabs a[aria-current="page"]{color:var(--blue);border-bottom-color:var(--blue)}
+.community-board-tabs a:hover{color:var(--blue)}
+.team-community-filters{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:30px}
+.team-community-filters a{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 16px;border:1px solid #e4ebf5;border-radius:7px;background:#fff;color:#74849a;font-size:12px}
+.team-community-filters a:hover{background:#f3f7ff;color:var(--blue)}
+.team-community-filters a[aria-current="page"]{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.team-community-col-team{width:128px}.team-community-col-kind{width:90px}
+.team-community-table-team{display:flex;align-items:center;justify-content:center;gap:10px;color:#52667e;font-size:12px;font-weight:550}
+.team-community-logo{display:inline-flex;align-items:center;justify-content:center;flex:none;width:36px;height:36px}
+.team-community-mobile-team{display:none}
+.team-community-page .community-stadium-label[data-category="응원"]{background:#fff0f2;color:#c83d4d}
+.team-community-page .community-stadium-label[data-category="직관"]{background:#edf5ff;color:#3473c6}
+.team-community-page .community-stadium-label[data-category="질문"]{background:#fff6d9;color:#8b6508}
+.team-community-page .community-pagination button{font-size:12px}
+.team-community-page .community-pagination button:first-child,.team-community-page .community-pagination button:last-child{font-size:18px}
+.team-community-article{border-top:2px solid #344864;padding-top:24px}
+.team-community-article-team{display:flex;align-items:center;gap:10px;margin-bottom:25px;font-size:13px;font-weight:600;color:#5b7395}
+.team-community-article-team a:hover{color:var(--blue)}
+.team-community-article header{padding-bottom:24px;border-bottom:1px solid #e5edf7}
+.team-community-article h2{font-size:26px;letter-spacing:-.7px;line-height:1.65;margin-top:11px;overflow-wrap:anywhere;word-break:keep-all;color:#2b3d56}
+.team-community-post-content{min-height:170px;padding:30px 0;font-size:15px;line-height:2;color:#5b6a80;white-space:pre-line;overflow-wrap:anywhere;word-break:keep-all}
+.team-community-sample-note{padding:14px 16px;border-radius:8px;background:#f5f8fd;color:#8a98ad;font-size:11px;line-height:1.9;margin-bottom:26px}
+.team-community-article>.button{min-height:44px;font-size:12px}
+.team-community-missing{padding:65px 20px;text-align:center;border-block:1px solid #e6ecf5}
+.team-community-missing h2{font-size:22px;color:#4e6585}.team-community-missing p{margin:14px 0 25px;font-size:13px;color:#8a97a9}
+@media(max-width:767px){.community-board-tabs{gap:22px;margin:-7px 0 22px}.community-board-tabs a{font-size:13px;min-height:46px}.team-community-filters{gap:6px;margin-bottom:25px}.team-community-filters a{min-height:44px;padding:8px 13px;font-size:11px}.team-community-table .community-post{min-height:88px;padding:14px 9px}.team-community-mobile-team{display:inline;font-size:10px;color:#7b8ea7}.team-community-article h2{font-size:21px;line-height:1.7}.team-community-article-team{font-size:12px}.team-community-post-content{font-size:13px;min-height:160px}.team-community-sample-note{font-size:10px;padding:12px 14px}}

@@ -1,0 +1,1113 @@
+.kbo-detail-page {
+  padding-top: 32px;
+  padding-bottom: 74px;
+}
+
+.kbo-detail-heading {
+  padding-bottom: 32px;
+}
+
+.kbo-detail-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin-bottom: 27px;
+  color: #8895a9;
+  font-size: 12px;
+}
+
+.kbo-detail-back:hover {
+  color: var(--blue);
+}
+
+.kbo-detail-heading h1 {
+  margin-top: 11px;
+  color: #23364e;
+  font-size: 38px;
+  font-weight: 800;
+}
+
+.kbo-detail-intro {
+  margin-top: 12px;
+  color: #8290a4;
+  font-size: 14px;
+  word-break: keep-all;
+}
+
+.kbo-detail-tabs {
+  display: flex;
+  gap: 30px;
+  border-bottom: 1px solid #e5ecf5;
+}
+
+.kbo-detail-tabs a {
+  position: relative;
+  padding: 16px 3px;
+  color: #91a0b4;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.kbo-detail-tabs a[aria-current="page"] {
+  color: var(--blue);
+}
+
+.kbo-detail-tabs a[aria-current="page"]::after {
+  position: absolute;
+  inset: auto 0 -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--blue);
+  content: "";
+}
+
+.kbo-detail-body {
+  padding-top: 31px;
+}
+
+.kbo-calendar-toolbar,
+.kbo-month-controls,
+.kbo-record-heading,
+.kbo-record-toolbar,
+.kbo-fixtures-heading,
+.kbo-day-controls {
+  display: flex;
+  align-items: center;
+}
+
+.kbo-calendar-toolbar,
+.kbo-record-heading,
+.kbo-record-toolbar,
+.kbo-fixtures-heading {
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.kbo-month-controls {
+  gap: 13px;
+  margin-left: -9px;
+}
+
+.kbo-detail-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #6987b1;
+}
+
+.kbo-detail-icon-button:hover:not(:disabled) {
+  background: #edf4ff;
+  color: var(--blue);
+}
+
+.kbo-detail-icon-button:disabled {
+  color: #ced7e5;
+}
+
+.kbo-chevron-back {
+  transform: rotate(180deg);
+}
+
+.kbo-month-controls select {
+  min-height: 42px;
+  padding: 6px 23px 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background-color: #fff;
+  color: #304968;
+  font-size: 21px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.kbo-today-button,
+.kbo-record-toolbar button {
+  min-height: 35px;
+  padding: 6px 15px;
+  border: 1px solid #dfe8f5;
+  border-radius: 7px;
+  background: #fff;
+  color: #6d86aa;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.kbo-today-button:hover:not(:disabled),
+.kbo-record-toolbar button:hover:not(:disabled) {
+  background: #f3f7ff;
+  color: var(--blue);
+}
+
+.kbo-today-button:disabled,
+.kbo-record-toolbar button:disabled {
+  background: #fafbfd;
+  color: #afbaca;
+}
+
+.kbo-date-picker {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 24px;
+  padding: 10px 2px;
+  border: 1px solid #e6edf7;
+  border-radius: 14px;
+  background: #fafdff;
+}
+
+.kbo-date-strip {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 6px 3px;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.kbo-date-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.kbo-date-button {
+  display: flex;
+  flex: 0 0 60px;
+  align-items: center;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 78px;
+  padding: 9px 7px 6px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: #6d809d;
+}
+
+.kbo-date-button > span {
+  color: #9aa7ba;
+  font-size: 11px;
+}
+
+.kbo-date-button strong {
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.kbo-date-button i {
+  width: 4px;
+  height: 4px;
+  margin-top: 1px;
+  border-radius: 50%;
+}
+
+.kbo-date-button i.has-games {
+  background: #83a8e3;
+}
+
+.kbo-date-button.is-sunday > span {
+  color: #c8898c;
+}
+
+.kbo-date-button.is-saturday > span {
+  color: #77a0dc;
+}
+
+.kbo-date-button.is-today {
+  border-color: #dce8fb;
+}
+
+.kbo-date-button:hover {
+  background: #eff5ff;
+}
+
+.kbo-date-button[aria-pressed="true"] {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 3px 8px #246bf320;
+}
+
+.kbo-date-button[aria-pressed="true"] > span {
+  color: #dce9ff;
+}
+
+.kbo-date-button[aria-pressed="true"] i.has-games {
+  background: #c9ddff;
+}
+
+.kbo-team-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0 33px;
+}
+
+.kbo-team-filters button {
+  min-height: 37px;
+  padding: 7px 16px;
+  border: 1px solid #e3eaf4;
+  border-radius: 7px;
+  background: #fff;
+  color: #8a98ac;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.kbo-team-filters button[aria-pressed="true"] {
+  border-color: #cee0fc;
+  background: #edf4ff;
+  color: var(--blue);
+  font-weight: 650;
+}
+
+.kbo-team-filters button:hover:not([aria-pressed="true"]) {
+  border-color: #b9d1f5;
+  color: #5c7eae;
+}
+
+.kbo-fixtures-heading {
+  margin-bottom: 19px;
+}
+
+.kbo-fixtures-heading h2,
+.kbo-record-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #2e4563;
+  font-size: 21px;
+  font-weight: 750;
+}
+
+.kbo-fixtures-heading h2 > span {
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: #edf4ff;
+  color: #4c7fc9;
+  font-size: 10px;
+  font-weight: 550;
+}
+
+.kbo-fixtures-heading p {
+  margin-top: 6px;
+  color: #94a1b4;
+  font-size: 11px;
+}
+
+.kbo-day-controls {
+  gap: 4px;
+}
+
+.kbo-day-controls .kbo-detail-icon-button {
+  border: 1px solid #e4ebf6;
+  border-radius: 8px;
+}
+
+.kbo-fixtures-list {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #e3ebf6;
+  border-radius: 14px;
+  list-style: none;
+}
+
+.kbo-fixture-row {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) 100px;
+  align-items: center;
+  gap: 30px;
+  min-height: 133px;
+  padding: 24px 35px;
+  border-bottom: 1px solid #eaf0f8;
+  background: #fff;
+}
+
+.kbo-fixture-row:last-child {
+  border-bottom: 0;
+}
+
+.kbo-fixture-row:nth-child(even) {
+  background: #fcfdff;
+}
+
+.kbo-fixture-when {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.kbo-fixture-when time {
+  color: #3f5575;
+  font-size: 19px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.kbo-fixture-status {
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: #edf4ff;
+  color: #6086bd;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.kbo-fixture-status.is-live {
+  background: #edf8f2;
+  color: #288a60;
+}
+
+.kbo-fixture-status.is-final {
+  background: #f0f3f8;
+  color: #8593a8;
+}
+
+.kbo-fixture-status.is-cancelled,
+.kbo-fixture-status.is-postponed,
+.kbo-fixture-status.is-suspended {
+  background: #fff4e8;
+  color: #ac7e45;
+}
+
+.kbo-fixture-match {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  max-width: 610px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.kbo-fixture-team {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.kbo-fixture-away {
+  justify-content: flex-end;
+}
+
+.kbo-fixture-team > div {
+  min-width: 0;
+}
+
+.kbo-fixture-team strong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: #334c6f;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.kbo-fixture-team small {
+  color: #9dabbf;
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.kbo-fixture-team p {
+  margin-top: 5px;
+  color: #a2aec0;
+  font-size: 10px;
+  word-break: keep-all;
+}
+
+.kbo-fixture-team p > span {
+  margin-left: 3px;
+  color: #7185a1;
+  font-size: 11px;
+}
+
+.kbo-detail-team-mark {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 47px;
+  height: 47px;
+  border: 1px solid transparent;
+  border-radius: 15px;
+  background: transparent;
+  color: #375582;
+  font-family: Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -.07em;
+}
+
+.kbo-fixture-score {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  color: #b1bdce;
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.kbo-fixture-score.has-score {
+  color: #7a8da8;
+  font-size: 15px;
+}
+
+.kbo-fixture-score strong {
+  color: #486181;
+  font-size: 28px;
+  font-weight: 750;
+}
+
+.kbo-fixture-score .is-winner {
+  color: var(--blue);
+}
+
+.kbo-fixture-venue {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  color: #8b9ab0;
+  font-size: 12px;
+  word-break: keep-all;
+}
+
+.kbo-fixture-venue svg {
+  flex-shrink: 0;
+}
+
+.kbo-detail-source {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px 20px;
+  margin-top: 20px;
+  color: #95a3b7;
+  font-size: 11px;
+}
+
+.kbo-detail-source a {
+  color: #6c85aa;
+  white-space: nowrap;
+}
+
+.kbo-detail-source a:hover {
+  color: var(--blue);
+  text-decoration: underline;
+}
+
+.kbo-detail-source > div {
+  text-align: right;
+}
+
+.kbo-detail-footnote {
+  margin-top: 12px;
+  color: #9aa7ba;
+  font-size: 11px;
+  word-break: keep-all;
+}
+
+.kbo-detail-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 250px;
+  padding: 36px 22px;
+  border: 1px solid #e6edf7;
+  border-radius: 13px;
+  background: #fafdff;
+  text-align: center;
+}
+
+.kbo-detail-empty > svg {
+  margin-bottom: 6px;
+  color: #9bb6dd;
+}
+
+.kbo-detail-empty strong {
+  color: #4e6789;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.kbo-detail-empty p {
+  max-width: 440px;
+  color: #8d9db4;
+  font-size: 12px;
+  word-break: keep-all;
+}
+
+.kbo-detail-empty .button {
+  min-height: 39px;
+  margin-top: 9px;
+  font-size: 12px;
+}
+
+.kbo-detail-warning {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 19px;
+  padding: 12px 16px;
+  border: 1px solid #efe4d1;
+  border-radius: 9px;
+  background: #fffaf2;
+  color: #a0855c;
+  font-size: 12px;
+}
+
+.kbo-detail-warning button {
+  min-height: 35px;
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border: 1px solid #e8ddcc;
+  border-radius: 6px;
+  background: #fff;
+  color: #977747;
+  font-size: 11px;
+}
+
+.kbo-detail-warning button:disabled {
+  opacity: .6;
+}
+
+.kbo-month-loading-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 18px;
+  color: #93a4bd;
+  font-size: 11px;
+}
+
+.kbo-month-loading-note .ui-spinner {
+  width: 13px;
+  height: 13px;
+}
+
+.kbo-detail-loading {
+  border: 1px solid #e7edf7;
+  border-radius: 13px;
+  overflow: hidden;
+}
+
+.kbo-detail-loading > div {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  min-height: 83px;
+  padding: 20px 25px;
+  border-bottom: 1px solid #edf2f8;
+}
+
+.kbo-detail-loading > div:last-child {
+  border-bottom: 0;
+}
+
+.kbo-detail-loading i {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: #edf3fb;
+}
+
+.kbo-detail-loading div > span {
+  width: 110px;
+  height: 12px;
+  border-radius: 5px;
+  background: #edf3fb;
+}
+
+.kbo-detail-loading div > span:last-child {
+  width: min(350px, 50%);
+  margin-left: auto;
+}
+
+.kbo-record-heading h2 {
+  margin-top: 7px;
+  font-size: 26px;
+}
+
+.kbo-detail-season {
+  padding: 6px 11px;
+  border: 1px solid #e1e9f6;
+  border-radius: 6px;
+  color: #7790b4;
+  font-size: 12px;
+}
+
+.kbo-ranking-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(360px, 100%);
+  margin: 27px 0 24px;
+  padding: 4px;
+  border: 1px solid #e1e9f5;
+  border-radius: 11px;
+  background: #f6f9fe;
+}
+
+.kbo-ranking-tabs button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #8799b2;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.kbo-ranking-tabs button[aria-selected="true"] {
+  background: #fff;
+  box-shadow: 0 3px 11px rgb(36 80 145 / 9%);
+  color: var(--blue);
+}
+
+.kbo-record-toolbar {
+  margin: 25px 0 15px;
+}
+
+.kbo-record-toolbar > p,
+.kbo-record-scroll-note {
+  color: #94a5bb;
+  font-size: 11px;
+}
+
+.kbo-record-scroll-note {
+  display: none;
+  margin-bottom: 10px;
+  text-align: right;
+}
+
+.kbo-record-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e2eaf6;
+  border-radius: 13px;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #d5e2f7 #f7faff;
+}
+
+.kbo-record-table {
+  width: 100%;
+  min-width: 1070px;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: #6a7e9d;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.kbo-record-table th,
+.kbo-record-table td {
+  height: 62px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #edf2f8;
+  background: #fff;
+}
+
+.kbo-record-table thead th {
+  height: 50px;
+  padding-block: 6px;
+  background: #f6f9fe;
+  color: #7d94b5;
+  font-size: 11px;
+  font-weight: 550;
+}
+
+.kbo-record-table thead button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  min-height: 37px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.kbo-record-table thead button:hover,
+.kbo-record-table th[aria-sort] {
+  color: var(--blue);
+}
+
+.kbo-record-table thead button > span {
+  color: #c4d0e1;
+  font-size: 11px;
+}
+
+.kbo-record-table thead button > span.is-sorted {
+  color: var(--blue);
+}
+
+.kbo-record-table tr > :first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: 65px;
+  min-width: 65px;
+}
+
+.kbo-record-table tr > :nth-child(2) {
+  position: sticky;
+  left: 65px;
+  z-index: 1;
+  width: 150px;
+  min-width: 150px;
+  text-align: left;
+}
+
+.kbo-record-table tbody tr:hover > * {
+  background: #fafcff;
+}
+
+.kbo-record-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.kbo-record-rank {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #7790b3;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.kbo-record-rank.is-first {
+  background: #edf4ff;
+  color: var(--blue);
+}
+
+.kbo-record-team {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #456082;
+  font-weight: 650;
+}
+
+.kbo-record-team:hover,
+.kbo-athlete-player:hover {
+  color: var(--blue);
+}
+
+.kbo-row-link-arrow {
+  margin-left: auto;
+  color: #b4c3d7;
+  font-size: 18px;
+  font-weight: 400;
+  transition: transform .18s ease, color .18s ease;
+}
+
+.kbo-record-team:hover .kbo-row-link-arrow,
+.kbo-athlete-player:hover .kbo-row-link-arrow {
+  color: var(--blue);
+  transform: translateX(2px);
+}
+
+.kbo-record-team .kbo-detail-team-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.kbo-record-emphasis {
+  color: #3d628f;
+  font-weight: 650;
+}
+
+.kbo-record-positive {
+  color: #5188d3;
+}
+
+.kbo-athlete-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin: 0 0 15px;
+}
+
+.kbo-athlete-toolbar > p {
+  color: #94a5bb;
+  font-size: 11px;
+}
+
+.kbo-athlete-toolbar > p strong {
+  color: #617ea5;
+  font-weight: 700;
+}
+
+.kbo-athlete-type-tabs {
+  display: flex;
+  gap: 7px;
+}
+
+.kbo-athlete-type-tabs button {
+  min-width: 77px;
+  min-height: 36px;
+  padding: 7px 15px;
+  border: 1px solid #dfe8f5;
+  border-radius: 18px;
+  background: #fff;
+  color: #7d91ad;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.kbo-athlete-type-tabs button[aria-selected="true"] {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+}
+
+.kbo-athlete-table {
+  min-width: 1810px;
+}
+
+.kbo-athlete-table tr > :nth-child(2) {
+  width: 178px;
+  min-width: 178px;
+}
+
+.kbo-athlete-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #456082;
+}
+
+.kbo-athlete-player .kbo-detail-team-mark {
+  width: 35px;
+  height: 35px;
+  flex: 0 0 auto;
+}
+
+.kbo-athlete-player > span {
+  display: grid;
+  gap: 3px;
+}
+
+.kbo-athlete-player strong {
+  color: #3f5878;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.kbo-athlete-player small {
+  color: #a0aec0;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.kbo-ranking-count {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  color: #9aa9bd;
+  font-size: 10px;
+}
+
+.kbo-ranking-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 18px;
+}
+
+.kbo-ranking-pagination button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid #e2eaf6;
+  border-radius: 8px;
+  background: #fff;
+  color: #8295af;
+  font-size: 11px;
+}
+
+.kbo-ranking-pagination button.is-active {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+}
+
+.kbo-ranking-pagination button:disabled {
+  background: #fafbfd;
+  color: #c8d1de;
+}
+
+.kbo-record-glossary {
+  margin-top: 34px;
+  padding: 23px 26px;
+  border: 1px solid #e8eff9;
+  border-radius: 12px;
+  background: #f8fbff;
+}
+
+.kbo-record-glossary h3 {
+  color: #6481a9;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.kbo-record-glossary dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 25px;
+  margin: 16px 0 0;
+}
+
+.kbo-record-glossary dt {
+  color: #637e9f;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.kbo-record-glossary dd {
+  margin: 4px 0 0;
+  color: #99a9bf;
+  font-size: 11px;
+  word-break: keep-all;
+}
+
+@media (max-width: 1250px) {
+  .kbo-record-scroll-note { display: block; }
+  .kbo-fixture-row { grid-template-columns: 85px minmax(0, 1fr) 65px; gap: 20px; padding-inline: 26px; }
+  .kbo-fixture-match { grid-template-columns: minmax(0, 1fr) 75px minmax(0, 1fr); gap: 17px; }
+  .kbo-fixture-team { gap: 10px; }
+}
+
+@media (max-width: 900px) {
+  .kbo-fixture-row { grid-template-columns: 70px minmax(0, 1fr) 50px; gap: 12px; padding-inline: 21px; }
+  .kbo-fixture-match { grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr); gap: 11px; }
+  .kbo-fixture-team { flex-direction: column; gap: 6px; text-align: center; }
+  .kbo-fixture-team strong { justify-content: center; font-size: 15px; }
+  .kbo-fixture-team p { margin-top: 3px; }
+  .kbo-fixture-score { gap: 9px; }
+  .kbo-fixture-score strong { font-size: 25px; }
+  .kbo-fixture-venue { font-size: 11px; }
+  .kbo-record-glossary dl { gap: 20px; }
+}
+
+@media (max-width: 640px) {
+  .kbo-detail-page { padding-top: 22px; padding-bottom: 45px; }
+  .kbo-detail-heading { padding-bottom: 21px; }
+  .kbo-detail-back { margin-bottom: 23px; font-size: 11px; }
+  .kbo-detail-heading .eyebrow { font-size: 8px; }
+  .kbo-detail-heading h1 { margin-top: 9px; font-size: 30px; }
+  .kbo-detail-intro { margin-top: 10px; font-size: 12px; line-height: 1.9; }
+  .kbo-detail-tabs { gap: 23px; }
+  .kbo-detail-tabs a { padding-block: 14px; font-size: 12px; }
+  .kbo-detail-body { padding-top: 22px; }
+  .kbo-calendar-toolbar { gap: 10px; }
+  .kbo-month-controls { gap: 0; margin-left: -8px; }
+  .kbo-month-controls select { font-size: 17px; padding-inline: 5px 7px; }
+  .kbo-month-controls .kbo-detail-icon-button { width: 32px; }
+  .kbo-today-button { min-height: 33px; padding-inline: 12px; font-size: 11px; }
+  .kbo-date-picker { gap: 0; margin-top: 17px; padding: 5px 0; border-radius: 11px; }
+  .kbo-date-scroll-button { width: 25px; height: 42px; }
+  .kbo-date-strip { gap: 5px; }
+  .kbo-date-button { flex-basis: 45px; min-height: 73px; padding-inline: 5px; border-radius: 9px; }
+  .kbo-date-button > span { font-size: 10px; }
+  .kbo-date-button strong { font-size: 16px; }
+  .kbo-team-filters { gap: 6px; margin: 18px 0 26px; }
+  .kbo-team-filters button { min-height: 34px; padding: 6px 12px; font-size: 11px; }
+  .kbo-fixtures-heading { gap: 10px; margin-bottom: 14px; }
+  .kbo-fixtures-heading h2 { gap: 6px; font-size: 16px; flex-wrap: wrap; }
+  .kbo-fixtures-heading h2 > span { font-size: 9px; }
+  .kbo-fixtures-heading p { font-size: 10px; }
+  .kbo-day-controls { gap: 4px; }
+  .kbo-day-controls .kbo-detail-icon-button { width: 30px; height: 33px; border-radius: 6px; }
+  .kbo-fixtures-list { border-radius: 11px; }
+  .kbo-fixture-row { grid-template-columns: 1fr auto; gap: 18px 9px; padding: 19px 19px 22px; }
+  .kbo-fixture-when { grid-column: 1; grid-row: 1; flex-direction: row; align-items: center; gap: 8px; }
+  .kbo-fixture-when time { font-size: 15px; }
+  .kbo-fixture-status { padding: 3px 6px; font-size: 9px; }
+  .kbo-fixture-venue { grid-column: 2; grid-row: 1; font-size: 10px; }
+  .kbo-fixture-venue svg { width: 12px; }
+  .kbo-fixture-match { grid-column: 1 / -1; grid-row: 2; grid-template-columns: minmax(0, 1fr) 55px minmax(0, 1fr); gap: 8px; }
+  .kbo-fixture-team { gap: 8px; }
+  .kbo-fixture-team strong { font-size: 14px; }
+  .kbo-fixture-team small { font-size: 8px; }
+  .kbo-fixture-team p { font-size: 9px; }
+  .kbo-fixture-team p > span { font-size: 10px; }
+  .kbo-detail-team-mark { width: 43px; height: 43px; border-radius: 13px; font-size: 18px; }
+  .kbo-fixture-score { gap: 7px; font-size: 10px; }
+  .kbo-fixture-score strong { font-size: 24px; }
+  .kbo-detail-source { gap: 9px; margin-top: 16px; font-size: 10px; }
+  .kbo-detail-source > div { max-width: 220px; }
+  .kbo-detail-footnote { margin-top: 10px; font-size: 10px; line-height: 1.8; }
+  .kbo-detail-empty { min-height: 228px; padding: 28px 19px; }
+  .kbo-detail-empty strong { font-size: 13px; }
+  .kbo-detail-empty p { font-size: 11px; }
+  .kbo-detail-warning { gap: 10px; padding: 10px 12px; font-size: 10px; }
+  .kbo-detail-warning button { padding-inline: 7px; font-size: 10px; }
+  .kbo-detail-loading > div { gap: 17px; min-height: 71px; padding: 18px; }
+  .kbo-detail-loading div > span { width: 62px; }
+  .kbo-detail-loading div > span:last-child { width: 34%; }
+  .kbo-month-loading-note { font-size: 10px; }
+  .kbo-record-heading h2 { font-size: 22px; }
+  .kbo-record-heading .eyebrow { font-size: 8px; }
+  .kbo-detail-season { padding: 5px 8px; font-size: 10px; }
+  .kbo-ranking-tabs { width: 100%; margin: 20px 0 19px; }
+  .kbo-ranking-tabs button { min-height: 37px; font-size: 11px; }
+  .kbo-record-toolbar { align-items: flex-start; gap: 12px; margin-top: 20px; }
+  .kbo-record-toolbar > p { max-width: 190px; font-size: 10px; }
+  .kbo-record-toolbar button { min-height: 32px; padding-inline: 9px; font-size: 10px; }
+  .kbo-record-scroll-note { font-size: 9px; }
+  .kbo-record-scroll { border-radius: 10px; }
+  .kbo-record-table { min-width: 940px; font-size: 12px; }
+  .kbo-record-table th, .kbo-record-table td { height: 55px; padding: 9px 12px; }
+  .kbo-record-table thead th { font-size: 10px; }
+  .kbo-record-table tr > :first-child { width: 49px; min-width: 49px; padding-inline: 7px; }
+  .kbo-record-table tr > :nth-child(2) { left: 49px; width: 108px; min-width: 108px; padding-inline: 7px 12px; border-right: 1px solid #edf2f8; }
+  .kbo-record-team { gap: 8px; }
+  .kbo-record-team .kbo-detail-team-mark { width: 28px; height: 28px; border-radius: 8px; font-size: 11px; }
+  .kbo-record-rank { font-size: 12px; }
+  .kbo-athlete-toolbar { align-items: flex-end; margin-bottom: 13px; }
+  .kbo-athlete-toolbar > p { max-width: 132px; text-align: right; font-size: 9px; line-height: 1.6; }
+  .kbo-athlete-type-tabs { gap: 5px; }
+  .kbo-athlete-type-tabs button { min-width: 62px; min-height: 33px; padding: 6px 11px; font-size: 10px; }
+  .kbo-athlete-table { min-width: 1670px; }
+  .kbo-athlete-table tr > :nth-child(2) { width: 135px; min-width: 135px; }
+  .kbo-athlete-player { gap: 7px; }
+  .kbo-athlete-player .kbo-detail-team-mark { width: 28px; height: 28px; }
+  .kbo-athlete-player strong { font-size: 11px; }
+  .kbo-athlete-player small { font-size: 8px; }
+  .kbo-ranking-pagination { margin-top: 14px; }
+  .kbo-ranking-pagination button { min-width: 31px; height: 31px; border-radius: 7px; font-size: 10px; }
+  .kbo-record-glossary { margin-top: 26px; padding: 19px; }
+  .kbo-record-glossary h3 { font-size: 12px; }
+  .kbo-record-glossary dl { grid-template-columns: minmax(0, 1fr); gap: 15px; margin-top: 17px; }
+  .kbo-record-glossary dt, .kbo-record-glossary dd { font-size: 10px; }
+}

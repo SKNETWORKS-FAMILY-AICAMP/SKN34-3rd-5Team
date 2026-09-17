@@ -1,15 +1,81 @@
 # data/preprocessed
 
-크롤링·전처리 스크립트의 생성 결과입니다. 프로젝트 루트의 `crawling/`, `preprocessing/` 스크립트 실행 시 갱신됩니다.
+크롤링·전처리 스크립트가 만들어내는 결과물. crawling/, preprocessing/ 폴더의 스크립트를 실행하면 여기가 갱신됨.
 
 - kbo_standing.csv — kbo_standing.py가 실행할 때마다 덮어쓰는 최신 순위 스냅샷
 - kbo_standing_history.csv — 같은 스크립트가 날짜별로 계속 누적하는 이력
 - kbo_schedule_full.csv — kbo_schedule.py 결과 (3~10월 전체, 스코어 포함)
 - kbo_schedule_postseason_tbd.csv — kbo_schedule_postseason_placeholder.py 결과 (참가팀 미정, TBD)
 - kbo_ticket_policy_structured.csv — parse_ticket_policy.py 결과 (예매정책 구조화)
-- stadium_coordinates.csv / external_places.csv — collect_kakao_places.py 결과 (카카오 API)
+- stadium_coordinates.csv / external_places.csv — collect_kakao_places.py 결과 (카카오 API, 2026-09-08 2.5km 반경 재실행 + 대전 오분류 5건 보정 확인)
+- 구장편의시설.csv / 구장편의시설_보류이력.csv / 구장잔여정보_좌석주차버스.csv — preprocessing/normalize_new_supplements.py 결과 (팀원 보완자료 2종, 2026-09-08 생성)
+- 구장먹거리_공식매점.csv (291행) / 구장부가콘텐츠_공식.csv (68행) — preprocessing/normalize_food_stores.py 결과 (2026-09-08 생성, 같은 날 밤 3차 갱신). "구장 내부 매점"(분리하기 정책의 내부 축) 데이터가 이 전처리 전까지는 raw xlsx로만 존재했던 걸 발견해서 처리함 — RAG 청킹 시작 전 마지막으로 채운 전처리 공백. **3차 갱신**: 팀원 3차 재검증(`backlog 보충.xlsx`)에서 확보한 더본코리아 8개 브랜드 실명(대전, `apply_daejeon_deoban_enrichment()` 오버레이)을 반영해 기존 요약 행 1개를 8개 개별 행으로 확장(284→291행). 상세는 아래 "3차 재검증 backlog 최종 반영" 섹션 참고.
+- 구장티켓가격.csv (740행, 10구단 전부) — preprocessing/normalize_ticket_prices.py 결과 (2026-09-08 밤 생성). `구장정보.xlsx` Ticket Prices 시트를 원본 그대로 옮긴 것(등급명이 팀마다 이름형/색상형/티어형으로 달라 표준화 없이 원본 필드 유지, RAG는 team_code+zone_name_ko+day_type+customer_type 조합으로 자유텍스트 검색). **주의**: NC 50행(`day_type=SAMPLE_EVENT_2026-09-08`)은 고정 시즌가격이 아니라 특정 경기 1건의 동적가격 스냅샷이라 챗봇 답변에 디스클레이머 필요, PARTIAL 5행(NC 스카이박스/불펜/라운드테이블)은 1인 단가인지 총액인지 불명확, `group_size`는 숫자/텍스트 혼재, `price_krw=0`인 4행은 오류가 아니라 엘린이·미취학아동 무료 요금(오류 아님). 상세 근거는 스크립트 docstring 참고
+- 구장교통정보.csv (43행, 9개 구장 전부: 지하철·버스·주차·셔틀) — preprocessing/normalize_transport.py 결과 (2026-09-08 밤 생성, 같은 날 밤 브라우저 보완 조사로 2차 갱신, 3차 갱신은 팀원 backlog 재검증 반영). `구장정보.xlsx` Transport 시트 37행을 원본 그대로 옮긴 뒤, 브라우저 조사로 확보한 5행을 추가하고 2행을 정정했으며, 3차 갱신으로 DAEJEON 지하주차장 신규 1행을 추가했다(42→43행). GOCHEOK 주차 행에는 전기차충전소 구비 문구도 보강했다. 기존 `구장잔여정보_좌석주차버스.csv`(3개 구장, 좌석도/주차/버스정류장명만, 지하철 없음)와 **병합하지 않고 별도 파일로 유지** — 대전·광주·대구 3개 구장에서 주차 수치가 서로 다르거나 세부항목이 갈라져 있어 단순 병합이 위험하다고 판단. 지하철·버스는 이 파일에만 있으므로 그대로 사용. 주차 우선순위: **광주·대구는 이 파일(더 최근 조사, 2026-09-03/04)을 우선**하되 기존 파일은 참고용으로 보존. **대전은 예외 — 본구장 주차 "총 수용면"의 원출처는 `구장잔여정보_좌석주차버스.csv`(지하 1,220면+지상 459면=총 1,679면, CONFIRMED).** 이 파일의 대전 4행 중 3행(73면/80면/미상)은 본구장이 아닌 임시 공영주차장이고, 3차 갱신으로 추가된 `PARKING_MAIN_UNDERGROUND` 행(본구장 지하주차장)은 원래 수용면 숫자 없이 "운영조건"(지하 1층만 사용/입장시작 시각/선착순)만 담고 있었는데, **4차 갱신(2026-09-08 밤)에서 이 행 하나만 검색돼도 완결된 답이 나오도록 `details`에 총 수용면(1,679면=지하 1,220면+지상 459면) 문구를 직접 넣고 `parking_spaces=1220`도 채워 자기완결적으로 만들었다** — 청킹 검토 중 "이 행만 단독으로 검색되면 총량 정보 없이 운영조건만 나가 불완전해 보인다"는 지적이 있어서 데이터 단에서 바로 반영. 두 파일이 서로 다른 수치를 주는 게 아니라 서로 다른 층위의 정보(전체 수용면 vs 게임데이 운영조건)라는 점은 변함없다. `overlaps_legacy_parking_csv` 컬럼으로 겹치는 행(6건)을 표시해뒀다. `status=RECHECK`(1건: 광주 주차 수용면 — 대구는 아래 참고로 CONFIRMED 확정됨)·`PARTIAL`(8건: 대전 대중교통·임시주차장·지하주차장 운영조건 5건 + 이번 조사로 추가된 미확정 3건)는 답변 시 원본의 불확실성 문구를 그대로 살릴 것. 새로 추가된 `evidence_subtype` 컬럼으로 원본 xlsx 값(`OFFICIAL_XLSX`)과 이번 조사분(`GOV_NOTICE`/`OFFICIAL_TEAM_SITE`/`COMMUNITY_WIKI`/`BLOG`/`NEWS_MEDIA`/`GOV_AGENCY`)을 구분해뒀다. **2026-09-08 밤 브라우저 보완 조사 결과는 아래 별도 섹션 참고.**
+- 구장좌석구역.csv (192행, 10구단 전부) — preprocessing/normalize_seat_zones.py 결과 (2026-09-08 밤 3차 생성). `구장정보.xlsx` Seat Zones 시트를 Ticket Prices와 같은 방식으로 원본 그대로 옮긴 것(zone_code/zone_name_ko가 팀마다 제각각이라 표준화하지 않음). `level`/`side`/`group_size`의 결측은 원본에 애초에 없는 값(해당 없음)이라 정상 — 파싱 오류로 취급하지 말 것. `status=PARTIAL` 2행(삼성 대구, KIA 광주)은 원본 `description`에 사유가 이미 있어 별도 챗봇 규칙 불필요.
+- 구장좌석경험.csv (8행) / 구장운영정보.csv (9행) / 구장좌석도.csv (10행) — preprocessing/normalize_official_extras.py 결과 (2026-09-08 밤 최종 생성). `구장정보.xlsx`의 마지막까지 미처리 상태였던 3개 소규모 시트(Seat Experience/Operations/Seat Maps)를 "총정리" 감사 중 발견해서 처리함 — 이걸로 `구장정보.xlsx`의 좌석/운영/접근 관련 시트는 전부 전처리 완료. 전부 `status=CONFIRMED`, `evidence_type=OFFICIAL`.
+  - 구장좌석경험.csv: `scope_code`가 `ALL_SEATS`/`INFIELD_1F`처럼 구장 전체·그룹 단위 시야 설명이라 개별 구역 단위인 구장좌석구역.csv와는 별도 파일로 유지.
+  - 구장운영정보.csv: 구장별 시설관리 주체/경기운영 주체/대표전화 3종(총괄·시설·티켓) 연락처. `phone_facility`/`phone_ticket` 결측은 별도 번호가 없다는 뜻(정상).
+  - 구장좌석도.csv: 10구단 팀별 공식 좌석도 페이지/이미지 URL 1행씩. `asset_url`/`secondary_asset_url` 결측은 이미지 없이 페이지 링크만 공식 제공된다는 뜻(정상, 예: LG).
+- 3차_신규확보데이터.csv (14행) — preprocessing/build_backlog_findings_ref.py 결과 (2026-09-08 밤 최종 생성). 팀원의 "3차 재검증"(`backlog 보충.xlsx`) `신규확보데이터` 시트 14건을 원문 그대로 옮긴 참조 테이블. `incorporation_status` 컬럼으로 각 항목이 실제 어디에 반영됐는지 추적 — 상세는 아래 "3차 재검증 backlog 최종 반영" 섹션 참고.
 
-카카오 CSV를 최종 배포용 엑셀로 만드는 후처리는 아직 자동화되지 않았습니다.
-포스트시즌 TBD는 미확정 참고 일정입니다. 순위·일정은 각 파일의 수집 시점 기준으로 해석합니다.
+※ 구장반경_외부맛집카페핫플_카카오수집본.xlsx(최종 배포본)는 위 카카오 CSV 2개를 후처리해서 만드는 것으로, 아직 자동화 안 됨 — docs/크롤링_전처리_실행가이드 참고.
 
-[데이터 관리 기준](../README.md) · [수집 실행](../../crawling/README.md) · [전처리 실행](../../preprocessing/README.md)
+## 챗봇 응답 규칙 — 구장티켓가격.csv (RAG 체인 구성 시 참고, 2026-09-08 작성)
+
+가격 데이터는 원본 필드를 그대로 옮겼을 뿐 표준화하지 않았기 때문에, RAG가 검색해온 행을 그대로 노출하면 오해를 살 수 있는 경우가 4가지 있다. LLM 프롬프트/답변 템플릿에 아래 규칙을 반영할 것.
+
+1. `team_code=NC`이고 `day_type`이 `SAMPLE_EVENT_`로 시작하는 행(50건)은 고정 시즌가격이 아니라 특정 경기 1건(2026-09-08 NC-롯데전)의 동적가격 스냅샷이다. NC 가격을 답할 때는 반드시 "특정 경기 기준 예시 가격이며 실제 요금은 경기별로 달라질 수 있습니다"를 덧붙인다. 다른 9개 구단(`day_type=WEEKDAY`/`WEEKEND_HOLIDAY` 등)은 고정가이므로 이 문구가 필요 없다.
+2. `status=PARTIAL`인 5행(전부 NC — 스카이박스·불펜석·불펜가족석·라운드테이블석)은 표시 금액이 1인 단가인지 구역 전체 총액인지 원본에도 명시돼 있지 않다. 이 5행을 답할 때는 "정확한 결제 단위는 예매 시 확인이 필요합니다"를 붙인다.
+3. `group_size` 컬럼은 숫자(예: 6, 4)와 문장("무료 대상 증빙 필요")이 섞여 있다. 이 컬럼을 숫자로 파싱하는 로직이 있다면 문자열 값이 들어올 수 있다는 예외 처리를 반드시 넣는다.
+4. `price_krw=0`인 4행(LG 그린석-엘린이 2행, 키움 외야 지정석 상단-미취학아동/리틀야구회원 2행)은 데이터 오류가 아니라 정상적인 무료 요금이다. 그냥 "0원"이라고만 답하지 말고 `discount_condition` 값(무료 대상 조건)을 같이 안내한다.
+
+## 구장교통정보.csv 브라우저 보완 조사 결과 (2026-09-08 밤, 사용자 지시로 대구 버스 → 인천 대중교통 → 사직·수원·창원 주차 대수 → 창원 셔틀 순으로 조사)
+
+기존 `구장정보.xlsx` Transport 시트에는 없던 정보라 `preprocessing/normalize_transport.py`의 `apply_manual_research_enrichment()`가 xlsx 파싱 이후 오버레이로 적용한다. 신뢰도가 제각각이라 `evidence_type`/`evidence_subtype`/`status`를 출처별로 차등 부여했다 (사용자 결정: "신뢰도별로 차등 반영").
+
+**⚠️ 정정 (공백이 아니라 이미 배포된 데이터의 오류였음)**
+- **대구 지하철역명**: `DAEGU`/`SUBWAY` 행의 "2호선 대공원역"은 2024년 대구광역시 고시 제2024-220호로 **"수성알파시티역"으로 공식 개명**되었다(연합뉴스·KBS 등 다수 보도로 확인). title·details를 정정했다. `evidence_type=OFFICIAL`(정부 고시 근거) 유지.
+- **창원 셔틀 2026 운영 여부**: `CHANGWON`/`SHUTTLE_2025` 행이 `status=RECHECK`("2026 운행 여부 재확인")였는데, NC 다이노스 공식 홈페이지 공지(2026-03-22/23, 2026-07-20 증차 공지)로 **2026시즌도 운행 중임을 확인**했다. `status=CONFIRMED`로 변경, 상세 운행 정보(45인승 6대, 출발/귀가 시각, 사전예약제)로 갱신.
+
+**신규 추가 (5행, 전부 `RESEARCH_2026-09-08_`로 시작하는 `source_id`)**
+1. `DAEGU`/`BUS` — 시내버스 16개 노선 전체(나무위키 출처). `evidence_type=UNOFFICIAL`, `status=PARTIAL` — 공식 구단/지자체 출처 재확인 전까지 참고용으로만 안내할 것.
+2. `MUNHAK`/`BUS` — SSG 랜더스 공식 홈페이지에서 확인한 시내버스 노선 전체(정류장별 경유노선 포함). 공식 구단 홈페이지 출처라 `evidence_type=OFFICIAL`, `status=CONFIRMED`로 처리 — 신규 추가분 중 유일하게 PARTIAL이 아님.
+3. `SAJIK`/`PARKING_CAPACITY_UNOFFICIAL` — 사직야구장 단독 주차 약 450면. 블로그 1건 출처만 확인(부산시 공식 페이지는 접속했으나 렌더링 문제로 대조 실패). `evidence_type=UNOFFICIAL`, `status=PARTIAL`.
+4. `SUWON`/`PARKING_CAPACITY_NEWS` — 수원종합운동장+야구장 **합산** 1,402면(야구장 단독 수치 아님, 중부일보 보도). `evidence_type=UNOFFICIAL`, `status=PARTIAL`.
+5. `CHANGWON`/`PARKING_CAPACITY_OFFICIAL` — 마산종합운동장 부설주차장 총 1,685면(창원시설공단 공식 + 나무위키 교차확인). 기존 4개 개별 유료주차장 행과는 다른 시설(구장 부설주차장)이라 별도 행. `evidence_type=OFFICIAL`, `status=CONFIRMED`.
+
+**대구 주차 수용면 최종 확정 (2026-09-08 밤 2차 재조사)**: 1차 재조사(나무위키 852+245=1,097면)와 기존 값(1,117면)이 소폭 달라 RECHECK로 남겨뒀었는데, 위키백과(대구삼성라이온즈파크 문서)와 독립 언론 보도(굿모닝충청, 2018-11-20)가 모두 1,117면으로 명시해 원본과 일치함을 확인했다. `status=RECHECK`→`CONFIRMED`로 최종 확정. 나무위키의 852+245=1,097면은 소수 의견으로 판단해 채택하지 않았다(details에 참고로 남겨둠).
+
+**남은 불확실성**: 사직·수원 주차 대수는 블로그·언론 수준 출처라 공식 구단/지자체 확인 전까지는 챗봇 답변에서 "정확한 수치는 아닐 수 있음"을 반드시 남길 것.
+
+## F&B 매장별 영업시간 재조사 결과 — 정정 (2026-09-08 밤)
+
+이전 메모("사직 소스 S09/S10에 위치·운영시간이 공개돼 있어 실행 가능한 예외 1건 발견")를 실제로 브라우저로 확인한 결과 **착오였음이 밝혀졌다.** S09(`giantsclub.com/html/?pcode=367`)·S10(`?pcode=917`)은 식음매장이 아니라 **구단 굿즈샵**(자이언츠샵·프로페셔널샵·유니폼샵·치어샵 등 기념품 매장) 페이지였다 — Food Stores(식음매장) 데이터와는 무관한 카테고리라 반영하지 않는다. 따라서 **F&B 매장별 영업시간은 9개 구장 전부 사실상 데이터 없음(대구 1건만 "미공개"로 존재)이 최종 확인됐고, 추가로 채울 수 있는 공식 출처는 없다.** 이 항목은 여기서 종결한다 — 향후 팀에서 각 구단 공식 채널을 통해 직접 확인하지 않는 한 개선할 방법이 없다.
+
+## 총정리 감사에서 발견한 최종 누락분 처리 (2026-09-08 밤)
+
+"전처리 다 끝났는지 총정리해보자"는 지시로 raw 폴더·`구장정보.xlsx` 전체 시트를 재점검한 결과, 처리되지 않은 채 남아있던 것 2종류를 마지막으로 발견해 처리했다.
+
+**1. `구장정보.xlsx` 미처리 시트 3개** — Seat Experience(8행)/Operations(9행)/Seat Maps(10행). 전부 소규모(10행 이하)라 그동안 지나쳤던 것으로 추정. `preprocessing/normalize_official_extras.py`로 처리 완료 (위 항목 참고). 이걸로 `구장정보.xlsx`의 17개 시트 전부(Guide/Backlog/Coverage/Sources 등 메타 시트 제외) 전처리 완료.
+
+**2. `backlog 보충.xlsx`(팀원 3차 재검증, 2026-09-05 작성) `신규확보데이터` 시트 14건** — 이 파일 자체가 이번 총정리 전까지 한 번도 열어본 적 없던 파일이었다. 14건 전부 `3차_신규확보데이터.csv`에 원문 보존하고, `incorporation_status`별로 다음과 같이 처리했다.
+
+| No. | 항목 | 처리 |
+| --- | --- | --- |
+| 1 | SUWON 입장 시간 | PENDING_NEW_SCHEMA — Team Policies 전용 파일 없음, 참조 CSV에만 보존 |
+| 2 | GOCHEOK 주차 484면+EV충전소 | INCORPORATED — 구장교통정보.csv details에 EV충전소 문구 추가(면수는 기존과 일치) |
+| 3 | GOCHEOK 층별 시설 | PENDING_NEW_SCHEMA — `구장정보.xlsx` Facilities 시트 자체가 미처리라 반영 파일 없음 |
+| 4 | DAEJEON 지하주차장 운영조건 | INCORPORATED — 구장교통정보.csv에 신규 행 추가 |
+| 5 | DAEJEON 음료 반입 | ALREADY_CAPTURED — `docs/KBO_반입물품_재입장규정.md`·`.json`에 이미 동일 내용 있음, `beverage_note`로 명시 문구만 보강 |
+| 6 | DAEJEON 음식물 반입 | INCORPORATED — 위 두 파일에 `food_carry_in_detail` 필드 신설 |
+| 7 | DAEJEON 예매 한도·연령 기준 | PENDING_NEW_SCHEMA — 반입물품/재입장 스키마 밖의 티켓정책, 참조 CSV에만 보존 |
+| 8 | CHANGWON 2026 시즌티켓 체계 | PENDING_NEW_SCHEMA — 구장티켓가격.csv(개별 좌석 단가 표)와 스키마 불일치 |
+| 9 | CHANGWON 시즌권 혜택 | PENDING_NEW_SCHEMA — 구장좌석경험.csv(좌석 시야 설명)와 스키마 불일치 |
+| 10 | DAEJEON 더본코리아 8개 브랜드 | INCORPORATED — 구장먹거리_공식매점.csv PARTIAL 요약 행 1개를 개별 8행으로 확장 |
+| 11 | DAEJEON 아라마크 구역 | ALREADY_CAPTURED — 기존 F282 행이 이번 항목보다 상위 등급 출처(공식 보도자료)로 이미 반영됨 |
+| 12 | DAEGU HOUSE OF LIONS | ALREADY_CAPTURED — 구장먹거리_공식매점.csv·구장부가콘텐츠_공식.csv에 이미 이번 항목보다 상세하게 반영됨(4개 Zone 포함) |
+| 13 | SAJIK 2026 신규 입점 5곳 | ALREADY_CAPTURED — 구장먹거리_공식매점.csv에 5곳 전부 이미 존재 확인 |
+| 14 | JAMSIL 시설 규모(지자체 공식) | PENDING_NEW_SCHEMA — 구장 기본 제원 전용 파일 없음, 기존 좌석수(24,411석)·수용인원(25,000명) 값과 교차검증만 통과 확인 |
+
+INCORPORATED 4건 + ALREADY_CAPTURED 4건은 이번에 실제 반영·확인을 완료했고, PENDING_NEW_SCHEMA 6건은 유실 없이 `3차_신규확보데이터.csv`에 원문이 보존돼 있으니 향후 "구단정책(Team Policies)"·"구장 기본 제원" 같은 전용 테이블을 신설할 때 그대로 가져다 쓰면 된다.

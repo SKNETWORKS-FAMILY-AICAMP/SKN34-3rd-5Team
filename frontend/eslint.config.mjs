@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "public/vendor/**", // Unmodified third-party distributions, not application source.
+    ".cache/**", // Local crawler snapshots and temporary source inspection files.
   ]),
 ]);
 

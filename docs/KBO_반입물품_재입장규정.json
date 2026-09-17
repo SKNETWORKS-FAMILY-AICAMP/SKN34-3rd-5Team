@@ -1,0 +1,427 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "title": "KBO 10구단 반입물품·재입장 규정 — 고정형 데이터",
+    "source_document": "KBO_반입물품_재입장규정.md",
+    "source_document_sha256": "21eed1b284bd0bfe4d72968653085a9833e4cfd067cfff7ebd4aae30c48c6080",
+    "purpose": "챗봇/RAG에서 실시간 크롤링 없이 고정 규정으로 조회",
+    "carry_in_reference_date": "2026-09-07",
+    "reentry_updated_at": "2026-09-08",
+    "date_note": "재입장 정보 반영일은 문서 수정일이며 공식 규정 시행일이 아님",
+    "carry_in_common_source_url": "https://www.koreabaseball.com/Kbo/BusinessAndEvent/Safe.aspx",
+    "verification_scope": "MD의 기존 반입물품 내용과 출처·상태 표시는 유지했으며 JSON 생성 과정에서 공식 원문을 별도로 재검증하지 않음",
+    "field_scope_note": "teams의 기존 status, source, source_note 및 carry_in_team_reference의 status/evidence_type는 반입물품 자료의 원본 표시이며 재입장 안내 전체의 공식 검증 근거가 아님. 재입장 판단에는 각 팀의 reentry_status/reentry_evidence_type/reentry_source를 사용함",
+    "reentry_status": "PARTIAL",
+    "reentry_evidence_type": "UNOFFICIAL",
+    "reentry_source": "USER_PROVIDED",
+    "reentry_classification_note": "10구단 재입장 안내 전체를 사용자 제공 정보로 취급함. 고척의 재입장 시 외부음식 추가 반입 금지는 부가 정보로 보존하며, 그 단일 항목의 공식 확인 여부로 고척 또는 전체 재입장 안내를 공식 정보로 분류하지 않음",
+    "alcohol_abv_note_2026_09_14": "주류 도수 제한은 KBO 공통규정에 없고 구장별로만 확인된다. 공식 확인: LG 홈경기 8% 이하 맥주, 고척 6도 이하 주류(서울시설공단 FAQ). 잠실 커뮤니티 5% 기준과 SSG 블로그 5% 기준은 UNOFFICIAL 이라 반영하지 않음(공식 예외 없는 구단에 비공식 수치를 덧붙이지 않는다는 기존 규칙). 따라서 도수 기준이 확인되지 않은 구장에 대해 소주 가능 여부를 단정하지 않는다",
+    "alcohol_restore_2026_09_14": "carry_in_common_rules.alcohol 은 반입물품_구단별정리.md 1번 표(전 구장 공통 기준)의 '주류' 행 원문이다. 최초 JSON 변환 때 이 행이 beverage 로만 옮겨져 '주류'라는 표현이 사라졌고, 그 결과 소주·술 질문이 공통규정 청크에 걸리지 않아 2026-09-14 복원함. 용기·용량 기준이며 술 종류를 허용한다는 뜻이 아님",
+    "merge_note": "carry_in_common_rules는 구단별 예외 또는 재입장 규정과 자동 병합한 값이 아님. 구단별 기존 반입물품 키의 종류는 서로 다를 수 있음",
+    "unknown_note": "UNKNOWN은 제공 자료에 정보가 없다는 뜻이며 허용, 금지 또는 없음으로 치환하지 않음",
+    "lg_alcohol_update_2026_09_08": "data/raw/구장정보.xlsx Policies 시트 P012(source S037=lgtwins.com/ticket/general, verified_at 2026-09-03)에서 LG 홈경기 한정 '도수 8% 이하 맥주만 허용' 예외를 공식 확인하여 LG를 CONFIRMED_BASELINE에서 CONFIRMED로 갱신함. 반입물품_구단별정리.md의 잠실 커뮤니티 기준(도수 5% 초과 금지, UNOFFICIAL)과 수치가 다르나 이 LG 전용 공식 출처가 더 신뢰도가 높아 LG에만 8% 기준을 적용함(범위가 LG_HOME_GAME으로 한정되어 두산에는 적용하지 않음)"
+  },
+  "carry_in_common_rules": {
+    "bag": "1인당 45×45×20cm 이하 가방 1개",
+    "shopping_bag": "1인당 30×50×12cm 이하 쇼핑백류 1개",
+    "bulky_items": "상자, 아이스박스, 돗자리, 휴대용 의자, 휴대용 간이테이블 반입 불가(구장별 특별 허용구역 예외 가능)",
+    "glass_bottle": "반입 불가",
+    "frozen_water": "반입 불가",
+    "alcohol": "미개봉 상태에 한해 1인당 1L 이하 PET 1개 또는 캔 2개까지(총량 1L 이하). 유리병과 1L 초과 용기는 전면 금지. 막걸리 등 향이 강한 술은 구단 재량으로 추가 제한 가능",
+    "beverage": "미개봉 음료 기준 PET 1개 또는 캔 2개까지, 총량 1L 이하",
+    "food": "반입금지 품목이 아니고 허용 소지품 범위 내이면 가능",
+    "hot_or_strong_smell_food": "뜨거운 국물·강한 냄새 등 타인 관람을 방해할 수 있는 음식은 제한 가능",
+    "dangerous_items": "칼·가위·취사도구·레이저포인터 등 위험/투척 가능 물품 제한",
+    "noisy_cheering_tools": "과도한 소음 또는 타인 관람 방해 응원도구 제한",
+    "pet": "반입 제한(보조견 등 별도 법정 예외는 현장 기준 적용)"
+  },
+  "carry_in_team_reference": {
+    "LG": {
+      "team_name": "LG 트윈스",
+      "stadium": "잠실야구장",
+      "policy_basis": "KBO SAFE 공통규정 + LG 공식 티켓·입장 안내",
+      "team_exception": "주류: 도수 8% 이하 맥주만 허용 (LG 공식 안내로 확인, 2026-09-08 발견·반영). 그 외 반입물품은 공통규정 적용",
+      "status": "CONFIRMED",
+      "evidence_type": "OFFICIAL"
+    },
+    "DOOSAN": {
+      "team_name": "두산 베어스",
+      "stadium": "잠실야구장",
+      "policy_basis": "KBO SAFE 공통규정",
+      "team_exception": "공식 구단 고유 예외 미확인 → 공통규정 적용",
+      "status": "CONFIRMED_BASELINE",
+      "evidence_type": "OFFICIAL"
+    },
+    "KIWOOM": {
+      "team_name": "키움 히어로즈",
+      "stadium": "고척스카이돔",
+      "policy_basis": "KBO SAFE + 키움 공식 Q&A",
+      "team_exception": "최초 입장 외부음식 가능. **재입장 시 외부음식 추가 반입 제한.** 주류는 공식 Q&A의 현행 기준을 우선 적용",
+      "status": "CONFIRMED",
+      "evidence_type": "OFFICIAL"
+    },
+    "SSG": {
+      "team_name": "SSG 랜더스",
+      "stadium": "인천 SSG랜더스필드",
+      "policy_basis": "KBO SAFE 공통규정",
+      "team_exception": "팀 고유 세부 규정은 공식 원문 미확인 → 공통규정 적용",
+      "status": "CONFIRMED_BASELINE",
+      "evidence_type": "OFFICIAL"
+    },
+    "KT": {
+      "team_name": "KT 위즈",
+      "stadium": "수원 KT위즈파크",
+      "policy_basis": "KBO SAFE 공통규정",
+      "team_exception": "**기존 미완성 2구단 중 1곳.** 2026-09-07 현재 팀 공식 공개자료에서 별도 예외를 확인하지 못함 → 공통규정 고정 적용",
+      "status": "CONFIRMED_BASELINE",
+      "evidence_type": "OFFICIAL"
+    },
+    "HANWHA": {
+      "team_name": "한화 이글스",
+      "stadium": "대전 한화생명 볼파크",
+      "policy_basis": "한화 공식 FAQ + KBO SAFE",
+      "team_exception": "가방/쇼핑백 규격, 아이스박스·대형가방 제한, 미개봉 음료 1L 총량 기준, 뜨거운 국물·강한 냄새 음식 제한을 공식 FAQ에서 재확인",
+      "status": "CONFIRMED",
+      "evidence_type": "OFFICIAL"
+    },
+    "SAMSUNG": {
+      "team_name": "삼성 라이온즈",
+      "stadium": "대구 삼성 라이온즈파크",
+      "policy_basis": "KBO SAFE + 삼성 공식 안내",
+      "team_exception": "캐리어·아이스박스·의자·유리병 반입 금지 안내 확인. 그 외 항목은 KBO 공통규정 적용",
+      "status": "CONFIRMED",
+      "evidence_type": "OFFICIAL"
+    },
+    "KIA": {
+      "team_name": "KIA 타이거즈",
+      "stadium": "광주-기아 챔피언스필드",
+      "policy_basis": "KBO SAFE + KIA 공식 FAQ",
+      "team_exception": "막걸리·홍어·마라류 등 향이 강한 음식, 국물 포함 음식 등 구단 안내상 추가 제한 가능. 과일은 잘라온 경우 허용 안내",
+      "status": "CONFIRMED",
+      "evidence_type": "OFFICIAL"
+    },
+    "LOTTE": {
+      "team_name": "롯데 자이언츠",
+      "stadium": "사직야구장",
+      "policy_basis": "KBO SAFE 공통규정",
+      "team_exception": "롯데 공식 홈페이지에서 KBO 안전가이드라인을 안내하므로 공통규정을 구장 기준으로 사용",
+      "status": "CONFIRMED",
+      "evidence_type": "OFFICIAL"
+    },
+    "NC": {
+      "team_name": "NC 다이노스",
+      "stadium": "창원 NC파크",
+      "policy_basis": "NC 공식 KBO 안전가이드라인 안내 + KBO SAFE",
+      "team_exception": "**기존 미완성 2구단 중 1곳.** NC 공식 공지에서 전 KBO 구장 안전정책 적용을 안내. 별도 팀 고유 예외는 현재 공식 확인되지 않아 공통규정 고정 적용",
+      "status": "CONFIRMED_BASELINE",
+      "evidence_type": "OFFICIAL"
+    }
+  },
+  "reentry_field_definitions": {
+    "reentry_method": {
+      "value_format": "TICKET_CHECK / HAND_STAMP_AND_WRISTBAND_REQUEST",
+      "description": "재입장 절차 유형. 티켓 확인형 또는 퇴장 시 손등 도장 및 팔찌 요청형"
+    },
+    "reentry_procedure": {
+      "value_format": "안내 문장",
+      "description": "사용자가 제공한 게이트 출입·퇴장 절차"
+    },
+    "reentry_external_food": {
+      "value_format": "N / UNKNOWN",
+      "description": "재입장 시 외부음식 추가 반입. N은 금지, UNKNOWN은 제공 자료에 정보 없음"
+    },
+    "reentry_external_food_note": {
+      "value_format": "안내 문장",
+      "description": "외부음식 추가 반입의 제한 내용 또는 정보 미제공 안내"
+    },
+    "reentry_dedicated_queue": {
+      "value_format": "Y / UNKNOWN",
+      "description": "재입장 전용 대기줄. Y는 있음, UNKNOWN은 정보 없음이며 대기줄이 없다는 뜻이 아님"
+    },
+    "reentry_late_inning_restriction": {
+      "value_format": "POSSIBLE / UNKNOWN",
+      "description": "후반 이닝 재입장 통제 가능성. POSSIBLE은 조건부 통제 가능이며 항상 금지라는 뜻이 아님"
+    },
+    "reentry_late_inning_timing": {
+      "value_format": "8회초~말 이후 / UNKNOWN",
+      "description": "사용자가 제시한 시간 범위를 그대로 보존. 정확한 통제 개시 시점을 확정하지 않음"
+    },
+    "reentry_late_inning_note": {
+      "value_format": "안내 문장",
+      "description": "통제 가능성 및 적용 대상의 불확실성"
+    },
+    "reentry_status": {
+      "value_format": "PARTIAL",
+      "description": "프로젝트 공통 `status` 어휘(CONFIRMED/PARTIAL/OPEN/RECHECK/CONFIRMED_BASELINE/HISTORICAL_ONLY) 중 하나. 재입장 안내는 사용자 제공 자료이며 공식 원문을 별도로 검증하지 않았으므로 PARTIAL로 표기"
+    },
+    "reentry_evidence_type": {
+      "value_format": "UNOFFICIAL",
+      "description": "프로젝트 공통 `evidence_type` 어휘(OFFICIAL/DERIVED/THIRD_PARTY_API/UNOFFICIAL) 중 하나. 사용자 제공·비공식 출처이므로 UNOFFICIAL로 표기"
+    },
+    "reentry_source": {
+      "value_format": "USER_PROVIDED",
+      "description": "이번 재입장 보완 정보의 출처. 기존 반입물품 source와 별도"
+    },
+    "reentry_source_url": {
+      "value_format": "UNKNOWN",
+      "description": "사용자 제공 재입장 안내에는 원문 URL이 제시되지 않음"
+    },
+    "reentry_updated_at": {
+      "value_format": "YYYY-MM-DD",
+      "description": "파일에 재입장 정보를 반영한 날짜. 공식 규정 시행일이 아님"
+    }
+  },
+  "teams": {
+    "LG": {
+      "team_code": "LG",
+      "stadium": "잠실야구장",
+      "carry_in_policy": "KBO_SAFE_COMMON+TEAM_OFFICIAL_FAQ",
+      "team_exception": "주류는 도수 8% 이하 맥주만 허용(그 외 주류 제한). 그 외 반입물품은 공통규정 적용",
+      "alcohol": "도수 8% 이하 맥주만 허용 안내",
+      "status": "CONFIRMED",
+      "source": "https://www.lgtwins.com/ticket/general",
+      "reentry_method": "TICKET_CHECK",
+      "reentry_procedure": "게이트 출입 시 실물 티켓·앱 티켓을 매번 확인",
+      "reentry_external_food": "UNKNOWN",
+      "reentry_external_food_note": "제공된 재입장 자료에는 외부음식 추가 반입 허용·금지 정보가 없음",
+      "reentry_dedicated_queue": "UNKNOWN",
+      "reentry_late_inning_restriction": "UNKNOWN",
+      "reentry_late_inning_timing": "UNKNOWN",
+      "reentry_late_inning_note": "이 구장은 후반 이닝 통제 대상으로 개별 명시되지 않음. 사용자 안내의 최신/지방 구장 등 범위에 포함되는지는 미확인",
+      "reentry_status": "PARTIAL",
+      "reentry_evidence_type": "UNOFFICIAL",
+      "reentry_source": "USER_PROVIDED",
+      "reentry_source_url": "UNKNOWN",
+      "reentry_updated_at": "2026-09-08"
+    },
+    "DOOSAN": {
+      "team_code": "DOOSAN",
+      "stadium": "잠실야구장",
+      "carry_in_policy": "KBO_SAFE_COMMON",
+      "team_exception": "NONE_CONFIRMED",
+      "status": "CONFIRMED_BASELINE",
+      "reentry_method": "TICKET_CHECK",
+      "reentry_procedure": "게이트 출입 시 실물 티켓·앱 티켓을 매번 확인",
+      "reentry_external_food": "UNKNOWN",
+      "reentry_external_food_note": "제공된 재입장 자료에는 외부음식 추가 반입 허용·금지 정보가 없음",
+      "reentry_dedicated_queue": "UNKNOWN",
+      "reentry_late_inning_restriction": "UNKNOWN",
+      "reentry_late_inning_timing": "UNKNOWN",
+      "reentry_late_inning_note": "이 구장은 후반 이닝 통제 대상으로 개별 명시되지 않음. 사용자 안내의 최신/지방 구장 등 범위에 포함되는지는 미확인",
+      "reentry_status": "PARTIAL",
+      "reentry_evidence_type": "UNOFFICIAL",
+      "reentry_source": "USER_PROVIDED",
+      "reentry_source_url": "UNKNOWN",
+      "reentry_updated_at": "2026-09-08"
+    },
+    "KIWOOM": {
+      "team_code": "KIWOOM",
+      "stadium": "고척스카이돔",
+      "carry_in_policy": "KBO_SAFE_COMMON_WITH_TEAM_EXCEPTION",
+      "alcohol": "6도 이하 주류만 허용(서울시설공단 공식 FAQ 기준)",
+      "first_entry_external_food": "Y",
+      "reentry_external_food": "N",
+      "status": "CONFIRMED",
+      "source": "https://heroesbaseball.co.kr/fans/qna/list.do",
+      "reentry_method": "HAND_STAMP_AND_WRISTBAND_REQUEST",
+      "reentry_procedure": "게이트를 나갈 때 전용 게이트 안쪽에 있는 요원에게 손등 도장 및 팔찌 요청",
+      "reentry_external_food_note": "재입장 시 외부음식 추가 반입 금지",
+      "reentry_dedicated_queue": "UNKNOWN",
+      "reentry_late_inning_restriction": "UNKNOWN",
+      "reentry_late_inning_timing": "UNKNOWN",
+      "reentry_late_inning_note": "이 구장은 후반 이닝 통제 대상으로 개별 명시되지 않음. 사용자 안내의 최신/지방 구장 등 범위에 포함되는지는 미확인",
+      "reentry_status": "PARTIAL",
+      "reentry_evidence_type": "UNOFFICIAL",
+      "reentry_source": "USER_PROVIDED",
+      "reentry_source_url": "UNKNOWN",
+      "reentry_updated_at": "2026-09-08"
+    },
+    "SSG": {
+      "team_code": "SSG",
+      "stadium": "인천 SSG랜더스필드",
+      "carry_in_policy": "KBO_SAFE_COMMON",
+      "team_exception": "NONE_OFFICIALLY_CONFIRMED",
+      "status": "CONFIRMED_BASELINE",
+      "reentry_method": "HAND_STAMP_AND_WRISTBAND_REQUEST",
+      "reentry_procedure": "게이트를 나갈 때 전용 게이트 안쪽에 있는 요원에게 손등 도장 및 팔찌 요청",
+      "reentry_external_food": "UNKNOWN",
+      "reentry_external_food_note": "제공된 재입장 자료에는 외부음식 추가 반입 허용·금지 정보가 없음",
+      "reentry_dedicated_queue": "UNKNOWN",
+      "reentry_late_inning_restriction": "UNKNOWN",
+      "reentry_late_inning_timing": "UNKNOWN",
+      "reentry_late_inning_note": "이 구장은 후반 이닝 통제 대상으로 개별 명시되지 않음. 사용자 안내의 최신/지방 구장 등 범위에 포함되는지는 미확인",
+      "reentry_status": "PARTIAL",
+      "reentry_evidence_type": "UNOFFICIAL",
+      "reentry_source": "USER_PROVIDED",
+      "reentry_source_url": "UNKNOWN",
+      "reentry_updated_at": "2026-09-08"
+    },
+    "KT": {
+      "team_code": "KT",
+      "stadium": "수원 KT위즈파크",
+      "carry_in_policy": "KBO_SAFE_COMMON",
+      "team_exception": "NONE_OFFICIALLY_CONFIRMED",
+      "status": "CONFIRMED_BASELINE",
+      "note": "기존 반입물품 MD의 미완성 항목을 공통 공식규정으로 고정 보완",
+      "reentry_method": "HAND_STAMP_AND_WRISTBAND_REQUEST",
+      "reentry_procedure": "게이트를 나갈 때 전용 게이트 안쪽에 있는 요원에게 손등 도장 및 팔찌 요청",
+      "reentry_external_food": "UNKNOWN",
+      "reentry_external_food_note": "제공된 재입장 자료에는 외부음식 추가 반입 허용·금지 정보가 없음",
+      "reentry_dedicated_queue": "Y",
+      "reentry_late_inning_restriction": "UNKNOWN",
+      "reentry_late_inning_timing": "UNKNOWN",
+      "reentry_late_inning_note": "이 구장은 후반 이닝 통제 대상으로 개별 명시되지 않음. 사용자 안내의 최신/지방 구장 등 범위에 포함되는지는 미확인",
+      "reentry_status": "PARTIAL",
+      "reentry_evidence_type": "UNOFFICIAL",
+      "reentry_source": "USER_PROVIDED",
+      "reentry_source_url": "UNKNOWN",
+      "reentry_updated_at": "2026-09-08"
+    },
+    "HANWHA": {
+      "team_code": "HANWHA",
+      "stadium": "대전 한화생명 볼파크",
+      "carry_in_policy": "TEAM_OFFICIAL_FAQ",
+      "bag": "45x45x20cm 이하 1개",
+      "shopping_bag": "30x50x12cm 이하 1개",
+      "icebox": "N",
+      "large_bag": "N",
+      "beverage": "미개봉 PET 1개 또는 캔 2개, 총량 1L 이하",
+      "beverage_note": "유리병 반입 금지, 총 반입 용량 1L 초과 금지 (한화 이글스 공식 FAQ 명시, 2026-09-08 밤 2차 갱신)",
+      "hot_or_strong_smell_food": "RESTRICTABLE",
+      "food_carry_in_detail": "반입금지 품목 외 음식물은 소지품 크기·개수 허용 범위 내 반입 가능. 뜨거운 국물류·냄새가 강한 음식·던질 수 있는 과일류 제한. 미리 잘라온 과일은 가능 (한화 이글스 공식 FAQ, 2026-09-08 밤 2차 갱신)",
+      "status": "CONFIRMED",
+      "source": "https://www.hanwhaeagles.co.kr/ETC/CU/ETCCUCUI01.do?kind=FQ2&length=10&search=&start=0",
+      "reentry_method": "HAND_STAMP_AND_WRISTBAND_REQUEST",
+      "reentry_procedure": "게이트를 나갈 때 전용 게이트 안쪽에 있는 요원에게 손등 도장 및 팔찌 요청",
+      "reentry_external_food": "UNKNOWN",
+      "reentry_external_food_note": "제공된 재입장 자료에는 외부음식 추가 반입 허용·금지 정보가 없음",
+      "reentry_dedicated_queue": "UNKNOWN",
+      "reentry_late_inning_restriction": "POSSIBLE",
+      "reentry_late_inning_timing": "8회초~말 이후",
+      "reentry_late_inning_note": "사용자 안내상 대전·창원 등 최신/지방 구장은 8회초~말 이후 재입장이 전면 통제될 수도 있음. 정확한 시점과 적용 조건은 미제공이며 현장 확인 필요",
+      "reentry_status": "PARTIAL",
+      "reentry_evidence_type": "UNOFFICIAL",
+      "reentry_source": "USER_PROVIDED",
+      "reentry_source_url": "UNKNOWN",
+      "reentry_updated_at": "2026-09-08"
+    },
+    "SAMSUNG": {
+      "team_code": "SAMSUNG",
+      "stadium": "대구 삼성 라이온즈파크",
+      "carry_in_policy": "KBO_SAFE_COMMON_WITH_TEAM_EXCEPTION",
+      "carrier": "N",
+      "icebox": "N",
+      "portable_chair": "N",
+      "glass_bottle": "N",
+      "status": "CONFIRMED",
+      "source_note": "삼성 라이온즈 공식 SNS 고객센터 이용안내",
+      "reentry_method": "HAND_STAMP_AND_WRISTBAND_REQUEST",
+      "reentry_procedure": "게이트를 나갈 때 전용 게이트 안쪽에 있는 요원에게 손등 도장 및 팔찌 요청",
+      "reentry_external_food": "UNKNOWN",
+      "reentry_external_food_note": "제공된 재입장 자료에는 외부음식 추가 반입 허용·금지 정보가 없음",
+      "reentry_dedicated_queue": "UNKNOWN",
+      "reentry_late_inning_restriction": "UNKNOWN",
+      "reentry_late_inning_timing": "UNKNOWN",
+      "reentry_late_inning_note": "이 구장은 후반 이닝 통제 대상으로 개별 명시되지 않음. 사용자 안내의 최신/지방 구장 등 범위에 포함되는지는 미확인",
+      "reentry_status": "PARTIAL",
+      "reentry_evidence_type": "UNOFFICIAL",
+      "reentry_source": "USER_PROVIDED",
+      "reentry_source_url": "UNKNOWN",
+      "reentry_updated_at": "2026-09-08"
+    },
+    "KIA": {
+      "team_code": "KIA",
+      "stadium": "광주-기아 챔피언스필드",
+      "carry_in_policy": "KBO_SAFE_COMMON_WITH_TEAM_EXCEPTION",
+      "strong_smell_food": "RESTRICTED_OR_RESTRICTABLE",
+      "soup_food": "RESTRICTED_OR_RESTRICTABLE",
+      "whole_throwable_fruit": "RESTRICTED",
+      "cut_fruit": "Y",
+      "status": "CONFIRMED",
+      "source_note": "KIA 타이거즈 공식 경기장 이용 FAQ",
+      "reentry_method": "HAND_STAMP_AND_WRISTBAND_REQUEST",
+      "reentry_procedure": "게이트를 나갈 때 전용 게이트 안쪽에 있는 요원에게 손등 도장 및 팔찌 요청",
+      "reentry_external_food": "UNKNOWN",
+      "reentry_external_food_note": "제공된 재입장 자료에는 외부음식 추가 반입 허용·금지 정보가 없음",
+      "reentry_dedicated_queue": "UNKNOWN",
+      "reentry_late_inning_restriction": "UNKNOWN",
+      "reentry_late_inning_timing": "UNKNOWN",
+      "reentry_late_inning_note": "이 구장은 후반 이닝 통제 대상으로 개별 명시되지 않음. 사용자 안내의 최신/지방 구장 등 범위에 포함되는지는 미확인",
+      "reentry_status": "PARTIAL",
+      "reentry_evidence_type": "UNOFFICIAL",
+      "reentry_source": "USER_PROVIDED",
+      "reentry_source_url": "UNKNOWN",
+      "reentry_updated_at": "2026-09-08"
+    },
+    "LOTTE": {
+      "team_code": "LOTTE",
+      "stadium": "사직야구장",
+      "carry_in_policy": "KBO_SAFE_COMMON",
+      "team_exception": "NONE_CONFIRMED",
+      "status": "CONFIRMED",
+      "reentry_method": "TICKET_CHECK",
+      "reentry_procedure": "게이트 출입 시 실물 티켓·앱 티켓을 매번 확인",
+      "reentry_external_food": "UNKNOWN",
+      "reentry_external_food_note": "제공된 재입장 자료에는 외부음식 추가 반입 허용·금지 정보가 없음",
+      "reentry_dedicated_queue": "UNKNOWN",
+      "reentry_late_inning_restriction": "UNKNOWN",
+      "reentry_late_inning_timing": "UNKNOWN",
+      "reentry_late_inning_note": "이 구장은 후반 이닝 통제 대상으로 개별 명시되지 않음. 사용자 안내의 최신/지방 구장 등 범위에 포함되는지는 미확인",
+      "reentry_status": "PARTIAL",
+      "reentry_evidence_type": "UNOFFICIAL",
+      "reentry_source": "USER_PROVIDED",
+      "reentry_source_url": "UNKNOWN",
+      "reentry_updated_at": "2026-09-08"
+    },
+    "NC": {
+      "team_code": "NC",
+      "stadium": "창원 NC파크",
+      "carry_in_policy": "KBO_SAFE_COMMON",
+      "team_exception": "NONE_OFFICIALLY_CONFIRMED",
+      "status": "CONFIRMED_BASELINE",
+      "source": "https://www.ncdinos.com/dinos/notice/view.do?seq=39560",
+      "note": "기존 반입물품 MD의 미완성 항목을 NC 공식 KBO 안전정책 공지 근거로 고정 보완",
+      "reentry_method": "HAND_STAMP_AND_WRISTBAND_REQUEST",
+      "reentry_procedure": "게이트를 나갈 때 전용 게이트 안쪽에 있는 요원에게 손등 도장 및 팔찌 요청",
+      "reentry_external_food": "UNKNOWN",
+      "reentry_external_food_note": "제공된 재입장 자료에는 외부음식 추가 반입 허용·금지 정보가 없음",
+      "reentry_dedicated_queue": "UNKNOWN",
+      "reentry_late_inning_restriction": "POSSIBLE",
+      "reentry_late_inning_timing": "8회초~말 이후",
+      "reentry_late_inning_note": "사용자 안내상 대전·창원 등 최신/지방 구장은 8회초~말 이후 재입장이 전면 통제될 수도 있음. 정확한 시점과 적용 조건은 미제공이며 현장 확인 필요",
+      "reentry_status": "PARTIAL",
+      "reentry_evidence_type": "UNOFFICIAL",
+      "reentry_source": "USER_PROVIDED",
+      "reentry_source_url": "UNKNOWN",
+      "reentry_updated_at": "2026-09-08"
+    }
+  },
+  "supplementary_information": [
+    {
+      "team_code": "KIWOOM",
+      "field": "reentry_external_food",
+      "value": "N",
+      "description": "고척 재입장 시 외부음식 추가 반입 금지",
+      "confirmation_note": "사용자는 이 단일 항목만 공식 확인된 내용이라고 설명함. 이번 JSON 생성 과정에서 공식 원문을 별도로 재검증하지 않음",
+      "usage_note": "부가 정보로만 보존함. 재입장 자체의 금지를 뜻하지 않으며 고척 재입장 안내 전체의 PARTIAL/UNOFFICIAL 분류를 변경하지 않음"
+    }
+  ],
+  "chatbot_response_rules": {
+    "carry_in": [
+      "구단별 `team_exception`이 있으면 공통규정보다 우선한다.",
+      "`CONFIRMED_BASELINE`은 \"KBO 공통 안전규정 기준\"이라고 답한다.",
+      "공식 예외가 없는 구단에 비공식 블로그의 세부 수치를 덧붙이지 않는다.",
+      "구장별 특별석(잔디석 등)은 별도 허용 규정이 있을 수 있으므로 질문이 특정 좌석까지 포함하면 좌석 규정을 추가 확인한다."
+    ],
+    "reentry": [
+      "재입장 질문에는 해당 구단의 `reentry_*` 키를 사용한다. 재입장 절차와 반입물품 규정을 별개로 다룬다.",
+      "`reentry_method=TICKET_CHECK`이면 “게이트 출입 시 실물 티켓·앱 티켓을 매번 확인하는 방식으로 안내되어 있습니다”라고 답한다. 티켓 종류를 둘 다 소지해야 한다고 해석하지 않는다.",
+      "`reentry_method=HAND_STAMP_AND_WRISTBAND_REQUEST`이면 “게이트를 나갈 때 전용 게이트 안쪽 요원에게 손등 도장 및 팔찌를 요청하세요”라고 답한다. 제공되지 않은 도장·팔찌 대체 가능 여부나 추가 절차는 만들지 않는다.",
+      "고척의 `reentry_external_food=N`은 “재입장 시 외부음식 추가 반입 금지”를 뜻하며, 재입장 자체가 금지라는 뜻이 아니다.",
+      "수원의 `reentry_dedicated_queue=Y`이면 재입장 전용 대기줄이 별도로 있다는 점을 안내한다. 다른 구장의 `UNKNOWN`을 “대기줄 없음”으로 답하지 않는다.",
+      "대전·창원의 `reentry_late_inning_restriction=POSSIBLE`이면 “8회초~말 이후 재입장이 전면 통제될 수 있으므로 퇴장 전에 현장 요원에게 확인하세요”라고 안내한다. 특정 시점부터 항상 금지라고 단정하지 않는다. 다른 구장은 원문의 “등 최신/지방 구장”에 포함되는지 미확인이다.",
+      "`UNKNOWN`은 제공 자료로는 알 수 없다고 답한다. 허용·금지 또는 없음으로 임의 치환하지 않는다.",
+      "이번에 추가한 재입장 절차·대기줄·후반 이닝 안내는 `reentry_status=PARTIAL`, `reentry_evidence_type=UNOFFICIAL`인 사용자 제공 정보다. 공식 확인 여부를 묻는 경우 \"비공식 정보이며 현장 상황에 따라 다를 수 있습니다\" 문구를 붙인다. 기존 반입물품 쪽 `status=CONFIRMED`나 `source`를 신규 재입장 안내의 공식 근거로 인용하지 않는다."
+    ]
+  }
+}

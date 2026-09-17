@@ -10,10 +10,18 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
+from datetime import timedelta
 from pathlib import Path
+
+from dotenv import load_dotenv
+
+from baseball.limits import positive_int_env
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env", override=False)
+load_dotenv(BASE_DIR.parent / ".env", override=False)
 
 
 # Quick-start development settings - unsuitable for production
@@ -24,19 +32,44 @@ SECRET_KEY = 'django-insecure-xg6ypt+%hw2k@xak+x#7bqqpn(-^vu73^9qh3xnh*=^$pn6jg*
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+DEMO_USERS_ENABLED = os.getenv("DEMO_USERS_ENABLED", "false").strip().lower() == "true"
+CHAT_CHECKPOINT_SIGNING_KEY = os.getenv("CHAT_CHECKPOINT_SIGNING_KEY", "")
+CHAT_TRUST_PROXY_HEADERS = os.getenv("CHAT_TRUST_PROXY_HEADERS", "false").strip().lower() == "true"
+CHAT_GUEST_RATE_LIMIT = int(os.getenv("CHAT_GUEST_RATE_LIMIT", "10"))
+CHAT_GUEST_RATE_WINDOW = int(os.getenv("CHAT_GUEST_RATE_WINDOW", "60"))
+KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY", "")
+EXTERNAL_DATA_SYNC_INTERVAL_SECONDS = positive_int_env("EXTERNAL_DATA_SYNC_INTERVAL_SECONDS", 600)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in (os.getenv("DJANGO_ALLOWED_HOSTS") or "localhost,127.0.0.1,[::1]").split(",")
+    if host.strip()
+]
+if "*" in ALLOWED_HOSTS:
+    raise ValueError("DJANGO_ALLOWED_HOSTS must list explicit hosts")
 
+AUTH_USER_MODEL = 'accounts.CustomUser'
 
 # Application definition
 
 INSTALLED_APPS = [
+    'rest_framework',
+    'drf_spectacular',
+    "rest_framework_simplejwt",
+    'rest_framework_simplejwt.token_blacklist',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.postgres',
+    'baseball.apps.BaseballConfig',
+    'llm',
+    'accounts',
+    'travel',
+    'community',
+    'tving.apps.TvingConfig',
 ]
 
 MIDDLEWARE = [
@@ -75,13 +108,36 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "mydb",
-        "USER": "myuser",
-        "PASSWORD": "mypassword",
-        "HOST": "db",
-        "PORT": "5432",
-    }
+        "NAME": os.getenv("DB_NAME", "mydb"),
+        "USER": os.getenv("DB_USER", "myuser"),
+        "PASSWORD": os.getenv("DB_PASSWORD", "mypassword"),
+        "HOST": os.getenv("DB_HOST", "db"),  # 로컬 도커 기본값. 원격 DB는 backend/.env 의 DB_HOST 로
+        "PORT": os.getenv("DB_PORT", "5432"),
+    },
+    "baseball_readonly": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("DB_NAME", "mydb"),
+        "USER": os.getenv("BASEBALL_DB_USER", ""),
+        "PASSWORD": os.getenv("BASEBALL_DB_PASSWORD", ""),
+        "HOST": os.getenv("DB_HOST", "db"),
+        "PORT": os.getenv("DB_PORT", "5432"),
+    },
 }
+
+DATABASE_ROUTERS = ["baseball.db_router.BaseballDatabaseRouter"]
+
+BASEBALL_QUERY_MAX_ROWS = positive_int_env("BASEBALL_QUERY_MAX_ROWS", 200)
+BASEBALL_QUERY_TIMEOUT_MS = positive_int_env("BASEBALL_QUERY_TIMEOUT_MS", 3000)
+BASEBALL_QUERY_LOCK_TIMEOUT_MS = positive_int_env("BASEBALL_QUERY_LOCK_TIMEOUT_MS", 1000)
+BASEBALL_QUERY_MAX_SQL_BYTES = positive_int_env("BASEBALL_QUERY_MAX_SQL_BYTES", 32768)
+BASEBALL_QUERY_MAX_RESPONSE_BYTES = positive_int_env(
+    "BASEBALL_QUERY_MAX_RESPONSE_BYTES", 1024 * 1024
+)
+EXTERNAL_DATA_SYNC_INTERVAL_SECONDS = positive_int_env("EXTERNAL_DATA_SYNC_INTERVAL_SECONDS", 600)
+KMA_SERVICE_KEY = os.getenv("KMA_SERVICE_KEY", "")
+KMA_API_KEY = os.getenv("KMA_API_KEY", "")
+KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY", "")
+TOUR_API_KEY = os.getenv("TOUR_API_KEY", "")
 
 
 # Password validation
@@ -119,13 +175,119 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+MEDIA_ROOT = BASE_DIR / "media"
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+
+COMMUNITY_IMAGE_S3_ENDPOINT = os.getenv("COMMUNITY_IMAGE_S3_ENDPOINT", "http://minio:9000")
+COMMUNITY_IMAGE_S3_ACCESS_KEY = os.getenv("COMMUNITY_IMAGE_S3_ACCESS_KEY", "minioadmin")
+COMMUNITY_IMAGE_S3_SECRET_KEY = os.getenv("COMMUNITY_IMAGE_S3_SECRET_KEY", "")
+COMMUNITY_IMAGE_S3_BUCKET = os.getenv("COMMUNITY_IMAGE_S3_BUCKET", "community-images")
+COMMUNITY_IMAGE_S3_REGION = os.getenv("COMMUNITY_IMAGE_S3_REGION", "us-east-1")
 
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+email_host = os.getenv("EMAIL_HOST", "mailpit")
+email_port = int(os.getenv("EMAIL_PORT", "1025"))
+email_host_user = os.getenv("EMAIL_HOST_USER", "")
+email_host_password = os.getenv("EMAIL_HOST_PASSWORD", "")
+email_use_tls = os.getenv("EMAIL_USE_TLS", "false").strip().lower()
+if email_use_tls not in {"true", "false"}:
+    raise ValueError("EMAIL_USE_TLS must be either 'true' or 'false'")
+email_backend = (
+    os.getenv("EMAIL_BACKEND") or "django.core.mail.backends.smtp.EmailBackend"
+)
+
+DEFAULT_FROM_EMAIL = (
+    os.getenv("DEFAULT_FROM_EMAIL") or email_host_user or "webmaster@localhost"
+)
+AUTH_FRONTEND_ORIGIN = os.getenv("AUTH_FRONTEND_ORIGIN", "http://127.0.0.1:80").rstrip("/")
+
+MAILERS = {"default": {"BACKEND": email_backend}}
+if email_backend == "django.core.mail.backends.smtp.EmailBackend":
+    MAILERS["default"]["OPTIONS"] = {
+        "host": email_host,
+        "port": email_port,
+        "username": email_host_user,
+        "password": email_host_password,
+        "use_tls": email_use_tls == "true",
+    }
+
+
+REST_FRAMEWORK = {
+    'NUM_PROXIES': 1,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'course_write': '30/hour',
+        'place_search': '240/minute',
+        'tourism': '20/minute',
     },
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'KBO Journey API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SCHEMA_PATH_PREFIX_INSERT': '/api',
+    'ENUM_NAME_OVERRIDES': {
+        'ChatFinalizeStatusEnum': [('completed', 'completed'), ('stopped', 'stopped')],
+        'CompletedStatusEnum': [('completed', 'completed')],
+        'CommunityCategoryEnum': [(value, value) for value in ('질문', '잡담', '응원', '경기토론', '전력토론', '소식·정보', '이적·신인', '직관후기', '좌석·예매', '직관준비', '굿즈', '사진·영상')],
+        'TourismCategoryEnum': [(value, value) for value in ('walk', 'sight', 'indoor')],
+        'DirectionsModeEnum': [(value, value) for value in ('walk', 'car', 'transit')],
+        'KboTeamCodeEnum': [(value, value) for value in ('LG', 'HH', 'SK', 'SS', 'NC', 'KT', 'LT', 'HT', 'OB', 'WO')],
+    },
+}
+
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "UPDATE_LAST_LOGIN": False,
+
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "VERIFYING_KEY": "",
+    "AUDIENCE": None,
+    "ISSUER": None,
+    "JSON_ENCODER": None,
+    "JWK_URL": None,
+    "LEEWAY": 0,
+
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+    "USER_AUTHENTICATION_RULE": "rest_framework_simplejwt.authentication.default_user_authentication_rule",
+    "ON_LOGIN_SUCCESS": "rest_framework_simplejwt.serializers.default_on_login_success",
+    "ON_LOGIN_FAILED": "rest_framework_simplejwt.serializers.default_on_login_failed",
+
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_TYPE_CLAIM": "token_type",
+    "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
+
+    "JTI_CLAIM": "jti",
+
+    "SLIDING_TOKEN_REFRESH_EXP_CLAIM": "refresh_exp",
+    "SLIDING_TOKEN_LIFETIME": timedelta(minutes=5),
+    "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
+
+    "TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
+    "TOKEN_REFRESH_SERIALIZER": "accounts.serializers.PasswordAwareTokenRefreshSerializer",
+    "TOKEN_VERIFY_SERIALIZER": "rest_framework_simplejwt.serializers.TokenVerifySerializer",
+    "TOKEN_BLACKLIST_SERIALIZER": "rest_framework_simplejwt.serializers.TokenBlacklistSerializer",
+    "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
+    "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
+
+    "CHECK_REVOKE_TOKEN": True,
+    "REVOKE_TOKEN_CLAIM": "hash_password",
+    "CHECK_USER_IS_ACTIVE": True,
 }

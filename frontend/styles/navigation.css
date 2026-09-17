@@ -1,0 +1,64 @@
+.header-inner { position: relative; }
+.site-header:has(.header-menu-trigger[aria-expanded="true"]) { z-index: 50; }
+.header-menu { display: flex; align-items: center; }
+.header-menu-trigger { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; border: 1px solid transparent; border-radius: 12px; background: transparent; color: #28364c; transition: background .18s, color .18s; }
+.header-menu-trigger:hover, .header-menu-trigger[aria-expanded="true"] { background: #edf4ff; color: var(--blue); border-color: #dce9ff; }
+.header-menu-panel { position: absolute; top: calc(100% - 2px); right: 0; width: 310px; max-width: 100%; max-height: calc(100dvh - 112px); overflow-y: auto; overscroll-behavior: contain; padding: 19px 12px 12px; border: 1px solid #e2eaf6; border-radius: 18px; background: #fff; box-shadow: 0 16px 48px #16345e18, 0 3px 12px #16345e08; animation: header-menu-in .16s ease-out; }
+.header-menu-label { margin: 0 12px 10px; color: #8796ad; font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+.header-menu-list, .header-menu-children { list-style: none; margin: 0; padding: 0; }
+.header-menu-list > li + li { margin-top: 4px; }
+.header-menu-category { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 8px 12px; border: 0; border-radius: 11px; background: transparent; color: #27354b; font-size: 14px; font-weight: 650; text-align: left; cursor: pointer; transition: color .15s, background .15s; }
+.header-menu-category:hover { background: #f5f8fd; color: var(--blue); }
+.header-menu-category[aria-current="page"] { background: #edf4ff; color: var(--blue); }
+.header-menu-category::-webkit-details-marker { display: none; }
+.header-menu-category::marker { content: ""; }
+.header-menu-icon { display: grid; place-items: center; flex: 0 0 32px; height: 32px; border-radius: 9px; background: #f0f5fd; color: #497dc9; }
+.header-menu-arrow, .header-menu-chevron { margin-left: auto; flex-shrink: 0; color: #99a7ba; }
+.header-menu-chevron { transform: rotate(90deg); transition: transform .18s; }
+.header-menu-group[open] > summary .header-menu-chevron { transform: rotate(-90deg); color: var(--blue); }
+.header-menu-group[open] > summary { color: var(--blue); }
+.header-menu-children { margin: 2px 12px 10px 28px; padding: 2px 0 2px 16px; border-left: 1px solid #e0e9f6; }
+.header-menu-children a { display: flex; align-items: center; min-height: 42px; padding: 7px 13px; border-radius: 8px; color: #718097; font-size: 13px; transition: color .15s, background .15s; }
+.header-menu-children a:hover { background: #f5f8fd; color: var(--blue); }
+.header-menu-children a[aria-current="page"] { background: #edf4ff; color: var(--blue); font-weight: 650; }
+@keyframes header-menu-in { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 767px) {
+  .header-menu-panel { max-height: calc(100dvh - 176px - env(safe-area-inset-bottom, 0px)); }
+  .header-menu-children a { min-height: 44px; }
+}
+@media (max-width: 640px) {
+  .header-menu-trigger { width: 38px; height: 38px; border-radius: 10px; }
+  .header-menu-panel { top: calc(100% + 2px); max-height: calc(100dvh - 154px - env(safe-area-inset-bottom, 0px)); }
+  .header-actions { gap: 10px; }
+}
+
+.member-logout { border: 0; background: transparent; font: inherit; font-size: 12px; cursor: pointer; }
+
+.member-notifications { position: relative; }
+.notification-bell { position: relative; display: grid; place-items: center; width: 36px; height: 36px; background: transparent; border: 0; color: #657387; cursor: pointer; }
+.notification-count { position: absolute; right: -2px; bottom: -2px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 20px; background: #ed4052; color: white; font-size: 10px; font-weight: 700; display: grid; place-items: center; border: 2px solid white; }
+.notification-panel { position: absolute; top: 46px; right: 0; width: min(330px, calc(100vw - 32px)); background: white; border: 1px solid #dce5f1; border-radius: 12px; box-shadow: 0 10px 35px #18325524; z-index: 100; color: #253b57; }
+.notification-panel header { display: flex; justify-content: space-between; align-items: center; padding: 16px; }
+.notification-panel button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 12px; }
+.notification-panel p { padding: 20px 16px; font-size: 13px; color: #657790; }
+.notification-panel ul { padding: 0; margin: 0; list-style: none; max-height: 320px; overflow-y: auto; }
+.notification-panel li button { width: 100%; text-align: left; padding: 14px 16px; border-top: 1px solid #edf1f6; }
+.notification-panel li .is-unread { background: #f0f6ff; }
+.notification-panel small { display: block; margin-top: 6px; color: #7c8ba0; }
+
+.inbox-detail { padding: 0 16px 16px; overflow-wrap: anywhere; max-height: 360px; overflow-y: auto; }
+.inbox-detail small { display: block; margin-top: 8px; color: #7c8ba0; font-size: 11px; }
+.inbox-detail p { padding: 14px 0 0; white-space: pre-wrap; line-height: 1.7; }
+
+.header-brand-menu { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+@media(max-width: 640px) { .header-brand-menu { gap: 4px; } }
+
+.member-menu { position: relative; }
+.member-menu-panel { position: absolute; right: 0; top: calc(100% + 10px); z-index: 100; width: 160px; padding: 6px; border: 1px solid #e2eaf6; border-radius: 12px; background: white; box-shadow: 0 8px 28px #16345e18; }
+.member-menu-panel a, .member-menu-panel button { display: block; width: 100%; padding: 12px; border: 0; background: transparent; text-align: left; color: #34445e; font: inherit; font-size: 13px; border-radius: 6px; cursor: pointer; }
+.member-menu-panel a:hover, .member-menu-panel button:hover { background: #edf4ff; color: #246bf3; }
+
+.member-menu-divider { border: 0; border-top: 1px solid #e5ebf3; margin: 5px 8px; }
+
+.header-menu-icon.has-image { background: none; overflow: hidden; }
+.header-menu-icon.has-image img { display: block; width: 100%; height: 100%; object-fit: contain; }

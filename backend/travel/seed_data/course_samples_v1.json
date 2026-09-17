@@ -1,0 +1,765 @@
+[
+  {
+    "id": "fan-sajik-friends",
+    "title": "사직 가는 날, 친구들이랑 밥부터 먹는 코스",
+    "stadium": "사직야구장",
+    "description": "표만 잡아놓고 약속 장소를 못 정해서 일단 지도부터 찍어봤어요.",
+    "content": "표만 잡아놓고 약속 장소를 못 정해서 일단 지도부터 찍어봤어요.\n\n식사는 구장 남쪽에서 해결하고 만나는 장소는 조금 떨어뜨렸습니다. 경기 끝나고는 바로 해산하는 일정이에요. 메뉴는 당일에 정하려고요ㅋㅋ.\n\n지도에 표시한 후보 지점은 예시로 직접 찍은 위치입니다. 실제 매장과 통행 가능 여부는 방문 전에 확인해 주세요.",
+    "tags": [
+      "친구와",
+      "식사"
+    ],
+    "duration": "경기 전후",
+    "cover": "/images/stadium-day.jpg",
+    "stops": [
+      {
+        "name": "친구들과 만날 지점",
+        "lat": 35.1883668,
+        "lng": 129.06290089,
+        "category": "직접 지정",
+        "placeId": "sample:sajik-friends:0",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "식사 후보 지점",
+        "lat": 35.1903668,
+        "lng": 129.06090089,
+        "category": "직접 지정",
+        "placeId": "sample:sajik-friends:1"
+      },
+      {
+        "name": "사직야구장",
+        "lat": 35.1943668,
+        "lng": 129.05990089,
+        "category": "경기 관람",
+        "placeId": "stadium:SAJIK"
+      }
+    ],
+    "author": "사직약속잡는중",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-13T08:00:00.000Z"
+  },
+  {
+    "id": "fan-changwon-solo",
+    "title": "창원 혼관은 커피 한 잔 들고 느긋하게",
+    "stadium": "창원 NC 파크",
+    "description": "누구 기다릴 필요 없는 날이라 출발 시간을 넉넉히 잡았습니다.",
+    "content": "누구 기다릴 필요 없는 날이라 출발 시간을 넉넉히 잡았습니다.\n\n커피를 마실 곳부터 찾아보고 구장에 들어가려고요. 끝나고는 들어왔던 방향 대신 반대쪽으로 빠져나가는 걸로 찍어봤어요.\n\n지도에 표시한 후보 지점은 예시로 직접 찍은 위치입니다. 실제 매장과 통행 가능 여부는 방문 전에 확인해 주세요.",
+    "tags": [
+      "혼자",
+      "카페"
+    ],
+    "duration": "경기 전후",
+    "cover": "/images/stadium-night.jpg",
+    "stops": [
+      {
+        "name": "커피 마실 후보 지점",
+        "lat": 35.21898486,
+        "lng": 128.57458012,
+        "category": "직접 지정",
+        "placeId": "sample:changwon-solo:0",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "창원 NC 파크",
+        "lat": 35.22198486,
+        "lng": 128.57958012,
+        "category": "경기 관람",
+        "placeId": "stadium:CHANGWON"
+      },
+      {
+        "name": "귀가 동선 확인 지점",
+        "lat": 35.22598486,
+        "lng": 128.58258012,
+        "category": "직접 지정",
+        "placeId": "sample:changwon-solo:2"
+      }
+    ],
+    "author": "혼관연습중",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-13T08:01:00.000Z"
+  },
+  {
+    "id": "fan-gwangju-family",
+    "title": "부모님이랑 챔필 갈 땐 이동 욕심 줄이기",
+    "stadium": "광주-KIA 챔피언스 필드",
+    "description": "여러 군데 보여드릴까 하다가 경기 전에 지칠 것 같아서 줄였어요.",
+    "content": "여러 군데 보여드릴까 하다가 경기 전에 지칠 것 같아서 줄였어요.\n\n근처에서 만나 한 번 쉬고 들어가는 일정입니다. 중간 지점은 잠깐 앉아 쉴 장소를 찾아보려고 표시해둔 거예요.\n\n지도에 표시한 후보 지점은 예시로 직접 찍은 위치입니다. 실제 매장과 통행 가능 여부는 방문 전에 확인해 주세요.",
+    "tags": [
+      "가족과",
+      "짧은 동선"
+    ],
+    "duration": "경기 전후",
+    "cover": "/images/stadium-sunset.jpg",
+    "stops": [
+      {
+        "name": "가족 만남 지점",
+        "lat": 35.16642496,
+        "lng": 126.89080547,
+        "category": "직접 지정",
+        "placeId": "sample:gwangju-family:0",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "쉬어갈 후보 지점",
+        "lat": 35.16792496,
+        "lng": 126.88980547,
+        "category": "직접 지정",
+        "placeId": "sample:gwangju-family:1"
+      },
+      {
+        "name": "광주-KIA 챔피언스 필드",
+        "lat": 35.16942496,
+        "lng": 126.88880547,
+        "category": "경기 관람",
+        "placeId": "stadium:GWANGJU"
+      }
+    ],
+    "author": "가족표담당",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-13T08:02:00.000Z"
+  },
+  {
+    "id": "fan-gocheok-after",
+    "title": "고척은 야구부터 보고 저녁 먹으러",
+    "stadium": "고척스카이돔",
+    "description": "이번에는 경기 전에 이것저것 하지 말고 바로 들어가려고 합니다.",
+    "content": "이번에는 경기 전에 이것저것 하지 말고 바로 들어가려고 합니다.\n\n끝난 뒤 남쪽으로 걸어가면서 식당을 고르는 쪽이에요. 경기 종료가 늦으면 식사는 빼고 귀가할 생각입니다.\n\n지도에 표시한 후보 지점은 예시로 직접 찍은 위치입니다. 실제 매장과 통행 가능 여부는 방문 전에 확인해 주세요.",
+    "tags": [
+      "경기 후 식사",
+      "둘이서"
+    ],
+    "duration": "경기 전후",
+    "cover": "/images/stadium-day.jpg",
+    "stops": [
+      {
+        "name": "고척스카이돔",
+        "lat": 37.49821257,
+        "lng": 126.86708874,
+        "category": "경기 관람",
+        "placeId": "stadium:GOCHEOK",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "저녁 식사 후보 지점",
+        "lat": 37.49421257,
+        "lng": 126.86508874,
+        "category": "직접 지정",
+        "placeId": "sample:gocheok-after:1"
+      },
+      {
+        "name": "해산 지점",
+        "lat": 37.49221257,
+        "lng": 126.86608874,
+        "category": "직접 지정",
+        "placeId": "sample:gocheok-after:2"
+      }
+    ],
+    "author": "늦은저녁파",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-13T08:03:00.000Z"
+  },
+  {
+    "id": "fan-daegu-photo",
+    "title": "라팍 사진은 입장 전에 찍어두려고요",
+    "stadium": "대구 삼성 라이온즈 파크",
+    "description": "끝나고 사진 찍자고 하면 다들 집 가기 바쁘더라고요.",
+    "content": "끝나고 사진 찍자고 하면 다들 집 가기 바쁘더라고요.\n\n이번에는 만나자마자 구장 주변에서 사진부터 남기기로 했습니다. 지도에 찍어둔 곳은 구도를 살펴볼 후보 지점이고 현장에서 조정하려고요.\n\n지도에 표시한 후보 지점은 예시로 직접 찍은 위치입니다. 실제 매장과 통행 가능 여부는 방문 전에 확인해 주세요.",
+    "tags": [
+      "사진",
+      "첫 방문"
+    ],
+    "duration": "경기 전후",
+    "cover": "/images/stadium-night.jpg",
+    "stops": [
+      {
+        "name": "사진 약속 지점",
+        "lat": 35.84412892,
+        "lng": 128.67823637,
+        "category": "직접 지정",
+        "placeId": "sample:daegu-photo:0",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "구장 전경 촬영 후보",
+        "lat": 35.84262892,
+        "lng": 128.67973637,
+        "category": "직접 지정",
+        "placeId": "sample:daegu-photo:1"
+      },
+      {
+        "name": "대구 삼성 라이온즈 파크",
+        "lat": 35.84112892,
+        "lng": 128.68123637,
+        "category": "경기 관람",
+        "placeId": "stadium:DAEGU"
+      }
+    ],
+    "author": "사진한장더",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-13T08:04:00.000Z"
+  },
+  {
+    "id": "fan-daejeon-dessert",
+    "title": "대전에서는 간식 사고 야구 보러 가는 걸로",
+    "stadium": "대전 한화생명 볼파크",
+    "description": "식사 약속은 따로 있어서 이번 동선에는 간식만 넣었습니다.",
+    "content": "식사 약속은 따로 있어서 이번 동선에는 간식만 넣었습니다.\n\n친구가 고른 빵이랑 제가 고른 음료를 나눠 먹을 예정이에요. 가게는 아직 못 골라서 후보 구역만 찍어놨습니다.\n\n지도에 표시한 후보 지점은 예시로 직접 찍은 위치입니다. 실제 매장과 통행 가능 여부는 방문 전에 확인해 주세요.",
+    "tags": [
+      "간식",
+      "친구와"
+    ],
+    "duration": "경기 전후",
+    "cover": "/images/stadium-sunset.jpg",
+    "stops": [
+      {
+        "name": "간식 고를 후보 지점",
+        "lat": 36.320337,
+        "lng": 127.43201382,
+        "category": "직접 지정",
+        "placeId": "sample:daejeon-dessert:0",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "친구와 합류할 지점",
+        "lat": 36.318337,
+        "lng": 127.43001382,
+        "category": "직접 지정",
+        "placeId": "sample:daejeon-dessert:1"
+      },
+      {
+        "name": "대전 한화생명 볼파크",
+        "lat": 36.317337,
+        "lng": 127.42801382,
+        "category": "경기 관람",
+        "placeId": "stadium:DAEJEON"
+      },
+      {
+        "name": "귀가 전 정리할 지점",
+        "lat": 36.315337,
+        "lng": 127.43101382,
+        "category": "직접 지정",
+        "placeId": "sample:daejeon-dessert:3"
+      }
+    ],
+    "author": "간식은별도",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-13T08:05:00.000Z"
+  },
+  {
+    "id": "fan-munhak-reunion",
+    "title": "문학에서 각자 도착해서 구장 앞에서 합류",
+    "stadium": "인천 SSG 랜더스필드",
+    "description": "다들 출발지가 달라서 역에서 모이는 건 포기했어요.",
+    "content": "다들 출발지가 달라서 역에서 모이는 건 포기했어요.\n\n구장 서쪽에서 합류하고 경기가 끝나면 북쪽에서 다시 인원 확인하려고 합니다. 단체로 다니니까 헤어질 장소까지 정하는 게 마음 편하네요.\n\n지도에 표시한 후보 지점은 예시로 직접 찍은 위치입니다. 실제 매장과 통행 가능 여부는 방문 전에 확인해 주세요.",
+    "tags": [
+      "모임",
+      "합류"
+    ],
+    "duration": "경기 전후",
+    "cover": "/images/stadium-day.jpg",
+    "stops": [
+      {
+        "name": "일행 합류 지점",
+        "lat": 37.43608198,
+        "lng": 126.68675983,
+        "category": "직접 지정",
+        "placeId": "sample:munhak-reunion:0",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "인천 SSG 랜더스필드",
+        "lat": 37.43508198,
+        "lng": 126.69075983,
+        "category": "경기 관람",
+        "placeId": "stadium:MUNHAK"
+      },
+      {
+        "name": "경기 후 재집결 지점",
+        "lat": 37.43908198,
+        "lng": 126.68975983,
+        "category": "직접 지정",
+        "placeId": "sample:munhak-reunion:2"
+      }
+    ],
+    "author": "따로출발같이응원",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-13T08:06:00.000Z"
+  },
+  {
+    "id": "fan-suwon-lunch",
+    "title": "수원은 점심 약속 끝나고 바로 위팍으로",
+    "stadium": "수원 KT 위즈 파크",
+    "description": "지난번엔 산책까지 넣었다가 시간 계산을 계속 했어요.",
+    "content": "지난번엔 산책까지 넣었다가 시간 계산을 계속 했어요.\n\n이번에는 동쪽에서 점심 먹고 바로 구장으로 향하는 두 지점짜리 코스입니다. 돌아가는 일정은 경기 보고 정하려고요.\n\n지도에 표시한 후보 지점은 예시로 직접 찍은 위치입니다. 실제 매장과 통행 가능 여부는 방문 전에 확인해 주세요.",
+    "tags": [
+      "점심",
+      "간단한 코스"
+    ],
+    "duration": "경기 전후",
+    "cover": "/images/stadium-night.jpg",
+    "stops": [
+      {
+        "name": "점심 식사 후보 지점",
+        "lat": 37.29884289,
+        "lng": 127.0173481,
+        "category": "직접 지정",
+        "placeId": "sample:suwon-lunch:0",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "수원 KT 위즈 파크",
+        "lat": 37.29784289,
+        "lng": 127.0113481,
+        "category": "경기 관람",
+        "placeId": "stadium:SUWON"
+      }
+    ],
+    "author": "밥먹고위팍",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-13T08:07:00.000Z"
+  },
+  {
+    "id": "fan-jamsil-return",
+    "title": "잠실에서 만나 잠깐 나갔다 다시 돌아오기",
+    "stadium": "잠실야구장",
+    "description": "만남은 구장으로 정했는데 친구가 일찍 도착할 수 있다고 하네요.",
+    "content": "만남은 구장으로 정했는데 친구가 일찍 도착할 수 있다고 하네요.\n\n표 확인하고 잠깐 서쪽으로 나가 쉬었다가 입장하는 동선으로 그려봤어요. 출발과 도착을 같은 곳으로 둔 코스입니다.\n\n지도에 표시한 후보 지점은 예시로 직접 찍은 위치입니다. 실제 매장과 통행 가능 여부는 방문 전에 확인해 주세요.",
+    "tags": [
+      "왕복 코스",
+      "재방문"
+    ],
+    "duration": "경기 전후",
+    "cover": "/images/stadium-sunset.jpg",
+    "stops": [
+      {
+        "name": "잠실야구장",
+        "lat": 37.51619878,
+        "lng": 127.07594059,
+        "category": "경기 관람",
+        "placeId": "stadium:JAMSIL",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "잠깐 쉬어갈 후보 지점",
+        "lat": 37.51419878,
+        "lng": 127.07194059,
+        "category": "직접 지정",
+        "placeId": "sample:jamsil-return:1"
+      },
+      {
+        "name": "잠실야구장",
+        "lat": 37.51619878,
+        "lng": 127.07594059,
+        "category": "경기 관람",
+        "placeId": "stadium:JAMSIL"
+      }
+    ],
+    "author": "잠실에서만나요",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-13T08:08:00.000Z"
+  },
+  {
+    "id": "fan-sajik-date",
+    "title": "사직 둘이 가는 날은 경기 후 짧은 산책",
+    "stadium": "사직야구장",
+    "description": "경기 전에는 바로 입장하고 끝난 뒤에 조금 걸으려고요.",
+    "content": "경기 전에는 바로 입장하고 끝난 뒤에 조금 걸으려고요.\n\n아쉬운 경기여도 걸으면서 얘기하면 기분이 풀리더라고요. 길게 걷기보다 북쪽으로 짧게 돌아 나오는 정도로 정했습니다.\n\n지도에 표시한 후보 지점은 예시로 직접 찍은 위치입니다. 실제 매장과 통행 가능 여부는 방문 전에 확인해 주세요.",
+    "tags": [
+      "둘이서",
+      "경기 후 산책"
+    ],
+    "duration": "경기 전후",
+    "cover": "/images/stadium-day.jpg",
+    "stops": [
+      {
+        "name": "사직야구장",
+        "lat": 35.1943668,
+        "lng": 129.05990089,
+        "category": "경기 관람",
+        "placeId": "stadium:SAJIK",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "산책 후보 지점",
+        "lat": 35.1973668,
+        "lng": 129.05790089,
+        "category": "직접 지정",
+        "placeId": "sample:sajik-date:1"
+      },
+      {
+        "name": "마무리 지점",
+        "lat": 35.1993668,
+        "lng": 129.05990089,
+        "category": "직접 지정",
+        "placeId": "sample:sajik-date:2"
+      }
+    ],
+    "author": "구회말까지",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-13T08:09:00.000Z"
+  },
+  {
+    "id": "fan-jamsil-evening",
+    "title": "잠실은 일찍 가서 밥 먹고 들어가는 게 편하더라",
+    "stadium": "잠실야구장",
+    "description": "잠실새내에서 만나서 밥 먹고 천천히 구장까지 걷는 코스.",
+    "content": "친구랑 너무 일찍 만나서 뭐 할까 하다가 밥부터 먹었어요ㅋㅋ\n\n잠실새내역 근처에서 먹고 구장 쪽으로 걸어가면 딱 좋더라고요. 메뉴는 그날 당기는 걸로 정하면 됩니다. 저는 면 먹고 싶었는데 친구가 밥 먹자고 해서 결국 밥 먹음.\n\n경기 끝나고 바로 지하철 타기 아쉬워서 잠깐 더 걷다가 들어갔어요. 다음엔 꼭 이기고 집에 가고 싶다…",
+    "tags": [
+      "친구와",
+      "산책",
+      "잠실"
+    ],
+    "duration": "경기 전후 반나절",
+    "cover": "/images/stadium-night.jpg",
+    "stops": [
+      {
+        "name": "잠실새내역",
+        "lat": 37.5117,
+        "lng": 127.0863,
+        "category": "만남",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "잠실새내 먹자골목 부근",
+        "lat": 37.5096,
+        "lng": 127.0841,
+        "category": "식사"
+      },
+      {
+        "name": "잠실야구장",
+        "lat": 37.5161987797456,
+        "lng": 127.075940589715,
+        "category": "경기 관람"
+      },
+      {
+        "name": "종합운동장역",
+        "lat": 37.5111,
+        "lng": 127.0739,
+        "category": "귀가"
+      }
+    ],
+    "author": "잠실가는고양이",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-13T07:00:00.000Z"
+  },
+  {
+    "id": "fan-suwon-walk",
+    "title": "위팍 가기 전에 산책 조금만 하려다가",
+    "stadium": "수원 KT 위즈 파크",
+    "description": "장안공원에서 걷고 위팍으로 넘어가는 느긋한 하루.",
+    "content": "산책 조금만 하자고 했는데 얘기하다 보니까 시간이 순삭됐네요.\n\n장안공원에서 만나서 사진 몇 장 찍고 구장으로 이동했어요. 걷는 거 좋아하면 괜찮은데 더운 날에는 욕심 안 내는 걸 추천합니다ㅋㅋ\n\n구장 도착해서 물부터 찾았습니다. 다음엔 산책을 줄이고 먹는 시간을 늘릴 예정.",
+    "tags": [
+      "산책",
+      "친구와"
+    ],
+    "duration": "반나절",
+    "cover": "/images/stadium-day.jpg",
+    "stops": [
+      {
+        "name": "장안공원",
+        "lat": 37.2888,
+        "lng": 127.0125,
+        "category": "산책",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "수원 KT 위즈 파크",
+        "lat": 37.2978428909635,
+        "lng": 127.011348102567,
+        "category": "경기 관람"
+      },
+      {
+        "name": "수원종합운동장",
+        "lat": 37.2985,
+        "lng": 127.011,
+        "category": "귀가"
+      }
+    ],
+    "author": "위팍산책러",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-13T06:00:00.000Z"
+  },
+  {
+    "id": "fan-incheon-simple",
+    "title": "복잡한 건 싫어서 문학역 왕복으로 짰어요",
+    "stadium": "인천 SSG 랜더스필드",
+    "description": "역에서 만나 바로 구장으로. 경기 끝나고 같은 곳에서 해산.",
+    "content": "길 잘 못 찾는 친구랑 가는 거라 최대한 단순하게 짰습니다. 문학경기장역에서 만나서 구장으로 가고 끝나면 다시 역으로ㅋㅋ\n\n대신 구장에 좀 일찍 도착해서 사진 찍고 구경하는 시간을 넉넉하게 뒀어요. 괜히 여기저기 다니는 것보다 저는 이게 편하네요.\n\n집에 가는 길에 다음 경기 언제 볼지만 계속 얘기했어요.",
+    "tags": [
+      "대중교통",
+      "첫 직관"
+    ],
+    "duration": "경기 중심 반나절",
+    "cover": "/images/stadium-sunset.jpg",
+    "stops": [
+      {
+        "name": "문학경기장역",
+        "lat": 37.4345,
+        "lng": 126.6987,
+        "category": "만남",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "인천 SSG 랜더스필드",
+        "lat": 37.4350819826381,
+        "lng": 126.690759830613,
+        "category": "경기 관람"
+      },
+      {
+        "name": "문학경기장역",
+        "lat": 37.4345,
+        "lng": 126.6987,
+        "category": "귀가"
+      }
+    ],
+    "author": "야구끝나면배고파",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-13T05:00:00.000Z"
+  },
+  {
+    "id": "jamsil-day",
+    "title": "잠실에서 보내는 완벽한 야구 하루",
+    "stadium": "잠실야구장",
+    "description": "호수 산책부터 야구장의 함성까지, 여유롭게 즐기는 잠실 코스.",
+    "content": "경기 전에는 석촌호수를 가볍게 걸으며 하루를 시작해 보세요. 근처에서 식사한 뒤 여유 있게 구장으로 이동하는 코스예요.\n\n잠실야구장에서는 입장과 좌석 찾기에 충분한 시간을 남겨 두세요. 경기 후 일정은 종료 시간과 교통 상황에 맞춰 조정하면 좋아요.\n\n이 코스는 화면을 둘러보기 위한 예시입니다. 실제 방문 전 경기 일정과 각 장소의 운영 여부를 확인해 주세요.",
+    "tags": [
+      "첫 직관",
+      "산책",
+      "친구와"
+    ],
+    "duration": "경기 전후 반나절",
+    "cover": "/images/stadium-night.jpg",
+    "stops": [
+      {
+        "name": "석촌호수",
+        "lat": 37.507,
+        "lng": 127.102,
+        "category": "산책",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "잠실야구장",
+        "lat": 37.5161987797456,
+        "lng": 127.075940589715,
+        "category": "경기 관람"
+      },
+      {
+        "name": "잠실새내역",
+        "lat": 37.5117,
+        "lng": 127.0863,
+        "category": "경기 후 식사"
+      }
+    ],
+    "author": "KBO 코스 에디터",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-01T09:00:00.000Z"
+  },
+  {
+    "id": "gocheok-day",
+    "title": "날씨 걱정 없이, 고척 돔 나들이",
+    "stadium": "고척스카이돔",
+    "description": "가볍게 만나고 신나게 응원하는, 처음 가도 편한 고척 코스.",
+    "content": "동양미래대학교 주변에서 친구들과 만나 식사하고, 고척스카이돔으로 이동해 보세요.\n\n돔 구장에서 경기를 즐긴 후에는 혼잡 상황을 보며 귀가 동선을 정해 보세요. 방문 날짜에 맞는 경기 시간과 운영 정보를 확인하는 것도 잊지 마세요.\n\n실제 이용 후기가 아닌 샘플 코스입니다.",
+    "tags": [
+      "돔 구장",
+      "첫 직관",
+      "친구와"
+    ],
+    "duration": "경기 전후 반나절",
+    "cover": "/images/stadium-day.jpg",
+    "stops": [
+      {
+        "name": "동양미래대학교 앞",
+        "lat": 37.5001,
+        "lng": 126.8676,
+        "category": "식사",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "고척스카이돔",
+        "lat": 37.4982,
+        "lng": 126.8671,
+        "category": "경기 관람"
+      },
+      {
+        "name": "구일역",
+        "lat": 37.4969,
+        "lng": 126.8708,
+        "category": "귀가"
+      }
+    ],
+    "author": "KBO 코스 에디터",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-02T09:00:00.000Z"
+  },
+  {
+    "id": "incheon-day",
+    "title": "노을과 응원으로 채우는 인천 직관",
+    "stadium": "인천 SSG 랜더스필드",
+    "description": "문학에서 만나는 야구의 즐거움. 함께 걸으며 시작하는 하루.",
+    "content": "문학경기장역에서 만나 구장 주변을 둘러보며 직관을 시작해 보세요. 먹거리와 입장 동선을 미리 확인하면 더 여유롭게 경기를 즐길 수 있어요.\n\n경기 후에는 문학경기장역으로 돌아오는 단순한 동선으로 마무리해 보세요.\n\n경기 및 시설 운영 시간은 별도로 확인해야 하는 샘플 코스입니다.",
+    "tags": [
+      "주말 나들이",
+      "친구와",
+      "응원"
+    ],
+    "duration": "경기 중심 반나절",
+    "cover": "/images/stadium-sunset.jpg",
+    "stops": [
+      {
+        "name": "문학경기장역",
+        "lat": 37.4345,
+        "lng": 126.6987,
+        "category": "만남",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "인천 SSG 랜더스필드",
+        "lat": 37.4350819826381,
+        "lng": 126.690759830613,
+        "category": "경기 관람"
+      },
+      {
+        "name": "문학경기장역",
+        "lat": 37.4345,
+        "lng": 126.6987,
+        "category": "귀가"
+      }
+    ],
+    "author": "KBO 코스 에디터",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-03T09:00:00.000Z"
+  },
+  {
+    "id": "suwon-day",
+    "title": "수원 산책에 야구 한 스푼",
+    "stadium": "수원 KT 위즈 파크",
+    "description": "수원의 풍경을 걷고, 야구장에서 하루의 하이라이트를 만나세요.",
+    "content": "장안공원에서 산책한 후 경기 시간에 맞춰 수원KT위즈파크로 이동하는 예시 코스예요.\n\n구장까지의 이동 수단과 시간을 확인하고, 식사와 입장 시간을 여유롭게 잡아 보세요. 경기 후에는 수원종합운동장 주변에서 귀가 동선을 확인해 주세요.\n\n실제 이용 후기가 아닌 샘플 코스입니다.",
+    "tags": [
+      "산책",
+      "주말 나들이"
+    ],
+    "duration": "경기 전후 반나절",
+    "cover": "/images/stadium-day.jpg",
+    "stops": [
+      {
+        "name": "장안공원",
+        "lat": 37.2888,
+        "lng": 127.0125,
+        "category": "산책",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "수원 KT 위즈 파크",
+        "lat": 37.2978428909635,
+        "lng": 127.011348102567,
+        "category": "경기 관람"
+      },
+      {
+        "name": "수원종합운동장",
+        "lat": 37.2985,
+        "lng": 127.011,
+        "category": "귀가"
+      }
+    ],
+    "author": "KBO 코스 에디터",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-04T09:00:00.000Z"
+  },
+  {
+    "id": "daejeon-day",
+    "title": "대전의 하루, 야구로 마무리",
+    "stadium": "대전 한화생명 볼파크",
+    "description": "도심 구경과 직관을 함께 담은 대전 나들이 코스.",
+    "content": "대전 중앙로 주변을 둘러본 뒤 구장으로 이동하는 하루를 계획해 보세요.\n\n식사와 이동 시간을 넉넉하게 잡고, 대전한화생명볼파크에서 응원의 즐거움을 느껴 보세요. 종료 후에는 교통편에 맞춰 일정을 마무리하면 좋아요.\n\n장소 영업 여부와 이동 시간을 방문 전에 확인해야 하는 샘플 코스입니다.",
+    "tags": [
+      "도심 나들이",
+      "첫 직관"
+    ],
+    "duration": "경기 전후 반나절",
+    "cover": "/images/stadium-sunset.jpg",
+    "stops": [
+      {
+        "name": "중앙로역",
+        "lat": 36.3287,
+        "lng": 127.4256,
+        "category": "도심 구경",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "대전 한화생명 볼파크",
+        "lat": 36.3173370007388,
+        "lng": 127.428013823451,
+        "category": "경기 관람"
+      },
+      {
+        "name": "중앙로역",
+        "lat": 36.3287,
+        "lng": 127.4256,
+        "category": "귀가"
+      }
+    ],
+    "author": "KBO 코스 에디터",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-05T09:00:00.000Z"
+  },
+  {
+    "id": "daegu-day",
+    "title": "라팍으로 떠나는 설레는 첫 직관",
+    "stadium": "대구 삼성 라이온즈 파크",
+    "description": "지하철에서 구장까지, 응원에 집중하는 간단한 하루.",
+    "content": "대공원역에서 만나 대구삼성라이온즈파크로 이동하는 간단한 코스예요.\n\n경기 전 구장 주변을 둘러보며 사진도 남기고, 입장 후에는 좌석 위치를 확인해 보세요. 종료 시간에 맞춰 대중교통 운행 정보를 확인하면 좋아요.\n\n실제 이용 후기가 아닌 샘플 코스입니다.",
+    "tags": [
+      "첫 직관",
+      "대중교통",
+      "응원"
+    ],
+    "duration": "경기 중심 반나절",
+    "cover": "/images/stadium-night.jpg",
+    "stops": [
+      {
+        "name": "대공원역",
+        "lat": 35.8428,
+        "lng": 128.6798,
+        "category": "만남",
+        "isDrawnPoint": true
+      },
+      {
+        "name": "대구 삼성 라이온즈 파크",
+        "lat": 35.8411289243023,
+        "lng": 128.681236372268,
+        "category": "경기 관람"
+      },
+      {
+        "name": "대공원역",
+        "lat": 35.8428,
+        "lng": 128.6798,
+        "category": "귀가"
+      }
+    ],
+    "author": "KBO 코스 에디터",
+    "likes": 0,
+    "isSample": true,
+    "createdAt": "2026-09-06T09:00:00.000Z"
+  }
+]

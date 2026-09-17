@@ -1,0 +1,170 @@
+{
+  "code": "0000",
+  "data": {
+    "bands": [
+      {
+        "bandType": "SPORTS_TEAM_RANKING_CALENDAR",
+        "focusYearSeason": {
+          "code": "2026",
+          "name": "2026"
+        },
+        "focusGameSeason": {
+          "code": "0",
+          "name": "정규리그"
+        },
+        "items": [
+          {
+            "rank": 1,
+            "name": "삼성",
+            "code": "SS",
+            "games": "122",
+            "wins": "73",
+            "draws": "3",
+            "losses": "46",
+            "winningPercentage": "0.613",
+            "gamesBehind": "0.0",
+            "winningStreak": "3승",
+            "battingAverage": "0.279",
+            "earnedRunAverage": "4.12",
+            "recentGames": "8승-2패-0무"
+          },
+          {
+            "rank": 2,
+            "name": "KT",
+            "code": "KT",
+            "games": "119",
+            "wins": "70",
+            "draws": "3",
+            "losses": "46",
+            "winningPercentage": "0.603",
+            "gamesBehind": "1.5",
+            "winningStreak": "1승",
+            "battingAverage": "0.280",
+            "earnedRunAverage": "4.37",
+            "recentGames": "6승-4패-0무"
+          },
+          {
+            "rank": 3,
+            "name": "LG",
+            "code": "LG",
+            "games": "123",
+            "wins": "68",
+            "draws": "1",
+            "losses": "54",
+            "winningPercentage": "0.557",
+            "gamesBehind": "6.5",
+            "winningStreak": "3패",
+            "battingAverage": "0.266",
+            "earnedRunAverage": "4.85",
+            "recentGames": "6승-4패-0무"
+          },
+          {
+            "rank": 4,
+            "name": "KIA",
+            "code": "HT",
+            "games": "121",
+            "wins": "66",
+            "draws": "2",
+            "losses": "53",
+            "winningPercentage": "0.555",
+            "gamesBehind": "7.0",
+            "winningStreak": "1패",
+            "battingAverage": "0.272",
+            "earnedRunAverage": "4.40",
+            "recentGames": "6승-4패-0무"
+          },
+          {
+            "rank": 5,
+            "name": "두산",
+            "code": "OB",
+            "games": "124",
+            "wins": "62",
+            "draws": "4",
+            "losses": "58",
+            "winningPercentage": "0.517",
+            "gamesBehind": "11.5",
+            "winningStreak": "1패",
+            "battingAverage": "0.266",
+            "earnedRunAverage": "3.69",
+            "recentGames": "3승-7패-0무"
+          },
+          {
+            "rank": 6,
+            "name": "NC",
+            "code": "NC",
+            "games": "117",
+            "wins": "55",
+            "draws": "2",
+            "losses": "60",
+            "winningPercentage": "0.478",
+            "gamesBehind": "16.0",
+            "winningStreak": "2패",
+            "battingAverage": "0.272",
+            "earnedRunAverage": "4.67",
+            "recentGames": "7승-3패-0무"
+          },
+          {
+            "rank": 7,
+            "name": "한화",
+            "code": "HH",
+            "games": "121",
+            "wins": "53",
+            "draws": "3",
+            "losses": "65",
+            "winningPercentage": "0.449",
+            "gamesBehind": "19.5",
+            "winningStreak": "4승",
+            "battingAverage": "0.276",
+            "earnedRunAverage": "5.12",
+            "recentGames": "4승-6패-0무"
+          },
+          {
+            "rank": 8,
+            "name": "롯데",
+            "code": "LT",
+            "games": "120",
+            "wins": "52",
+            "draws": "2",
+            "losses": "66",
+            "winningPercentage": "0.441",
+            "gamesBehind": "20.5",
+            "winningStreak": "1승",
+            "battingAverage": "0.268",
+            "earnedRunAverage": "4.77",
+            "recentGames": "2승-8패-0무"
+          },
+          {
+            "rank": 9,
+            "name": "SSG",
+            "code": "SK",
+            "games": "125",
+            "wins": "52",
+            "draws": "5",
+            "losses": "68",
+            "winningPercentage": "0.433",
+            "gamesBehind": "21.5",
+            "winningStreak": "2패",
+            "battingAverage": "0.260",
+            "earnedRunAverage": "5.37",
+            "recentGames": "6승-4패-0무"
+          },
+          {
+            "rank": 10,
+            "name": "키움",
+            "code": "WO",
+            "games": "128",
+            "wins": "45",
+            "draws": "3",
+            "losses": "80",
+            "winningPercentage": "0.360",
+            "gamesBehind": "31.0",
+            "winningStreak": "2승",
+            "battingAverage": "0.243",
+            "earnedRunAverage": "5.29",
+            "recentGames": "3승-7패-0무"
+          }
+        ]
+      }
+    ]
+  }
+}
